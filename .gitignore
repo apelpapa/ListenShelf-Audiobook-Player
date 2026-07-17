@@ -285,4 +285,5 @@ BenchmarkDotNet.Artifacts.*
 .tokensave
 /CLAUDE.md
 
-*.md
+# Local product handoff; repository documentation remains trackable.
+/LISTENSHELF_HANDOFF.md

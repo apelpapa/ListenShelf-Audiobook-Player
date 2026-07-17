@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ListenShelf.Application/ListenShelf.Application.csproj" />
+    <Project Path="src/ListenShelf.Core/ListenShelf.Core.csproj" />
+    <Project Path="src/ListenShelf.Desktop/ListenShelf.Desktop.csproj" />
+    <Project Path="src/ListenShelf.Infrastructure/ListenShelf.Infrastructure.csproj" />
+    <Project Path="src/ListenShelf.Playback/ListenShelf.Playback.csproj" />
+  </Folder>
+</Solution>

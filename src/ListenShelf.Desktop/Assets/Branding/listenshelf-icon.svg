@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- ListenShelf — audiobook player icon
+       Concept: five book spines on a shelf whose heights rise and fall
+       like an audio waveform. The tallest book carries a play mark. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A4A85"/>
+      <stop offset="1" stop-color="#1C2148"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.36" r="0.55">
+      <stop offset="0" stop-color="#F2A94E" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#F2A94E" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="shelf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C08A52"/>
+      <stop offset="1" stop-color="#8E5B36"/>
+    </linearGradient>
+    <clipPath id="squircle">
+      <rect width="1024" height="1024" rx="228"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#squircle)">
+    <rect width="1024" height="1024" fill="url(#bg)"/>
+    <rect width="1024" height="1024" fill="url(#glow)"/>
+
+    <!-- book spines (waveform) -->
+    <rect x="230" y="490" width="92" height="300" rx="26" fill="#F2A94E"/>
+    <rect x="348" y="360" width="92" height="430" rx="26" fill="#F2E7CF"/>
+    <rect x="466" y="260" width="92" height="530" rx="26" fill="#E7654B"/>
+    <rect x="584" y="400" width="92" height="390" rx="26" fill="#F2E7CF"/>
+    <rect x="702" y="530" width="92" height="260" rx="26" fill="#F2A94E"/>
+
+    <!-- spine title bands -->
+    <rect x="230" y="538" width="92" height="14" fill="#1C2148" opacity="0.3"/>
+    <rect x="348" y="416" width="92" height="14" fill="#1C2148" opacity="0.3"/>
+    <rect x="466" y="310" width="92" height="14" fill="#1C2148" opacity="0.3"/>
+    <rect x="584" y="452" width="92" height="14" fill="#1C2148" opacity="0.3"/>
+    <rect x="702" y="574" width="92" height="14" fill="#1C2148" opacity="0.3"/>
+
+    <!-- play mark on the tallest book -->
+    <path d="M488 472 L546 510 L488 548 Z" fill="#FFF6E8"/>
+
+    <!-- shelf -->
+    <rect x="176" y="760" width="672" height="44" rx="22" fill="url(#shelf)"/>
+  </g>
+</svg>

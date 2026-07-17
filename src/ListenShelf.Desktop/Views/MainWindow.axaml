@@ -1,0 +1,230 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        d:DesignWidth="1000"
+        d:DesignHeight="650"
+        x:Class="ListenShelf.Desktop.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Width="1000"
+        Height="650"
+        MinWidth="780"
+        MinHeight="540"
+        Background="#0E1118"
+        Icon="/Assets/Branding/listenshelf.ico"
+        Title="ListenShelf — Audiobook Player">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0"
+                Padding="28,20"
+                Background="#141923"
+                BorderBrush="#242B38"
+                BorderThickness="0,0,0,1">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="14">
+                    <Image Width="44"
+                           Height="44"
+                           Stretch="Uniform"
+                           Source="/Assets/Branding/listenshelf-1024.png"
+                           AutomationProperties.Name="ListenShelf logo" />
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock FontSize="21"
+                                   FontWeight="SemiBold"
+                                   Foreground="#F5F7FB"
+                                   Text="ListenShelf" />
+                        <TextBlock FontSize="12"
+                                   Foreground="#9BA5B7"
+                                   Text="Preliminary M4B player" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Padding="20,11"
+                        VerticalAlignment="Center"
+                        Background="#7567F8"
+                        Foreground="White"
+                        FontWeight="SemiBold"
+                        Command="{Binding OpenFileCommand}"
+                        Content="Open M4B" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1"
+              Margin="28"
+              ColumnDefinitions="0.38*,0.62*"
+              ColumnSpacing="24">
+            <Border Grid.Column="0"
+                    Padding="24"
+                    CornerRadius="22"
+                    Background="#171C26"
+                    BorderBrush="#262E3D"
+                    BorderThickness="1">
+                <Grid RowDefinitions="*,Auto">
+                    <Border Grid.Row="0"
+                            MinHeight="250"
+                            CornerRadius="18"
+                            Background="#222839">
+                        <Grid>
+                            <Border Width="104"
+                                    Height="104"
+                                    CornerRadius="52"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Background="#302B56">
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontSize="42"
+                                           Foreground="#AFA6FF"
+                                           Text="♪" />
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Row="1" Margin="0,24,0,0" Spacing="7">
+                        <TextBlock FontSize="22"
+                                   FontWeight="SemiBold"
+                                   Foreground="#F3F5F9"
+                                   Text="{Binding BookTitle}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock FontSize="13"
+                                   Foreground="#8F99AB"
+                                   Text="{Binding FileName}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Margin="0,5,0,0"
+                                   FontSize="12"
+                                   Foreground="#AFA6FF"
+                                   Text="{Binding ProgressText}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1"
+                    Padding="30"
+                    CornerRadius="22"
+                    Background="#171C26"
+                    BorderBrush="#262E3D"
+                    BorderThickness="1">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                        <StackPanel Spacing="5">
+                            <TextBlock FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="#818C9F"
+                                       Text="NOW PLAYING" />
+                            <TextBlock FontSize="17"
+                                       Foreground="#E9ECF2"
+                                       Text="{Binding StatusText}" />
+                        </StackPanel>
+                        <Border Grid.Column="1"
+                                Padding="10,5"
+                                VerticalAlignment="Top"
+                                CornerRadius="10"
+                                Background="#242A39">
+                            <TextBlock FontSize="12"
+                                       Foreground="#AEB7C8"
+                                       Text="M4B • LOCAL" />
+                        </Border>
+                    </Grid>
+
+                    <StackPanel Grid.Row="1"
+                                VerticalAlignment="Center"
+                                Spacing="22">
+                        <StackPanel Spacing="8">
+                            <Slider Minimum="0"
+                                    Maximum="{Binding SeekMaximum}"
+                                    Value="{Binding PositionSeconds, Mode=TwoWay}"
+                                    IsEnabled="{Binding CanControlPlayback}" />
+                            <Grid ColumnDefinitions="*,Auto,*">
+                                <TextBlock Grid.Column="0"
+                                           FontSize="12"
+                                           Foreground="#9CA6B8"
+                                           Text="{Binding ElapsedText}" />
+                                <TextBlock Grid.Column="1"
+                                           FontSize="12"
+                                           Foreground="#6F798B"
+                                           Text="{Binding DurationText}" />
+                                <TextBlock Grid.Column="2"
+                                           HorizontalAlignment="Right"
+                                           FontSize="12"
+                                           Foreground="#9CA6B8"
+                                           Text="{Binding RemainingText}" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel HorizontalAlignment="Center"
+                                    Orientation="Horizontal"
+                                    Spacing="14">
+                            <Button Width="92"
+                                    Height="48"
+                                    Background="#242B38"
+                                    Foreground="#E7EAF0"
+                                    Command="{Binding SkipBackwardCommand}"
+                                    IsEnabled="{Binding CanControlPlayback}"
+                                    Content="−15 sec" />
+                            <Button Width="112"
+                                    Height="56"
+                                    Background="#7567F8"
+                                    Foreground="White"
+                                    FontSize="16"
+                                    FontWeight="SemiBold"
+                                    Command="{Binding TogglePlaybackCommand}"
+                                    IsEnabled="{Binding CanControlPlayback}"
+                                    Content="{Binding PlayPauseLabel}" />
+                            <Button Width="92"
+                                    Height="48"
+                                    Background="#242B38"
+                                    Foreground="#E7EAF0"
+                                    Command="{Binding SkipForwardCommand}"
+                                    IsEnabled="{Binding CanControlPlayback}"
+                                    Content="+30 sec" />
+                        </StackPanel>
+
+                        <TextBlock MinHeight="20"
+                                   HorizontalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="#FF8A98"
+                                   Text="{Binding ErrorMessage}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <Grid Grid.Row="2" ColumnDefinitions="Auto,150,*,Auto,90">
+                        <TextBlock Grid.Column="0"
+                                   Margin="0,0,12,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="13"
+                                   Foreground="#AAB3C3"
+                                   Text="Volume" />
+                        <Slider Grid.Column="1"
+                                Minimum="0"
+                                Maximum="100"
+                                Value="{Binding Volume, Mode=TwoWay}" />
+
+                        <TextBlock Grid.Column="3"
+                                   Margin="0,0,12,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="13"
+                                   Foreground="#AAB3C3"
+                                   Text="Speed" />
+                        <ComboBox Grid.Column="4"
+                                  ItemsSource="{Binding PlaybackRates}"
+                                  SelectedItem="{Binding SelectedPlaybackRate, Mode=TwoWay}" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2"
+                Padding="28,12"
+                Background="#111620"
+                BorderBrush="#242B38"
+                BorderThickness="0,1,0,0">
+            <TextBlock HorizontalAlignment="Center"
+                       FontSize="11"
+                       Foreground="#6F798A"
+                       Text="Offline playback • Progress saves automatically for each file" />
+        </Border>
+    </Grid>
+</Window>
