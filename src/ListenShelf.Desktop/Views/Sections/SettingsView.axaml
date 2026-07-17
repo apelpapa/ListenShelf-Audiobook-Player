@@ -1,0 +1,138 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+             x:Class="ListenShelf.Desktop.Views.Sections.SettingsView"
+             x:DataType="vm:MainWindowViewModel">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <StackPanel MaxWidth="850"
+                    HorizontalAlignment="Left"
+                    Spacing="18">
+            <StackPanel Spacing="5">
+                <TextBlock FontSize="19"
+                           FontWeight="SemiBold"
+                           Foreground="#F1F3F7"
+                           Text="Library file handling" />
+                <TextBlock FontSize="13"
+                           Foreground="#909BAD"
+                           Text="Choose the default behavior for audiobooks you add in the future."
+                           TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
+                <Button Grid.Column="0"
+                        Padding="0"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Command="{Binding ChooseLinkedLibraryCommand}">
+                    <Border Padding="22"
+                            CornerRadius="17"
+                            Background="#171C26"
+                            BorderBrush="#7567F8"
+                            BorderThickness="1">
+                        <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                <TextBlock FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="#F2A94E"
+                                           Text="LINKED LIBRARY" />
+                                <Border Grid.Column="1"
+                                        Padding="8,3"
+                                        CornerRadius="8"
+                                        Background="#302B56"
+                                        IsVisible="{Binding IsLinkedModeSelected}">
+                                    <TextBlock FontSize="10"
+                                               Foreground="#C7C0FF"
+                                               Text="SELECTED" />
+                                </Border>
+                            </Grid>
+                            <TextBlock Grid.Row="1"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F1F3F7"
+                                       Text="Keep files where they are" />
+                            <TextBlock Grid.Row="2"
+                                       FontSize="12"
+                                       Foreground="#929DAF"
+                                       Text="ListenShelf remembers existing locations. Your folders and files remain entirely under your control."
+                                       TextWrapping="Wrap" />
+                            <TextBlock Grid.Row="3"
+                                       FontSize="11"
+                                       Foreground="#B3BDCD"
+                                       Text="No copying • No renaming • No moving" />
+                        </Grid>
+                    </Border>
+                </Button>
+
+                <Button Grid.Column="1"
+                        Padding="0"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Command="{Binding ChooseManagedLibraryCommand}">
+                    <Border Padding="22"
+                            CornerRadius="17"
+                            Background="#171C26"
+                            BorderBrush="#7567F8"
+                            BorderThickness="1">
+                        <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                <TextBlock FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="#E7654B"
+                                           Text="MANAGED LIBRARY" />
+                                <Border Grid.Column="1"
+                                        Padding="8,3"
+                                        CornerRadius="8"
+                                        Background="#302B56"
+                                        IsVisible="{Binding IsManagedModeSelected}">
+                                    <TextBlock FontSize="10"
+                                               Foreground="#C7C0FF"
+                                               Text="SELECTED" />
+                                </Border>
+                            </Grid>
+                            <TextBlock Grid.Row="1"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F1F3F7"
+                                       Text="Let ListenShelf manage copies" />
+                            <TextBlock Grid.Row="2"
+                                       FontSize="12"
+                                       Foreground="#929DAF"
+                                       Text="Future imports are copied into a ListenShelf library and organized for you. Originals stay untouched."
+                                       TextWrapping="Wrap" />
+                            <TextBlock Grid.Row="3"
+                                       FontSize="11"
+                                       Foreground="#B3BDCD"
+                                       Text="Copy first • Verify • Manage the copy" />
+                        </Grid>
+                    </Border>
+                </Button>
+            </Grid>
+
+            <Border Padding="17"
+                    CornerRadius="13"
+                    Background="#181E2A"
+                    BorderBrush="#2A3241"
+                    BorderThickness="1">
+                <StackPanel Spacing="5">
+                    <TextBlock FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="#D9DEE7"
+                               Text="Safe while this foundation is being built" />
+                    <TextBlock FontSize="12"
+                               Foreground="#8E99AB"
+                               Text="Changing this setting does not currently copy, move, rename, or delete anything. It only saves your preferred behavior."
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock FontSize="12"
+                       Foreground="#AFA6FF"
+                       Text="{Binding LibrarySettingsMessage}"
+                       TextWrapping="Wrap" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

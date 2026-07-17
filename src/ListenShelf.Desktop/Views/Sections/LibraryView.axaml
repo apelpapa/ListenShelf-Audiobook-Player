@@ -1,0 +1,99 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+             x:Class="ListenShelf.Desktop.Views.Sections.LibraryView"
+             x:DataType="vm:MainWindowViewModel">
+    <Grid RowDefinitions="Auto,*" RowSpacing="18">
+        <Grid Grid.Row="0" ColumnDefinitions="*,220" ColumnSpacing="18">
+            <Border Grid.Column="0"
+                    Padding="20"
+                    CornerRadius="16"
+                    Background="#171C26"
+                    BorderBrush="#293142"
+                    BorderThickness="1">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="6">
+                        <TextBlock FontSize="10"
+                                   FontWeight="SemiBold"
+                                   Foreground="#7F899C"
+                                   Text="CURRENT FILE HANDLING" />
+                        <TextBlock FontSize="17"
+                                   FontWeight="SemiBold"
+                                   Foreground="#F0F2F6"
+                                   Text="{Binding CurrentLibraryModeTitle}" />
+                        <TextBlock MaxWidth="600"
+                                   FontSize="12"
+                                   Foreground="#939DAF"
+                                   Text="{Binding CurrentLibraryModeDescription}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Button Grid.Column="1"
+                            Padding="14,8"
+                            VerticalAlignment="Center"
+                            Background="#242B39"
+                            Foreground="#D6DBE5"
+                            Command="{Binding ShowSettingsCommand}"
+                            Content="Change" />
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1"
+                    Padding="20"
+                    CornerRadius="16"
+                    Background="#171C26"
+                    BorderBrush="#293142"
+                    BorderThickness="1">
+                <StackPanel VerticalAlignment="Center" Spacing="4">
+                    <TextBlock FontSize="28"
+                               FontWeight="SemiBold"
+                               Foreground="#F2A94E"
+                               Text="0" />
+                    <TextBlock FontSize="12"
+                               Foreground="#949EAF"
+                               Text="audiobooks on your shelf" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="1"
+                Padding="36"
+                CornerRadius="20"
+                Background="#171C26"
+                BorderBrush="#293142"
+                BorderThickness="1">
+            <StackPanel MaxWidth="520"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="13">
+                <Image Width="92"
+                       Height="92"
+                       Margin="0,0,0,5"
+                       Source="/Assets/Branding/listenshelf-1024.png"
+                       Stretch="Uniform" />
+                <TextBlock HorizontalAlignment="Center"
+                           FontSize="24"
+                           FontWeight="SemiBold"
+                           Foreground="#F2F4F8"
+                           Text="Your shelf is ready" />
+                <TextBlock HorizontalAlignment="Center"
+                           FontSize="13"
+                           Foreground="#929DAF"
+                           Text="{Binding LibraryEmptyDescription}"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap" />
+                <Button Margin="0,8,0,0"
+                        Padding="19,10"
+                        HorizontalAlignment="Center"
+                        Background="#7567F8"
+                        Foreground="White"
+                        FontWeight="SemiBold"
+                        Command="{Binding PlayM4bFromLibraryCommand}"
+                        Content="Play an M4B now" />
+                <TextBlock HorizontalAlignment="Center"
+                           FontSize="11"
+                           Foreground="#687386"
+                           Text="Importing, grouping, and file management are not active yet." />
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

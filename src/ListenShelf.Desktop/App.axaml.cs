@@ -4,7 +4,9 @@ using Avalonia.Markup.Xaml;
 using ListenShelf.Desktop.Services;
 using ListenShelf.Desktop.ViewModels;
 using ListenShelf.Desktop.Views;
+using ListenShelf.Infrastructure.Library;
 using ListenShelf.Infrastructure.Progress;
+using ListenShelf.Infrastructure.Storage;
 using ListenShelf.Playback.LibVlc;
 
 namespace ListenShelf.Desktop
@@ -21,10 +23,12 @@ namespace ListenShelf.Desktop
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 var mainWindow = new MainWindow();
+                var database = new ListenShelfDatabase();
                 var viewModel = new MainWindowViewModel(
                     new LibVlcAudioEngine(),
                     new AvaloniaFilePickerService(mainWindow),
-                    new SqlitePlaybackProgressStore());
+                    new SqlitePlaybackProgressStore(database),
+                    new SqliteLibrarySettingsStore(database));
 
                 mainWindow.DataContext = viewModel;
                 mainWindow.Closed += (_, _) => viewModel.Dispose();

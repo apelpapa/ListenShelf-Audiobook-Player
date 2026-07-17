@@ -18,7 +18,9 @@ tests/                         Test projects, added alongside behavior
 
 ## Current preview
 
-The preliminary Windows player can open one local `.m4b` file and provides play/pause, seeking, 15-second rewind, 30-second forward, playback-speed selection, volume, elapsed/remaining time, and automatic per-file position persistence in a local SQLite database.
+The preliminary Windows app now has Library, Player, and Settings sections. First-run setup saves a choice between a linked library (keep files where they are) and a managed library (let ListenShelf manage copies); this is currently a preference only, and no import or file-management operation is active yet.
+
+The player can open one local `.m4b` file and provides play/pause, seeking, 15-second rewind, 30-second forward, playback-speed selection, volume, elapsed/remaining time, and automatic per-file position persistence in a local SQLite database.
 
 Run it from the repository root:
 

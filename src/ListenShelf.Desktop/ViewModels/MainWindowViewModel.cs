@@ -1,6 +1,7 @@
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ListenShelf.Application.Library;
 using ListenShelf.Application.Playback;
 using ListenShelf.Application.Progress;
 using ListenShelf.Desktop.Services;
@@ -14,6 +15,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IAudioEngine _audioEngine;
     private readonly IFilePickerService _filePickerService;
     private readonly IPlaybackProgressStore _progressStore;
+    private readonly ILibrarySettingsStore _librarySettingsStore;
     private bool _isUpdatingPositionFromEngine;
     private bool _isLoadingFile;
     private string? _currentFilePath;
@@ -24,11 +26,23 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public MainWindowViewModel(
         IAudioEngine audioEngine,
         IFilePickerService filePickerService,
-        IPlaybackProgressStore progressStore)
+        IPlaybackProgressStore progressStore,
+        ILibrarySettingsStore librarySettingsStore)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
         _progressStore = progressStore;
+        _librarySettingsStore = librarySettingsStore;
+
+        try
+        {
+            _defaultLibraryStorageMode = _librarySettingsStore.GetDefaultStorageMode();
+        }
+        catch (Exception exception)
+        {
+            _librarySettingsMessage = $"Library preference could not be loaded: {exception.Message}";
+            _librarySettingsErrorMessage = _librarySettingsMessage;
+        }
 
         _audioEngine.ProgressChanged += OnProgressChanged;
         _audioEngine.StateChanged += OnStateChanged;
@@ -38,6 +52,31 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public IReadOnlyList<double> PlaybackRates { get; } =
         [0.75d, 1d, 1.25d, 1.5d, 1.75d, 2d];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsLibrarySection))]
+    [NotifyPropertyChangedFor(nameof(IsPlayerSection))]
+    [NotifyPropertyChangedFor(nameof(IsSettingsSection))]
+    [NotifyPropertyChangedFor(nameof(PageTitle))]
+    [NotifyPropertyChangedFor(nameof(PageSubtitle))]
+    private AppSection _selectedSection = AppSection.Library;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOnboardingVisible))]
+    [NotifyPropertyChangedFor(nameof(IsMainContentVisible))]
+    [NotifyPropertyChangedFor(nameof(IsLinkedModeSelected))]
+    [NotifyPropertyChangedFor(nameof(IsManagedModeSelected))]
+    [NotifyPropertyChangedFor(nameof(CurrentLibraryModeTitle))]
+    [NotifyPropertyChangedFor(nameof(CurrentLibraryModeDescription))]
+    [NotifyPropertyChangedFor(nameof(LibraryEmptyDescription))]
+    private LibraryStorageMode? _defaultLibraryStorageMode;
+
+    [ObservableProperty]
+    private string _librarySettingsMessage = "This preference controls future imports only. No files will be moved.";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLibrarySettingsError))]
+    private string _librarySettingsErrorMessage = string.Empty;
 
     [ObservableProperty]
     private string _bookTitle = "No audiobook selected";
@@ -85,6 +124,59 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool CanControlPlayback => IsFileLoaded && !IsBusy;
 
+    public bool IsLibrarySection => SelectedSection == AppSection.Library;
+
+    public bool IsPlayerSection => SelectedSection == AppSection.Player;
+
+    public bool IsSettingsSection => SelectedSection == AppSection.Settings;
+
+    public bool IsOnboardingVisible => DefaultLibraryStorageMode is null;
+
+    public bool IsMainContentVisible => !IsOnboardingVisible;
+
+    public bool IsLinkedModeSelected => DefaultLibraryStorageMode == LibraryStorageMode.Linked;
+
+    public bool IsManagedModeSelected => DefaultLibraryStorageMode == LibraryStorageMode.Managed;
+
+    public bool HasLibrarySettingsError => !string.IsNullOrWhiteSpace(LibrarySettingsErrorMessage);
+
+    public string PageTitle => SelectedSection switch
+    {
+        AppSection.Player => "Player",
+        AppSection.Settings => "Settings",
+        _ => "Library",
+    };
+
+    public string PageSubtitle => SelectedSection switch
+    {
+        AppSection.Player => "Listen locally with automatic progress saving.",
+        AppSection.Settings => "Choose how ListenShelf should handle future audiobook imports.",
+        _ => "Your audiobooks, series, and collections will live here.",
+    };
+
+    public string CurrentLibraryModeTitle => DefaultLibraryStorageMode switch
+    {
+        LibraryStorageMode.Linked => "Keep files where they are",
+        LibraryStorageMode.Managed => "Let ListenShelf manage copies",
+        _ => "Choose how your library works",
+    };
+
+    public string CurrentLibraryModeDescription => DefaultLibraryStorageMode switch
+    {
+        LibraryStorageMode.Linked =>
+            "ListenShelf will remember your existing file locations without moving or renaming anything.",
+        LibraryStorageMode.Managed =>
+            "Future imports will be copied into a ListenShelf-managed library while originals remain untouched.",
+        _ => "Select a library style to finish setup.",
+    };
+
+    public string LibraryEmptyDescription => DefaultLibraryStorageMode switch
+    {
+        LibraryStorageMode.Managed =>
+            "Managed importing is the next library milestone. For now, you can play an M4B directly.",
+        _ => "Linked importing is the next library milestone. For now, you can play an M4B directly.",
+    };
+
     public string PlayPauseLabel => IsPlaying ? "Pause" : "Play";
 
     public double SeekMaximum => Math.Max(1d, DurationSeconds);
@@ -95,6 +187,28 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public string RemainingText =>
         $"-{FormatTime(Math.Max(0d, DurationSeconds - PositionSeconds), DurationSeconds)}";
+
+    [RelayCommand]
+    private void ShowLibrary() => SelectedSection = AppSection.Library;
+
+    [RelayCommand]
+    private void ShowPlayer() => SelectedSection = AppSection.Player;
+
+    [RelayCommand]
+    private void ShowSettings() => SelectedSection = AppSection.Settings;
+
+    [RelayCommand]
+    private void ChooseLinkedLibrary() => SaveLibraryStorageMode(LibraryStorageMode.Linked);
+
+    [RelayCommand]
+    private void ChooseManagedLibrary() => SaveLibraryStorageMode(LibraryStorageMode.Managed);
+
+    [RelayCommand]
+    private async Task PlayM4bFromLibraryAsync()
+    {
+        SelectedSection = AppSection.Player;
+        await OpenFileAsync();
+    }
 
     [RelayCommand]
     private async Task OpenFileAsync()
@@ -326,6 +440,31 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         catch (Exception exception)
         {
             ErrorMessage = $"Playback continues, but your place could not be saved: {exception.Message}";
+        }
+    }
+
+    private void SaveLibraryStorageMode(LibraryStorageMode storageMode)
+    {
+        var wasOnboarding = IsOnboardingVisible;
+
+        try
+        {
+            _librarySettingsStore.SaveDefaultStorageMode(storageMode);
+            DefaultLibraryStorageMode = storageMode;
+            LibrarySettingsErrorMessage = string.Empty;
+            LibrarySettingsMessage =
+                $"Saved: {CurrentLibraryModeTitle}. This will apply to future imports.";
+
+            if (wasOnboarding)
+            {
+                SelectedSection = AppSection.Library;
+            }
+        }
+        catch (Exception exception)
+        {
+            LibrarySettingsErrorMessage =
+                $"Library preference could not be saved: {exception.Message}";
+            LibrarySettingsMessage = LibrarySettingsErrorMessage;
         }
     }
 
