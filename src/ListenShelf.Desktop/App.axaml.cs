@@ -28,7 +28,8 @@ namespace ListenShelf.Desktop
                     new LibVlcAudioEngine(),
                     new AvaloniaFilePickerService(mainWindow),
                     new SqlitePlaybackProgressStore(database),
-                    new SqliteLibrarySettingsStore(database));
+                    new SqliteLibrarySettingsStore(database),
+                    new SqliteAudiobookLibrary(database));
 
                 mainWindow.DataContext = viewModel;
                 mainWindow.Closed += (_, _) => viewModel.Dispose();

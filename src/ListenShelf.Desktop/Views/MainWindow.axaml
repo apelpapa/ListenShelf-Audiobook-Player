@@ -134,15 +134,25 @@
                                    Text="{Binding PageSubtitle}" />
                     </StackPanel>
 
-                    <Button Grid.Column="1"
-                            Padding="20,11"
-                            VerticalAlignment="Center"
-                            Background="#7567F8"
-                            Foreground="White"
-                            FontWeight="SemiBold"
-                            Command="{Binding OpenFileCommand}"
-                            Content="Open M4B"
-                            IsVisible="{Binding IsPlayerSection}" />
+                    <StackPanel Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal">
+                        <Button Padding="20,11"
+                                Background="#7567F8"
+                                Foreground="White"
+                                FontWeight="SemiBold"
+                                Command="{Binding AddAudiobooksCommand}"
+                                Content="Add audiobooks"
+                                IsEnabled="{Binding CanAddAudiobooks}"
+                                IsVisible="{Binding IsLibrarySection}" />
+                        <Button Padding="20,11"
+                                Background="#7567F8"
+                                Foreground="White"
+                                FontWeight="SemiBold"
+                                Command="{Binding OpenFileCommand}"
+                                Content="Open M4B"
+                                IsVisible="{Binding IsPlayerSection}" />
+                    </StackPanel>
                 </Grid>
             </Border>
 

@@ -18,7 +18,7 @@ tests/                         Test projects, added alongside behavior
 
 ## Current preview
 
-The preliminary Windows app now has Library, Player, and Settings sections. First-run setup saves a choice between a linked library (keep files where they are) and a managed library (let ListenShelf manage copies); this is currently a preference only, and no import or file-management operation is active yet.
+The preliminary Windows app has Library, Player, and Settings sections. First-run setup saves a choice between a linked library (keep files where they are) and a managed library (let ListenShelf manage copies). The Library can import multiple `.m4b` files, remembers linked paths, creates verified managed copies without changing the originals, prevents repeat imports from the same location, and plays cataloged books directly.
 
 The player can open one local `.m4b` file and provides play/pause, seeking, 15-second rewind, 30-second forward, playback-speed selection, volume, elapsed/remaining time, and automatic per-file position persistence in a local SQLite database.
 

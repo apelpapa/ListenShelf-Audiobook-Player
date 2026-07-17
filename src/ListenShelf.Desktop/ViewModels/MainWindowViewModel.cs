@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -16,6 +17,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IFilePickerService _filePickerService;
     private readonly IPlaybackProgressStore _progressStore;
     private readonly ILibrarySettingsStore _librarySettingsStore;
+    private readonly IAudiobookLibrary _audiobookLibrary;
     private bool _isUpdatingPositionFromEngine;
     private bool _isLoadingFile;
     private string? _currentFilePath;
@@ -27,12 +29,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IAudioEngine audioEngine,
         IFilePickerService filePickerService,
         IPlaybackProgressStore progressStore,
-        ILibrarySettingsStore librarySettingsStore)
+        ILibrarySettingsStore librarySettingsStore,
+        IAudiobookLibrary audiobookLibrary)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
         _progressStore = progressStore;
         _librarySettingsStore = librarySettingsStore;
+        _audiobookLibrary = audiobookLibrary;
 
         try
         {
@@ -48,10 +52,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _audioEngine.StateChanged += OnStateChanged;
         _audioEngine.Volume = (int)Volume;
         _audioEngine.TrySetPlaybackRate(SelectedPlaybackRate);
+        RefreshLibrary();
     }
 
     public IReadOnlyList<double> PlaybackRates { get; } =
         [0.75d, 1d, 1.25d, 1.5d, 1.75d, 2d];
+
+    public ObservableCollection<LibraryBookItemViewModel> LibraryBooks { get; } = [];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLibrarySection))]
@@ -69,6 +76,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(CurrentLibraryModeTitle))]
     [NotifyPropertyChangedFor(nameof(CurrentLibraryModeDescription))]
     [NotifyPropertyChangedFor(nameof(LibraryEmptyDescription))]
+    [NotifyPropertyChangedFor(nameof(CanAddAudiobooks))]
     private LibraryStorageMode? _defaultLibraryStorageMode;
 
     [ObservableProperty]
@@ -77,6 +85,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasLibrarySettingsError))]
     private string _librarySettingsErrorMessage = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanAddAudiobooks))]
+    private bool _isLibraryBusy;
+
+    [ObservableProperty]
+    private string _libraryStatusMessage = "Add one or more M4B files to begin building your shelf.";
 
     [ObservableProperty]
     private string _bookTitle = "No audiobook selected";
@@ -140,6 +155,18 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool HasLibrarySettingsError => !string.IsNullOrWhiteSpace(LibrarySettingsErrorMessage);
 
+    public bool HasLibraryBooks => LibraryBooks.Count > 0;
+
+    public bool IsLibraryEmpty => !HasLibraryBooks;
+
+    public bool CanAddAudiobooks => !IsLibraryBusy && DefaultLibraryStorageMode is not null;
+
+    public string LibraryBookCountText => LibraryBooks.Count == 1
+        ? "1 audiobook"
+        : $"{LibraryBooks.Count} audiobooks";
+
+    public string ManagedLibraryPath => _audiobookLibrary.ManagedLibraryPath;
+
     public string PageTitle => SelectedSection switch
     {
         AppSection.Player => "Player",
@@ -173,8 +200,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public string LibraryEmptyDescription => DefaultLibraryStorageMode switch
     {
         LibraryStorageMode.Managed =>
-            "Managed importing is the next library milestone. For now, you can play an M4B directly.",
-        _ => "Linked importing is the next library milestone. For now, you can play an M4B directly.",
+            "Choose one or more M4B files. ListenShelf will make verified copies and leave the originals untouched.",
+        _ => "Choose one or more M4B files. ListenShelf will remember their current locations without changing them.",
     };
 
     public string PlayPauseLabel => IsPlaying ? "Pause" : "Play";
@@ -189,7 +216,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         $"-{FormatTime(Math.Max(0d, DurationSeconds - PositionSeconds), DurationSeconds)}";
 
     [RelayCommand]
-    private void ShowLibrary() => SelectedSection = AppSection.Library;
+    private void ShowLibrary()
+    {
+        RefreshLibrary();
+        SelectedSection = AppSection.Library;
+    }
 
     [RelayCommand]
     private void ShowPlayer() => SelectedSection = AppSection.Player;
@@ -204,10 +235,61 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private void ChooseManagedLibrary() => SaveLibraryStorageMode(LibraryStorageMode.Managed);
 
     [RelayCommand]
-    private async Task PlayM4bFromLibraryAsync()
+    private async Task AddAudiobooksAsync()
     {
-        SelectedSection = AppSection.Player;
-        await OpenFileAsync();
+        if (!CanAddAudiobooks || DefaultLibraryStorageMode is not { } storageMode)
+        {
+            return;
+        }
+
+        try
+        {
+            var filePaths = await _filePickerService.PickM4bFilesAsync();
+            if (filePaths.Count == 0)
+            {
+                return;
+            }
+
+            IsLibraryBusy = true;
+            LibraryStatusMessage = storageMode == LibraryStorageMode.Managed
+                ? $"Copying {filePaths.Count} audiobook(s) into the managed library…"
+                : $"Linking {filePaths.Count} audiobook(s)…";
+
+            var addedCount = 0;
+            var existingCount = 0;
+            var failures = new List<string>();
+
+            foreach (var filePath in filePaths)
+            {
+                try
+                {
+                    var result = await Task.Run(() => _audiobookLibrary.Import(filePath, storageMode));
+                    if (result.WasAdded)
+                    {
+                        addedCount++;
+                    }
+                    else
+                    {
+                        existingCount++;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    failures.Add($"{Path.GetFileName(filePath)}: {exception.Message}");
+                }
+            }
+
+            RefreshLibrary();
+            LibraryStatusMessage = BuildImportSummary(addedCount, existingCount, failures);
+        }
+        catch (Exception exception)
+        {
+            LibraryStatusMessage = $"Audiobooks could not be selected: {exception.Message}";
+        }
+        finally
+        {
+            IsLibraryBusy = false;
+        }
     }
 
     [RelayCommand]
@@ -221,6 +303,21 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             {
                 return;
             }
+
+            await LoadAndPlayFileAsync(filePath);
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = exception.Message;
+            StatusText = "Could not open audiobook";
+        }
+    }
+
+    private async Task LoadAndPlayFileAsync(string filePath)
+    {
+        try
+        {
+            ErrorMessage = string.Empty;
 
             IsBusy = true;
             StatusText = "Opening audiobook…";
@@ -262,6 +359,20 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         {
             IsBusy = false;
         }
+    }
+
+    private async Task PlayLibraryBookAsync(LibraryBook book)
+    {
+        if (!File.Exists(book.FilePath))
+        {
+            LibraryStatusMessage =
+                $"{book.Title} is missing from its saved location. Re-import it to add the new location.";
+            RefreshLibrary();
+            return;
+        }
+
+        SelectedSection = AppSection.Player;
+        await LoadAndPlayFileAsync(book.FilePath);
     }
 
     [RelayCommand]
@@ -466,6 +577,70 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 $"Library preference could not be saved: {exception.Message}";
             LibrarySettingsMessage = LibrarySettingsErrorMessage;
         }
+    }
+
+    private void RefreshLibrary()
+    {
+        try
+        {
+            var books = _audiobookLibrary.GetBooks();
+            LibraryBooks.Clear();
+
+            foreach (var book in books)
+            {
+                LibraryBooks.Add(new LibraryBookItemViewModel(
+                    book,
+                    GetProgressSummary(book),
+                    PlayLibraryBookAsync));
+            }
+
+            OnPropertyChanged(nameof(HasLibraryBooks));
+            OnPropertyChanged(nameof(IsLibraryEmpty));
+            OnPropertyChanged(nameof(LibraryBookCountText));
+        }
+        catch (Exception exception)
+        {
+            LibraryStatusMessage = $"The library could not be loaded: {exception.Message}";
+        }
+    }
+
+    private string GetProgressSummary(LibraryBook book)
+    {
+        if (!File.Exists(book.FilePath))
+        {
+            return "File missing";
+        }
+
+        try
+        {
+            var progress = _progressStore.Get(book.FilePath);
+            return progress is { Position: var position } && position > TimeSpan.Zero
+                ? $"Resume at {FormatTime(position.TotalSeconds, progress.Duration.TotalSeconds)}"
+                : "Not started";
+        }
+        catch
+        {
+            return "Progress unavailable";
+        }
+    }
+
+    private static string BuildImportSummary(
+        int addedCount,
+        int existingCount,
+        IReadOnlyList<string> failures)
+    {
+        var summary = $"Added {addedCount} audiobook(s).";
+        if (existingCount > 0)
+        {
+            summary += $" {existingCount} already in the library.";
+        }
+
+        if (failures.Count > 0)
+        {
+            summary += $" {failures.Count} failed: {string.Join(" | ", failures)}";
+        }
+
+        return summary;
     }
 
     private static string FormatTime(double seconds, double totalSeconds)

@@ -73,6 +73,22 @@ public sealed class ListenShelfDatabase
                 setting_key TEXT NOT NULL PRIMARY KEY,
                 setting_value TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS library_books (
+                book_id TEXT NOT NULL PRIMARY KEY,
+                title TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                file_key TEXT NOT NULL UNIQUE,
+                storage_mode TEXT NOT NULL CHECK (storage_mode IN ('Linked', 'Managed')),
+                source_path TEXT NULL,
+                source_key TEXT NULL,
+                file_size_bytes INTEGER NOT NULL CHECK (file_size_bytes >= 0),
+                added_utc TEXT NOT NULL
+            );
+
+            CREATE UNIQUE INDEX IF NOT EXISTS ux_library_books_managed_source
+            ON library_books(source_key)
+            WHERE source_key IS NOT NULL;
             """;
         command.ExecuteNonQuery();
     }

@@ -12,6 +12,15 @@ public sealed class AvaloniaFilePickerService(Window owner) : IFilePickerService
 
     public async Task<string?> PickM4bFileAsync()
     {
+        var files = await PickM4bFilesAsync(allowMultiple: false);
+        return files.Count == 1 ? files[0] : null;
+    }
+
+    public Task<IReadOnlyList<string>> PickM4bFilesAsync() =>
+        PickM4bFilesAsync(allowMultiple: true);
+
+    private async Task<IReadOnlyList<string>> PickM4bFilesAsync(bool allowMultiple)
+    {
         if (!owner.StorageProvider.CanOpen)
         {
             throw new NotSupportedException("This system does not provide a file picker.");
@@ -19,12 +28,12 @@ public sealed class AvaloniaFilePickerService(Window owner) : IFilePickerService
 
         var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Open an M4B audiobook",
-            AllowMultiple = false,
+            Title = allowMultiple ? "Add M4B audiobooks" : "Open an M4B audiobook",
+            AllowMultiple = allowMultiple,
             FileTypeFilter = [M4bFileType],
             SuggestedFileType = M4bFileType,
         });
 
-        return files.Count == 1 ? files[0].Path.LocalPath : null;
+        return files.Select(file => file.Path.LocalPath).ToArray();
     }
 }

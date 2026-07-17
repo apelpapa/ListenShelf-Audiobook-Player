@@ -29,3 +29,4 @@
     <ProjectReference Include="..\ListenShelf.Playback\ListenShelf.Playback.csproj" />
   </ItemGroup>
 </Project>
+ 

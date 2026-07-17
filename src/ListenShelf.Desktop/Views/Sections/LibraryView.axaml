@@ -44,56 +44,171 @@
                     BorderBrush="#293142"
                     BorderThickness="1">
                 <StackPanel VerticalAlignment="Center" Spacing="4">
-                    <TextBlock FontSize="28"
+                    <TextBlock FontSize="26"
                                FontWeight="SemiBold"
                                Foreground="#F2A94E"
-                               Text="0" />
+                               Text="{Binding LibraryBookCountText}" />
                     <TextBlock FontSize="12"
                                Foreground="#949EAF"
-                               Text="audiobooks on your shelf" />
+                               Text="on your shelf" />
                 </StackPanel>
             </Border>
         </Grid>
 
-        <Border Grid.Row="1"
-                Padding="36"
-                CornerRadius="20"
-                Background="#171C26"
-                BorderBrush="#293142"
-                BorderThickness="1">
-            <StackPanel MaxWidth="520"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        Spacing="13">
-                <Image Width="92"
-                       Height="92"
-                       Margin="0,0,0,5"
-                       Source="/Assets/Branding/listenshelf-1024.png"
-                       Stretch="Uniform" />
-                <TextBlock HorizontalAlignment="Center"
-                           FontSize="24"
-                           FontWeight="SemiBold"
-                           Foreground="#F2F4F8"
-                           Text="Your shelf is ready" />
-                <TextBlock HorizontalAlignment="Center"
-                           FontSize="13"
-                           Foreground="#929DAF"
-                           Text="{Binding LibraryEmptyDescription}"
-                           TextAlignment="Center"
-                           TextWrapping="Wrap" />
-                <Button Margin="0,8,0,0"
-                        Padding="19,10"
-                        HorizontalAlignment="Center"
-                        Background="#7567F8"
-                        Foreground="White"
-                        FontWeight="SemiBold"
-                        Command="{Binding PlayM4bFromLibraryCommand}"
-                        Content="Play an M4B now" />
-                <TextBlock HorizontalAlignment="Center"
-                           FontSize="11"
-                           Foreground="#687386"
-                           Text="Importing, grouping, and file management are not active yet." />
-            </StackPanel>
-        </Border>
+        <Grid Grid.Row="1">
+            <Border Padding="36"
+                    CornerRadius="20"
+                    Background="#171C26"
+                    BorderBrush="#293142"
+                    BorderThickness="1"
+                    IsVisible="{Binding IsLibraryEmpty}">
+                <StackPanel MaxWidth="540"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="13">
+                    <Image Width="92"
+                           Height="92"
+                           Margin="0,0,0,5"
+                           Source="/Assets/Branding/listenshelf-1024.png"
+                           Stretch="Uniform" />
+                    <TextBlock HorizontalAlignment="Center"
+                               FontSize="24"
+                               FontWeight="SemiBold"
+                               Foreground="#F2F4F8"
+                               Text="Add your first audiobooks" />
+                    <TextBlock HorizontalAlignment="Center"
+                               FontSize="13"
+                               Foreground="#929DAF"
+                               Text="{Binding LibraryEmptyDescription}"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap" />
+                    <Button Margin="0,8,0,0"
+                            Padding="19,10"
+                            HorizontalAlignment="Center"
+                            Background="#7567F8"
+                            Foreground="White"
+                            FontWeight="SemiBold"
+                            Command="{Binding AddAudiobooksCommand}"
+                            Content="Choose M4B files"
+                            IsEnabled="{Binding CanAddAudiobooks}" />
+                    <TextBlock HorizontalAlignment="Center"
+                               FontSize="11"
+                               Foreground="#7D8799"
+                               Text="{Binding LibraryStatusMessage}"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Grid RowDefinitions="Auto,*"
+                  RowSpacing="12"
+                  IsVisible="{Binding HasLibraryBooks}">
+                <Border Grid.Row="0"
+                        Padding="14,10"
+                        CornerRadius="11"
+                        Background="#181E2A"
+                        BorderBrush="#293142"
+                        BorderThickness="1">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0"
+                                   VerticalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="#AFA6FF"
+                                   Text="{Binding LibraryStatusMessage}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Grid.Column="1"
+                                   Margin="18,0,0,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="11"
+                                   Foreground="#737E90"
+                                   Text="Select a book to start listening" />
+                    </Grid>
+                </Border>
+
+                <ScrollViewer Grid.Row="1"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding LibraryBooks}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:LibraryBookItemViewModel">
+                                <Border Margin="0,0,0,10"
+                                        Padding="16"
+                                        CornerRadius="15"
+                                        Background="#171C26"
+                                        BorderBrush="#293142"
+                                        BorderThickness="1">
+                                    <Grid ColumnDefinitions="58,*,Auto" ColumnSpacing="15">
+                                        <Border Grid.Column="0"
+                                                Width="58"
+                                                Height="58"
+                                                CornerRadius="12"
+                                                Background="#252B42">
+                                            <TextBlock HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="25"
+                                                       Foreground="#AFA6FF"
+                                                       Text="♪" />
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1"
+                                                    VerticalAlignment="Center"
+                                                    Spacing="4">
+                                            <TextBlock FontSize="16"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#F0F2F6"
+                                                       Text="{Binding Title}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <Border Padding="7,2"
+                                                        CornerRadius="7"
+                                                        Background="#2B3042">
+                                                    <TextBlock FontSize="9"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="#C2B9FF"
+                                                               Text="{Binding StorageModeText}" />
+                                                </Border>
+                                                <TextBlock VerticalAlignment="Center"
+                                                           FontSize="11"
+                                                           Foreground="#8D97A9"
+                                                           Text="{Binding FileSizeText}" />
+                                                <TextBlock VerticalAlignment="Center"
+                                                           FontSize="11"
+                                                           Foreground="#8D97A9"
+                                                           Text="•" />
+                                                <TextBlock VerticalAlignment="Center"
+                                                           FontSize="11"
+                                                           Foreground="#8D97A9"
+                                                           Text="{Binding ProgressSummary}" />
+                                            </StackPanel>
+                                            <TextBlock FontSize="10"
+                                                       Foreground="#697487"
+                                                       Text="{Binding FilePath}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Column="2"
+                                                    MinWidth="88"
+                                                    VerticalAlignment="Center"
+                                                    Spacing="7">
+                                            <TextBlock HorizontalAlignment="Center"
+                                                       FontSize="10"
+                                                       Foreground="#8290A4"
+                                                       Text="{Binding AvailabilityText}" />
+                                            <Button Padding="16,8"
+                                                    Background="#7567F8"
+                                                    Foreground="White"
+                                                    FontWeight="SemiBold"
+                                                    Command="{Binding PlayCommand}"
+                                                    Content="Play"
+                                                    IsEnabled="{Binding IsAvailable}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
     </Grid>
 </UserControl>
