@@ -7,4 +7,6 @@ public interface IAudiobookLibrary
     IReadOnlyList<LibraryBook> GetBooks();
 
     LibraryImportResult Import(string sourceFilePath, LibraryStorageMode storageMode);
+
+    LibraryBook SetCover(Guid bookId, string sourceImagePath);
 }

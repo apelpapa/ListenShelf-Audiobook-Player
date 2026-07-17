@@ -2,6 +2,8 @@
 
 ListenShelf is a private, offline-first audiobook library and player. The first milestone is a focused Windows M4B playback slice built with Avalonia and .NET 10; the architecture keeps macOS, Linux, and possible future mobile clients open.
 
+> **Alpha:** ListenShelf is early software. Windows preview downloads are available from [GitHub Releases](https://github.com/apelpapa/ListenShelf-Audiobook-Player/releases).
+
 ## Repository layout
 
 ```text
@@ -18,7 +20,7 @@ tests/                         Test projects, added alongside behavior
 
 ## Current preview
 
-The preliminary Windows app has Library, Player, and Settings sections. First-run setup saves a choice between a linked library (keep files where they are) and a managed library (let ListenShelf manage copies). The Library can import multiple `.m4b` files, remembers linked paths, creates verified managed copies without changing the originals, prevents repeat imports from the same location, and plays cataloged books directly.
+The preliminary Windows app has Library, Player, and Settings sections. First-run setup saves a choice between a linked library (keep files where they are) and a managed library (let ListenShelf manage copies). The Library can import multiple `.m4b` files, remembers linked paths, creates verified managed copies without changing the originals, prevents repeat imports from the same location, and plays cataloged books directly. Each book can also be given a manual PNG, JPEG, or WebP cover; ListenShelf keeps its own cached copy and displays it on the shelf and player without modifying the audiobook.
 
 The player can open one local `.m4b` file and provides play/pause, seeking, 15-second rewind, 30-second forward, playback-speed selection, volume, elapsed/remaining time, and automatic per-file position persistence in a local SQLite database.
 
@@ -27,3 +29,13 @@ Run it from the repository root:
 ```powershell
 dotnet run --project src/ListenShelf.Desktop/ListenShelf.Desktop.csproj
 ```
+
+Create all Windows x64 release assets from the repository root:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build\Publish-WindowsRelease.ps1
+```
+
+## License status
+
+ListenShelf does not yet have a project license. The source is visible for this alpha, but no open-source reuse license has been selected. Distributed third-party components retain their own licenses as listed in `THIRD-PARTY-NOTICES.txt`.

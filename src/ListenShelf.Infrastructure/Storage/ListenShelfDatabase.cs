@@ -91,5 +91,33 @@ public sealed class ListenShelfDatabase
             WHERE source_key IS NOT NULL;
             """;
         command.ExecuteNonQuery();
+
+        EnsureColumn(connection, "library_books", "cover_path", "TEXT NULL");
+    }
+
+    private static void EnsureColumn(
+        SqliteConnection connection,
+        string tableName,
+        string columnName,
+        string columnDefinition)
+    {
+        using var schemaCommand = connection.CreateCommand();
+        schemaCommand.CommandText = $"PRAGMA table_info({tableName});";
+
+        using (var reader = schemaCommand.ExecuteReader())
+        {
+            while (reader.Read())
+            {
+                if (string.Equals(reader.GetString(1), columnName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+        }
+
+        using var alterCommand = connection.CreateCommand();
+        alterCommand.CommandText =
+            $"ALTER TABLE {tableName} ADD COLUMN {columnName} {columnDefinition};";
+        alterCommand.ExecuteNonQuery();
     }
 }

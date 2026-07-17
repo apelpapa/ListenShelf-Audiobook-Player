@@ -7,7 +7,17 @@ namespace ListenShelf.Infrastructure.Library;
 
 public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
 {
+    private static readonly HashSet<string> SupportedCoverExtensions =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp",
+        };
+
     private readonly ListenShelfDatabase _database;
+    private readonly string _coverCachePath;
 
     public SqliteAudiobookLibrary(
         ListenShelfDatabase database,
@@ -20,6 +30,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
 
         ManagedLibraryPath = Path.GetFullPath(
             managedLibraryPath ?? Path.Combine(databaseDirectory, "Library"));
+        _coverCachePath = Path.GetFullPath(Path.Combine(databaseDirectory, "Covers"));
     }
 
     public string ManagedLibraryPath { get; }
@@ -30,7 +41,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         using var command = connection.CreateCommand();
         command.CommandText =
             """
-            SELECT book_id, title, file_path, storage_mode, file_size_bytes, added_utc
+            SELECT book_id, title, file_path, storage_mode, file_size_bytes, added_utc, cover_path
             FROM library_books
             ORDER BY added_utc DESC, title COLLATE NOCASE;
             """;
@@ -65,6 +76,54 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             LibraryStorageMode.Managed => ImportManaged(sourceFile),
             _ => throw new ArgumentOutOfRangeException(nameof(storageMode)),
         };
+    }
+
+    public LibraryBook SetCover(Guid bookId, string sourceImagePath)
+    {
+        if (bookId == Guid.Empty)
+        {
+            throw new ArgumentException("A valid audiobook identifier is required.", nameof(bookId));
+        }
+
+        var book = FindById(bookId)
+            ?? throw new KeyNotFoundException("The selected audiobook is no longer in the library.");
+        var normalizedSourcePath = NormalizeCoverPath(sourceImagePath);
+        var extension = Path.GetExtension(normalizedSourcePath).ToLowerInvariant();
+
+        Directory.CreateDirectory(_coverCachePath);
+
+        var destinationPath = Path.Combine(_coverCachePath, $"{bookId:N}{extension}");
+        var temporaryPath = Path.Combine(_coverCachePath, $"{bookId:N}.{Guid.NewGuid():N}.importing");
+
+        if (PathsEqual(normalizedSourcePath, destinationPath))
+        {
+            UpdateCoverPath(bookId, destinationPath);
+            return book with { CoverPath = destinationPath };
+        }
+
+        try
+        {
+            File.Copy(normalizedSourcePath, temporaryPath, overwrite: false);
+            File.Move(temporaryPath, destinationPath, overwrite: true);
+            UpdateCoverPath(bookId, destinationPath);
+
+            if (!string.IsNullOrWhiteSpace(book.CoverPath)
+                && !PathsEqual(book.CoverPath, destinationPath))
+            {
+                TryDeleteOldCover(book.CoverPath);
+            }
+
+            return book with { CoverPath = destinationPath };
+        }
+        catch
+        {
+            if (File.Exists(temporaryPath))
+            {
+                File.Delete(temporaryPath);
+            }
+
+            throw;
+        }
     }
 
     private LibraryImportResult ImportLinked(FileInfo sourceFile)
@@ -188,13 +247,16 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
     private LibraryBook? FindBySourceKey(string sourceKey) =>
         Find("source_key", sourceKey);
 
+    private LibraryBook? FindById(Guid bookId) =>
+        Find("book_id", bookId.ToString("D"));
+
     private LibraryBook? Find(string columnName, string value)
     {
         using var connection = _database.OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText =
             $"""
-            SELECT book_id, title, file_path, storage_mode, file_size_bytes, added_utc
+            SELECT book_id, title, file_path, storage_mode, file_size_bytes, added_utc, cover_path
             FROM library_books
             WHERE {columnName} = $value;
             """;
@@ -221,7 +283,8 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
                 source_path,
                 source_key,
                 file_size_bytes,
-                added_utc)
+                added_utc,
+                cover_path)
             VALUES (
                 $book_id,
                 $title,
@@ -231,7 +294,8 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
                 $source_path,
                 $source_key,
                 $file_size_bytes,
-                $added_utc);
+                $added_utc,
+                $cover_path);
             """;
         command.Parameters.AddWithValue("$book_id", book.Id.ToString("D"));
         command.Parameters.AddWithValue("$title", book.Title);
@@ -244,7 +308,27 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         command.Parameters.AddWithValue(
             "$added_utc",
             book.AddedAtUtc.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture));
+        command.Parameters.AddWithValue("$cover_path", (object?)book.CoverPath ?? DBNull.Value);
         command.ExecuteNonQuery();
+    }
+
+    private void UpdateCoverPath(Guid bookId, string coverPath)
+    {
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            UPDATE library_books
+            SET cover_path = $cover_path
+            WHERE book_id = $book_id;
+            """;
+        command.Parameters.AddWithValue("$cover_path", Path.GetFullPath(coverPath));
+        command.Parameters.AddWithValue("$book_id", bookId.ToString("D"));
+
+        if (command.ExecuteNonQuery() != 1)
+        {
+            throw new KeyNotFoundException("The selected audiobook is no longer in the library.");
+        }
     }
 
     private static LibraryBook CreateBook(
@@ -269,7 +353,8 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             DateTimeOffset.Parse(
                 reader.GetString(5),
                 CultureInfo.InvariantCulture,
-                DateTimeStyles.RoundtripKind));
+                DateTimeStyles.RoundtripKind),
+            reader.IsDBNull(6) ? null : reader.GetString(6));
 
     private static string NormalizeM4bPath(string filePath)
     {
@@ -286,6 +371,59 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
 
         return normalizedPath;
     }
+
+    private static string NormalizeCoverPath(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath))
+        {
+            throw new ArgumentException("A cover image path is required.", nameof(filePath));
+        }
+
+        var normalizedPath = Path.GetFullPath(filePath);
+        if (!SupportedCoverExtensions.Contains(Path.GetExtension(normalizedPath)))
+        {
+            throw new NotSupportedException("ListenShelf currently supports PNG, JPEG, and WebP cover images.");
+        }
+
+        if (!File.Exists(normalizedPath))
+        {
+            throw new FileNotFoundException("The selected cover image could not be found.", normalizedPath);
+        }
+
+        return normalizedPath;
+    }
+
+    private void TryDeleteOldCover(string oldCoverPath)
+    {
+        try
+        {
+            var normalizedOldPath = Path.GetFullPath(oldCoverPath);
+            var normalizedCachePath = Path.TrimEndingDirectorySeparator(_coverCachePath)
+                + Path.DirectorySeparatorChar;
+
+            if (normalizedOldPath.StartsWith(
+                    normalizedCachePath,
+                    OperatingSystem.IsWindows()
+                        ? StringComparison.OrdinalIgnoreCase
+                        : StringComparison.Ordinal)
+                && File.Exists(normalizedOldPath))
+            {
+                File.Delete(normalizedOldPath);
+            }
+        }
+        catch
+        {
+            // An orphaned cache file is harmless and can be cleaned up later.
+        }
+    }
+
+    private static bool PathsEqual(string firstPath, string secondPath) =>
+        string.Equals(
+            Path.GetFullPath(firstPath),
+            Path.GetFullPath(secondPath),
+            OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal);
 
     private static string CreatePathKey(string normalizedPath) =>
         OperatingSystem.IsWindows()

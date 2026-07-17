@@ -6,4 +6,5 @@ public sealed record LibraryBook(
     string FilePath,
     LibraryStorageMode StorageMode,
     long FileSizeBytes,
-    DateTimeOffset AddedAtUtc);
+    DateTimeOffset AddedAtUtc,
+    string? CoverPath = null);

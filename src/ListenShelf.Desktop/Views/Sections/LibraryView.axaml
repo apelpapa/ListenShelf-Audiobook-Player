@@ -142,12 +142,19 @@
                                                 Width="58"
                                                 Height="58"
                                                 CornerRadius="12"
-                                                Background="#252B42">
-                                            <TextBlock HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       FontSize="25"
-                                                       Foreground="#AFA6FF"
-                                                       Text="♪" />
+                                                Background="#252B42"
+                                                ClipToBounds="True">
+                                            <Grid>
+                                                <Image Source="{Binding CoverImage}"
+                                                       Stretch="UniformToFill"
+                                                       IsVisible="{Binding HasCover}" />
+                                                <TextBlock HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"
+                                                           FontSize="25"
+                                                           Foreground="#AFA6FF"
+                                                           IsVisible="{Binding HasNoCover}"
+                                                           Text="♪" />
+                                            </Grid>
                                         </Border>
 
                                         <StackPanel Grid.Column="1"
@@ -187,7 +194,7 @@
                                         </StackPanel>
 
                                         <StackPanel Grid.Column="2"
-                                                    MinWidth="88"
+                                                    MinWidth="104"
                                                     VerticalAlignment="Center"
                                                     Spacing="7">
                                             <TextBlock HorizontalAlignment="Center"
@@ -201,6 +208,12 @@
                                                     Command="{Binding PlayCommand}"
                                                     Content="Play"
                                                     IsEnabled="{Binding IsAvailable}" />
+                                            <Button Padding="12,7"
+                                                    Background="#242B39"
+                                                    Foreground="#D6DBE5"
+                                                    FontSize="11"
+                                                    Command="{Binding ChooseCoverCommand}"
+                                                    Content="{Binding CoverButtonText}" />
                                         </StackPanel>
                                     </Grid>
                                 </Border>

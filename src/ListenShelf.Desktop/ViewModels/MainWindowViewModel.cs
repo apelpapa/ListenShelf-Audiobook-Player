@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -23,6 +24,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private string? _currentFilePath;
     private TimeSpan? _pendingResumePosition;
     private DateTimeOffset _lastSavedAtUtc = DateTimeOffset.MinValue;
+    private Bitmap? _currentCoverImage;
     private bool _disposed;
 
     public MainWindowViewModel(
@@ -136,6 +138,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private double _selectedPlaybackRate = 1d;
+
+    public Bitmap? CurrentCoverImage => _currentCoverImage;
+
+    public bool HasCurrentCover => CurrentCoverImage is not null;
+
+    public bool HasNoCurrentCover => !HasCurrentCover;
 
     public bool CanControlPlayback => IsFileLoaded && !IsBusy;
 
@@ -313,7 +321,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private async Task LoadAndPlayFileAsync(string filePath)
+    private async Task LoadAndPlayFileAsync(string filePath, LibraryBook? libraryBook = null)
     {
         try
         {
@@ -326,6 +334,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             IsFileLoaded = false;
             _currentFilePath = null;
             _pendingResumePosition = null;
+            SetCurrentCover(null);
 
             await _audioEngine.LoadAsync(filePath);
 
@@ -335,8 +344,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 ? savedProgress.Position
                 : null;
 
-            BookTitle = Path.GetFileNameWithoutExtension(_currentFilePath);
+            BookTitle = libraryBook?.Title ?? Path.GetFileNameWithoutExtension(_currentFilePath);
             FileName = Path.GetFileName(_currentFilePath);
+            SetCurrentCover(libraryBook?.CoverPath);
             ProgressText = _pendingResumePosition is { } resumePosition
                 ? $"Resuming from {FormatTime(resumePosition.TotalSeconds, savedProgress?.Duration.TotalSeconds ?? 0d)}"
                 : "Starting from the beginning";
@@ -372,7 +382,48 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         SelectedSection = AppSection.Player;
-        await LoadAndPlayFileAsync(book.FilePath);
+        await LoadAndPlayFileAsync(book.FilePath, book);
+    }
+
+    private async Task ChooseCoverAsync(LibraryBook book)
+    {
+        try
+        {
+            var imagePath = await _filePickerService.PickCoverImageAsync();
+            if (imagePath is null)
+            {
+                return;
+            }
+
+            IsLibraryBusy = true;
+            LibraryStatusMessage = $"Adding a cover for {book.Title}…";
+
+            using (var image = new Bitmap(imagePath))
+            {
+                if (image.PixelSize.Width <= 0 || image.PixelSize.Height <= 0)
+                {
+                    throw new InvalidDataException("The selected file is not a readable image.");
+                }
+            }
+
+            var updatedBook = await Task.Run(() => _audiobookLibrary.SetCover(book.Id, imagePath));
+            if (!string.IsNullOrWhiteSpace(_currentFilePath)
+                && PathsEqual(_currentFilePath, updatedBook.FilePath))
+            {
+                SetCurrentCover(updatedBook.CoverPath);
+            }
+
+            RefreshLibrary();
+            LibraryStatusMessage = $"Cover saved for {updatedBook.Title}.";
+        }
+        catch (Exception exception)
+        {
+            LibraryStatusMessage = $"The cover could not be added: {exception.Message}";
+        }
+        finally
+        {
+            IsLibraryBusy = false;
+        }
     }
 
     [RelayCommand]
@@ -447,6 +498,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _audioEngine.ProgressChanged -= OnProgressChanged;
         _audioEngine.StateChanged -= OnStateChanged;
         _audioEngine.Dispose();
+        SetCurrentCover(null);
+        DisposeLibraryItems();
     }
 
     private void OnProgressChanged(object? sender, PlaybackProgressChangedEventArgs e)
@@ -584,6 +637,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         try
         {
             var books = _audiobookLibrary.GetBooks();
+            DisposeLibraryItems();
             LibraryBooks.Clear();
 
             foreach (var book in books)
@@ -591,7 +645,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 LibraryBooks.Add(new LibraryBookItemViewModel(
                     book,
                     GetProgressSummary(book),
-                    PlayLibraryBookAsync));
+                    PlayLibraryBookAsync,
+                    ChooseCoverAsync));
             }
 
             OnPropertyChanged(nameof(HasLibraryBooks));
@@ -603,6 +658,51 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             LibraryStatusMessage = $"The library could not be loaded: {exception.Message}";
         }
     }
+
+    private void SetCurrentCover(string? coverPath)
+    {
+        Bitmap? newCover = null;
+
+        if (!string.IsNullOrWhiteSpace(coverPath) && File.Exists(coverPath))
+        {
+            try
+            {
+                newCover = new Bitmap(coverPath);
+            }
+            catch
+            {
+                newCover = null;
+            }
+        }
+
+        var oldCover = _currentCoverImage;
+        if (SetProperty(ref _currentCoverImage, newCover, nameof(CurrentCoverImage)))
+        {
+            OnPropertyChanged(nameof(HasCurrentCover));
+            OnPropertyChanged(nameof(HasNoCurrentCover));
+            oldCover?.Dispose();
+        }
+        else
+        {
+            newCover?.Dispose();
+        }
+    }
+
+    private void DisposeLibraryItems()
+    {
+        foreach (var item in LibraryBooks)
+        {
+            item.Dispose();
+        }
+    }
+
+    private static bool PathsEqual(string firstPath, string secondPath) =>
+        string.Equals(
+            Path.GetFullPath(firstPath),
+            Path.GetFullPath(secondPath),
+            OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal);
 
     private string GetProgressSummary(LibraryBook book)
     {

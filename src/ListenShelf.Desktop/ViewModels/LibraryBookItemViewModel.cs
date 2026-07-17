@@ -1,14 +1,36 @@
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.Input;
 using ListenShelf.Application.Library;
 
 namespace ListenShelf.Desktop.ViewModels;
 
-public partial class LibraryBookItemViewModel(
-    LibraryBook book,
-    string progressSummary,
-    Func<LibraryBook, Task> playBookAsync) : ViewModelBase
+public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposable
 {
-    public LibraryBook Book { get; } = book;
+    private readonly Func<LibraryBook, Task> _playBookAsync;
+    private readonly Func<LibraryBook, Task> _chooseCoverAsync;
+
+    public LibraryBookItemViewModel(
+        LibraryBook book,
+        string progressSummary,
+        Func<LibraryBook, Task> playBookAsync,
+        Func<LibraryBook, Task> chooseCoverAsync)
+    {
+        Book = book;
+        ProgressSummary = progressSummary;
+        _playBookAsync = playBookAsync;
+        _chooseCoverAsync = chooseCoverAsync;
+        CoverImage = TryLoadCover(book.CoverPath);
+    }
+
+    public LibraryBook Book { get; }
+
+    public Bitmap? CoverImage { get; }
+
+    public bool HasCover => CoverImage is not null;
+
+    public bool HasNoCover => !HasCover;
+
+    public string CoverButtonText => HasCover ? "Change cover" : "Add cover";
 
     public string Title => Book.Title;
 
@@ -22,14 +44,36 @@ public partial class LibraryBookItemViewModel(
 
     public string FileSizeText => FormatFileSize(Book.FileSizeBytes);
 
-    public string ProgressSummary { get; } = progressSummary;
+    public string ProgressSummary { get; }
 
     public bool IsAvailable => File.Exists(Book.FilePath);
 
     public string AvailabilityText => IsAvailable ? "Ready" : "Missing file";
 
     [RelayCommand(CanExecute = nameof(IsAvailable))]
-    private Task PlayAsync() => playBookAsync(Book);
+    private Task PlayAsync() => _playBookAsync(Book);
+
+    [RelayCommand]
+    private Task ChooseCoverAsync() => _chooseCoverAsync(Book);
+
+    public void Dispose() => CoverImage?.Dispose();
+
+    private static Bitmap? TryLoadCover(string? coverPath)
+    {
+        if (string.IsNullOrWhiteSpace(coverPath) || !File.Exists(coverPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            return new Bitmap(coverPath);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     private static string FormatFileSize(long bytes)
     {

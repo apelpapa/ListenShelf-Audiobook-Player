@@ -1,0 +1,51 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="ListenShelf — Audiobook Player"
+           Manufacturer="ListenShelf"
+           Version="$(ProductVersion)"
+           UpgradeCode="{0C87279E-1529-4254-A0A9-111496D4E2ED}"
+           Language="1033"
+           Scope="perMachine"
+           InstallerVersion="500"
+           Compressed="yes">
+    <SummaryInformation Description="Installs ListenShelf — Audiobook Player"
+                        Manufacturer="ListenShelf" />
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of ListenShelf is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="ListenShelfIcon"
+          SourceFile="src\ListenShelf.Desktop\Assets\Branding\listenshelf.ico" />
+    <Property Id="ARPPRODUCTICON" Value="ListenShelfIcon" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="ListenShelf" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="ListenShelf" />
+    </StandardDirectory>
+
+    <Component Id="MainExecutableComponent"
+               Directory="INSTALLFOLDER"
+               Guid="*">
+      <File Id="MainExecutable"
+            Source="!(bindpath.PublishDir)\ListenShelf.exe"
+            KeyPath="yes">
+        <Shortcut Id="ApplicationStartMenuShortcut"
+                  Directory="ApplicationProgramsFolder"
+                  Name="ListenShelf"
+                  Description="ListenShelf — Audiobook Player"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Advertise="no" />
+      </File>
+    </Component>
+
+    <Feature Id="MainFeature" Title="ListenShelf" Level="1">
+      <ComponentRef Id="MainExecutableComponent" />
+      <Files Include="!(bindpath.PublishDir)\**"
+             Directory="INSTALLFOLDER">
+        <Exclude Files="!(bindpath.PublishDir)\ListenShelf.exe" />
+      </Files>
+    </Feature>
+  </Package>
+</Wix>

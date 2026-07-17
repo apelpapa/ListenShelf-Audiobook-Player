@@ -1,0 +1,44 @@
+ListenShelf — Audiobook Player
+Third-party software notices
+
+ListenShelf distributes third-party software under its respective licenses.
+The project does not claim ownership of these components.
+
+Avalonia 12.0.5 and related Avalonia packages
+License: MIT
+Source: https://github.com/AvaloniaUI/Avalonia
+
+CommunityToolkit.Mvvm 8.4.1
+License: MIT
+Source: https://github.com/CommunityToolkit/dotnet
+
+LibVLCSharp 3.10.0
+License: GNU Lesser General Public License v2.1 or later
+Source: https://code.videolan.org/videolan/LibVLCSharp
+License text: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+LibVLC 3.0.23.1 for Windows and its included modules
+License: GNU Lesser General Public License v2.1 or later; individual bundled
+modules and dependencies may carry additional compatible licenses.
+Source: https://code.videolan.org/videolan/vlc
+License text: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+Microsoft.Data.Sqlite.Core 10.0.10 and the self-contained .NET runtime
+License: MIT
+Source: https://github.com/dotnet/dotnet
+
+SQLitePCLRaw 3.0.3
+License: Apache License 2.0
+Source: https://github.com/ericsink/SQLitePCL.raw
+
+SQLite
+SQLite is in the public domain.
+Source and blessing: https://www.sqlite.org/copyright.html
+
+SkiaSharp, HarfBuzzSharp, and related native components
+License: MIT
+Source: https://github.com/mono/SkiaSharp
+
+The complete dependency graph and exact package versions used by this build are
+recorded in Directory.Packages.props and the project files in the corresponding
+ListenShelf source-code release.
