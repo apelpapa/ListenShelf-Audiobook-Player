@@ -2,7 +2,68 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ListenShelf.Desktop.App"
              RequestedThemeVariant="Dark">
-  
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="AppBackgroundBrush">#0E1118</SolidColorBrush>
+                    <SolidColorBrush x:Key="SidebarBackgroundBrush">#121722</SolidColorBrush>
+                    <SolidColorBrush x:Key="HeaderBackgroundBrush">#141923</SolidColorBrush>
+                    <SolidColorBrush x:Key="FooterBackgroundBrush">#111620</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceBrush">#171C26</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceAltBrush">#181E2A</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceRaisedBrush">#242B39</SolidColorBrush>
+                    <SolidColorBrush x:Key="ArtworkPlaceholderBrush">#222839</SolidColorBrush>
+                    <SolidColorBrush x:Key="BorderBrush">#293142</SolidColorBrush>
+                    <SolidColorBrush x:Key="BorderStrongBrush">#384256</SolidColorBrush>
+                    <SolidColorBrush x:Key="SeparatorBrush">#2A3241</SolidColorBrush>
+                    <SolidColorBrush x:Key="NavigationHoverBrush">#202635</SolidColorBrush>
+                    <SolidColorBrush x:Key="NavigationTextBrush">#B5BECE</SolidColorBrush>
+                    <SolidColorBrush x:Key="PrimaryTextBrush">#F2F4F8</SolidColorBrush>
+                    <SolidColorBrush x:Key="SecondaryTextBrush">#C0C8D5</SolidColorBrush>
+                    <SolidColorBrush x:Key="MutedTextBrush">#929DAF</SolidColorBrush>
+                    <SolidColorBrush x:Key="SubtleTextBrush">#737E90</SolidColorBrush>
+                    <SolidColorBrush x:Key="AccentBrush">#7567F8</SolidColorBrush>
+                    <SolidColorBrush x:Key="AccentTextBrush">#AFA6FF</SolidColorBrush>
+                    <SolidColorBrush x:Key="AccentSoftBrush">#302B56</SolidColorBrush>
+                    <SolidColorBrush x:Key="AccentSoftTextBrush">#C7C0FF</SolidColorBrush>
+                    <SolidColorBrush x:Key="WarmAccentBrush">#F2A94E</SolidColorBrush>
+                    <SolidColorBrush x:Key="CoralAccentBrush">#E7654B</SolidColorBrush>
+                    <SolidColorBrush x:Key="DangerTextBrush">#FF8A98</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnAccentBrush">#FFFFFF</SolidColorBrush>
+                </ResourceDictionary>
+
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="AppBackgroundBrush">#F4F6FA</SolidColorBrush>
+                    <SolidColorBrush x:Key="SidebarBackgroundBrush">#FFFFFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="HeaderBackgroundBrush">#FFFFFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="FooterBackgroundBrush">#F8F9FC</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceBrush">#FFFFFF</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceAltBrush">#F3F5F9</SolidColorBrush>
+                    <SolidColorBrush x:Key="SurfaceRaisedBrush">#E9EDF5</SolidColorBrush>
+                    <SolidColorBrush x:Key="ArtworkPlaceholderBrush">#E8ECF5</SolidColorBrush>
+                    <SolidColorBrush x:Key="BorderBrush">#D7DDE8</SolidColorBrush>
+                    <SolidColorBrush x:Key="BorderStrongBrush">#BCC6D5</SolidColorBrush>
+                    <SolidColorBrush x:Key="SeparatorBrush">#DEE3EB</SolidColorBrush>
+                    <SolidColorBrush x:Key="NavigationHoverBrush">#EEF1F6</SolidColorBrush>
+                    <SolidColorBrush x:Key="NavigationTextBrush">#4A566A</SolidColorBrush>
+                    <SolidColorBrush x:Key="PrimaryTextBrush">#1B2230</SolidColorBrush>
+                    <SolidColorBrush x:Key="SecondaryTextBrush">#455166</SolidColorBrush>
+                    <SolidColorBrush x:Key="MutedTextBrush">#667287</SolidColorBrush>
+                    <SolidColorBrush x:Key="SubtleTextBrush">#8490A2</SolidColorBrush>
+                    <SolidColorBrush x:Key="AccentBrush">#6254E8</SolidColorBrush>
+                    <SolidColorBrush x:Key="AccentTextBrush">#5546D9</SolidColorBrush>
+                    <SolidColorBrush x:Key="AccentSoftBrush">#EAE7FF</SolidColorBrush>
+                    <SolidColorBrush x:Key="AccentSoftTextBrush">#4C3FC2</SolidColorBrush>
+                    <SolidColorBrush x:Key="WarmAccentBrush">#A86100</SolidColorBrush>
+                    <SolidColorBrush x:Key="CoralAccentBrush">#BF402B</SolidColorBrush>
+                    <SolidColorBrush x:Key="DangerTextBrush">#B42336</SolidColorBrush>
+                    <SolidColorBrush x:Key="OnAccentBrush">#FFFFFF</SolidColorBrush>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
     </Application.Styles>

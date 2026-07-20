@@ -7,14 +7,14 @@
         <Border Grid.Column="0"
                 Padding="22"
                 CornerRadius="20"
-                Background="#171C26"
-                BorderBrush="#293142"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="1">
             <Grid RowDefinitions="*,Auto">
                 <Border Grid.Row="0"
                         MinHeight="240"
                         CornerRadius="17"
-                        Background="#222839"
+                        Background="{DynamicResource ArtworkPlaceholderBrush}"
                         ClipToBounds="True">
                     <Grid>
                         <Image Source="{Binding CurrentCoverImage}"
@@ -25,12 +25,12 @@
                                 CornerRadius="52"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
-                                Background="#302B56"
+                                Background="{DynamicResource AccentSoftBrush}"
                                 IsVisible="{Binding HasNoCurrentCover}">
                             <TextBlock HorizontalAlignment="Center"
                                        VerticalAlignment="Center"
                                        FontSize="42"
-                                       Foreground="#AFA6FF"
+                                       Foreground="{DynamicResource AccentTextBrush}"
                                        Text="♪" />
                         </Border>
                     </Grid>
@@ -39,16 +39,16 @@
                 <StackPanel Grid.Row="1" Margin="0,21,0,0" Spacing="7">
                     <TextBlock FontSize="21"
                                FontWeight="SemiBold"
-                               Foreground="#F3F5F9"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
                                Text="{Binding BookTitle}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock FontSize="13"
-                               Foreground="#8F99AB"
+                               Foreground="{DynamicResource MutedTextBrush}"
                                Text="{Binding FileName}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Margin="0,5,0,0"
                                FontSize="12"
-                               Foreground="#AFA6FF"
+                               Foreground="{DynamicResource AccentTextBrush}"
                                Text="{Binding ProgressText}"
                                TextWrapping="Wrap" />
                 </StackPanel>
@@ -58,27 +58,27 @@
         <Border Grid.Column="1"
                 Padding="28"
                 CornerRadius="20"
-                Background="#171C26"
-                BorderBrush="#293142"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="1">
             <Grid RowDefinitions="Auto,*,Auto">
                 <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
                     <StackPanel Spacing="5">
                         <TextBlock FontSize="10"
                                    FontWeight="SemiBold"
-                                   Foreground="#818C9F"
+                                   Foreground="{DynamicResource SubtleTextBrush}"
                                    Text="NOW PLAYING" />
                         <TextBlock FontSize="17"
-                                   Foreground="#E9ECF2"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
                                    Text="{Binding StatusText}" />
                     </StackPanel>
                     <Border Grid.Column="1"
                             Padding="10,5"
                             VerticalAlignment="Top"
                             CornerRadius="10"
-                            Background="#242A39">
+                            Background="{DynamicResource SurfaceRaisedBrush}">
                         <TextBlock FontSize="12"
-                                   Foreground="#AEB7C8"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
                                    Text="M4B • LOCAL" />
                     </Border>
                 </Grid>
@@ -94,16 +94,16 @@
                         <Grid ColumnDefinitions="*,Auto,*">
                             <TextBlock Grid.Column="0"
                                        FontSize="12"
-                                       Foreground="#9CA6B8"
+                                       Foreground="{DynamicResource MutedTextBrush}"
                                        Text="{Binding ElapsedText}" />
                             <TextBlock Grid.Column="1"
                                        FontSize="12"
-                                       Foreground="#6F798B"
+                                       Foreground="{DynamicResource SubtleTextBrush}"
                                        Text="{Binding DurationText}" />
                             <TextBlock Grid.Column="2"
                                        HorizontalAlignment="Right"
                                        FontSize="12"
-                                       Foreground="#9CA6B8"
+                                       Foreground="{DynamicResource MutedTextBrush}"
                                        Text="{Binding RemainingText}" />
                         </Grid>
                     </StackPanel>
@@ -113,15 +113,15 @@
                                 Spacing="14">
                         <Button Width="92"
                                 Height="48"
-                                Background="#242B38"
-                                Foreground="#E7EAF0"
+                                Background="{DynamicResource SurfaceRaisedBrush}"
+                                Foreground="{DynamicResource SecondaryTextBrush}"
                                 Command="{Binding SkipBackwardCommand}"
                                 IsEnabled="{Binding CanControlPlayback}"
                                 Content="−15 sec" />
                         <Button Width="112"
                                 Height="56"
-                                Background="#7567F8"
-                                Foreground="White"
+                                Background="{DynamicResource AccentBrush}"
+                                Foreground="{DynamicResource OnAccentBrush}"
                                 FontSize="16"
                                 FontWeight="SemiBold"
                                 Command="{Binding TogglePlaybackCommand}"
@@ -129,8 +129,8 @@
                                 Content="{Binding PlayPauseLabel}" />
                         <Button Width="92"
                                 Height="48"
-                                Background="#242B38"
-                                Foreground="#E7EAF0"
+                                Background="{DynamicResource SurfaceRaisedBrush}"
+                                Foreground="{DynamicResource SecondaryTextBrush}"
                                 Command="{Binding SkipForwardCommand}"
                                 IsEnabled="{Binding CanControlPlayback}"
                                 Content="+30 sec" />
@@ -139,7 +139,7 @@
                     <TextBlock MinHeight="20"
                                HorizontalAlignment="Center"
                                FontSize="12"
-                               Foreground="#FF8A98"
+                               Foreground="{DynamicResource DangerTextBrush}"
                                Text="{Binding ErrorMessage}"
                                TextWrapping="Wrap" />
                 </StackPanel>
@@ -149,7 +149,7 @@
                                Margin="0,0,12,0"
                                VerticalAlignment="Center"
                                FontSize="13"
-                               Foreground="#AAB3C3"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
                                Text="Volume" />
                     <Slider Grid.Column="1"
                             Minimum="0"
@@ -160,7 +160,7 @@
                                Margin="0,0,12,0"
                                VerticalAlignment="Center"
                                FontSize="13"
-                               Foreground="#AAB3C3"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
                                Text="Speed" />
                     <ComboBox Grid.Column="4"
                               ItemsSource="{Binding PlaybackRates}"

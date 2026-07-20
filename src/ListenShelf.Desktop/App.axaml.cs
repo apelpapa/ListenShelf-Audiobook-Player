@@ -6,6 +6,7 @@ using ListenShelf.Desktop.ViewModels;
 using ListenShelf.Desktop.Views;
 using ListenShelf.Infrastructure.Library;
 using ListenShelf.Infrastructure.Progress;
+using ListenShelf.Infrastructure.Settings;
 using ListenShelf.Infrastructure.Storage;
 using ListenShelf.Playback.LibVlc;
 
@@ -29,6 +30,8 @@ namespace ListenShelf.Desktop
                     new AvaloniaFilePickerService(mainWindow),
                     new SqlitePlaybackProgressStore(database),
                     new SqliteLibrarySettingsStore(database),
+                    new SqliteAppSettingsStore(database),
+                    new AvaloniaThemeService(),
                     new SqliteAudiobookLibrary(database));
 
                 mainWindow.DataContext = viewModel;

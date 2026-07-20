@@ -18,12 +18,12 @@
                 <TextBlock HorizontalAlignment="Center"
                            FontSize="28"
                            FontWeight="SemiBold"
-                           Foreground="#F4F6FA"
+                           Foreground="{DynamicResource PrimaryTextBrush}"
                            Text="How should your library work?" />
                 <TextBlock MaxWidth="650"
                            HorizontalAlignment="Center"
                            FontSize="13"
-                           Foreground="#939EAF"
+                           Foreground="{DynamicResource MutedTextBrush}"
                            Text="Choose a starting preference. You can change this later, and ListenShelf will eventually support both styles side by side."
                            TextAlignment="Center"
                            TextWrapping="Wrap" />
@@ -39,25 +39,25 @@
                         Command="{Binding ChooseLinkedLibraryCommand}">
                     <Border Padding="24"
                             CornerRadius="18"
-                            Background="#171C26"
-                            BorderBrush="#384256"
+                            Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderStrongBrush}"
                             BorderThickness="1">
                         <StackPanel Spacing="11">
                             <TextBlock FontSize="11"
                                        FontWeight="SemiBold"
-                                       Foreground="#F2A94E"
+                                       Foreground="{DynamicResource WarmAccentBrush}"
                                        Text="KEEP CONTROL" />
                             <TextBlock FontSize="19"
                                        FontWeight="SemiBold"
-                                       Foreground="#F1F3F7"
+                                       Foreground="{DynamicResource PrimaryTextBrush}"
                                        Text="Keep files where they are" />
                             <TextBlock FontSize="12"
-                                       Foreground="#929DAF"
+                                       Foreground="{DynamicResource MutedTextBrush}"
                                        Text="ListenShelf links to your existing audiobooks. It remembers their locations but never rearranges your folders."
                                        TextWrapping="Wrap" />
-                            <Border Height="1" Margin="0,4" Background="#2A3241" />
+                            <Border Height="1" Margin="0,4" Background="{DynamicResource SeparatorBrush}" />
                             <TextBlock FontSize="11"
-                                       Foreground="#C0C8D5"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
                                        Text="Best for carefully organized folders and external drives."
                                        TextWrapping="Wrap" />
                         </StackPanel>
@@ -73,25 +73,25 @@
                         Command="{Binding ChooseManagedLibraryCommand}">
                     <Border Padding="24"
                             CornerRadius="18"
-                            Background="#171C26"
-                            BorderBrush="#384256"
+                            Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource BorderStrongBrush}"
                             BorderThickness="1">
                         <StackPanel Spacing="11">
                             <TextBlock FontSize="11"
                                        FontWeight="SemiBold"
-                                       Foreground="#E7654B"
+                                       Foreground="{DynamicResource CoralAccentBrush}"
                                        Text="LET LISTENSHELF HANDLE IT" />
                             <TextBlock FontSize="19"
                                        FontWeight="SemiBold"
-                                       Foreground="#F1F3F7"
+                                       Foreground="{DynamicResource PrimaryTextBrush}"
                                        Text="Manage copies for me" />
                             <TextBlock FontSize="12"
-                                       Foreground="#929DAF"
+                                       Foreground="{DynamicResource MutedTextBrush}"
                                        Text="ListenShelf will copy future imports into its own library and take care of organization behind the scenes."
                                        TextWrapping="Wrap" />
-                            <Border Height="1" Margin="0,4" Background="#2A3241" />
+                            <Border Height="1" Margin="0,4" Background="{DynamicResource SeparatorBrush}" />
                             <TextBlock FontSize="11"
-                                       Foreground="#C0C8D5"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
                                        Text="Best for a hands-off, application-managed collection."
                                        TextWrapping="Wrap" />
                         </StackPanel>
@@ -101,11 +101,11 @@
 
             <TextBlock HorizontalAlignment="Center"
                        FontSize="11"
-                       Foreground="#6E798B"
+                       Foreground="{DynamicResource SubtleTextBrush}"
                        Text="This choice saves a preference only. No files are touched during setup." />
             <TextBlock HorizontalAlignment="Center"
                        FontSize="11"
-                       Foreground="#FF8A98"
+                       Foreground="{DynamicResource DangerTextBrush}"
                        IsVisible="{Binding HasLibrarySettingsError}"
                        Text="{Binding LibrarySettingsErrorMessage}"
                        TextWrapping="Wrap" />

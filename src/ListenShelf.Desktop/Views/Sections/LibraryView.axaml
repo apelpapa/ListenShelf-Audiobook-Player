@@ -3,63 +3,88 @@
              xmlns:vm="using:ListenShelf.Desktop.ViewModels"
              x:Class="ListenShelf.Desktop.Views.Sections.LibraryView"
              x:DataType="vm:MainWindowViewModel">
-    <Grid RowDefinitions="Auto,*" RowSpacing="18">
-        <Grid Grid.Row="0" ColumnDefinitions="*,220" ColumnSpacing="18">
-            <Border Grid.Column="0"
-                    Padding="20"
-                    CornerRadius="16"
-                    Background="#171C26"
-                    BorderBrush="#293142"
-                    BorderThickness="1">
-                <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Grid.Column="0" Spacing="6">
-                        <TextBlock FontSize="10"
-                                   FontWeight="SemiBold"
-                                   Foreground="#7F899C"
-                                   Text="CURRENT FILE HANDLING" />
-                        <TextBlock FontSize="17"
-                                   FontWeight="SemiBold"
-                                   Foreground="#F0F2F6"
-                                   Text="{Binding CurrentLibraryModeTitle}" />
-                        <TextBlock MaxWidth="600"
-                                   FontSize="12"
-                                   Foreground="#939DAF"
-                                   Text="{Binding CurrentLibraryModeDescription}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-                    <Button Grid.Column="1"
-                            Padding="14,8"
-                            VerticalAlignment="Center"
-                            Background="#242B39"
-                            Foreground="#D6DBE5"
-                            Command="{Binding ShowSettingsCommand}"
-                            Content="Change" />
-                </Grid>
-            </Border>
-
-            <Border Grid.Column="1"
-                    Padding="20"
-                    CornerRadius="16"
-                    Background="#171C26"
-                    BorderBrush="#293142"
-                    BorderThickness="1">
-                <StackPanel VerticalAlignment="Center" Spacing="4">
-                    <TextBlock FontSize="26"
+    <Grid RowDefinitions="Auto,*" RowSpacing="12">
+        <Border Grid.Row="0"
+                Padding="10"
+                CornerRadius="11"
+                Background="{DynamicResource SurfaceAltBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <Border Grid.Column="0"
+                        Padding="9,5"
+                        VerticalAlignment="Center"
+                        CornerRadius="8"
+                        Background="{DynamicResource AccentSoftBrush}">
+                    <TextBlock FontSize="11"
                                FontWeight="SemiBold"
-                               Foreground="#F2A94E"
+                               Foreground="{DynamicResource AccentSoftTextBrush}"
                                Text="{Binding LibraryBookCountText}" />
-                    <TextBlock FontSize="12"
-                               Foreground="#949EAF"
-                               Text="on your shelf" />
+                </Border>
+
+                <TextBlock Grid.Column="1"
+                           VerticalAlignment="Center"
+                           FontSize="11"
+                           Foreground="{DynamicResource AccentTextBrush}"
+                           Text="{Binding LibraryStatusMessage}"
+                           TextTrimming="CharacterEllipsis" />
+
+                <StackPanel Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal"
+                            Spacing="6">
+                    <Button Padding="10,6"
+                            Background="{DynamicResource SurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            Command="{Binding ShowLibraryAsListCommand}"
+                            ToolTip.Tip="List view">
+                        <Grid RowDefinitions="Auto,2" RowSpacing="4">
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6">
+                                <TextBlock FontSize="13"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           Text="☰" />
+                                <TextBlock FontSize="11"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           Text="List" />
+                            </StackPanel>
+                            <Border Grid.Row="1"
+                                    Background="{DynamicResource AccentBrush}"
+                                    CornerRadius="1"
+                                    IsVisible="{Binding IsLibraryListView}" />
+                        </Grid>
+                    </Button>
+
+                    <Button Padding="10,6"
+                            Background="{DynamicResource SurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            Command="{Binding ShowLibraryAsTilesCommand}"
+                            ToolTip.Tip="Tile view">
+                        <Grid RowDefinitions="Auto,2" RowSpacing="4">
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6">
+                                <TextBlock FontSize="13"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           Text="▦" />
+                                <TextBlock FontSize="11"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           Text="Tiles" />
+                            </StackPanel>
+                            <Border Grid.Row="1"
+                                    Background="{DynamicResource AccentBrush}"
+                                    CornerRadius="1"
+                                    IsVisible="{Binding IsLibraryTileView}" />
+                        </Grid>
+                    </Button>
                 </StackPanel>
-            </Border>
-        </Grid>
+            </Grid>
+        </Border>
 
         <Grid Grid.Row="1">
             <Border Padding="36"
                     CornerRadius="20"
-                    Background="#171C26"
-                    BorderBrush="#293142"
+                    Background="{DynamicResource SurfaceBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="1"
                     IsVisible="{Binding IsLibraryEmpty}">
                 <StackPanel MaxWidth="540"
@@ -74,151 +99,221 @@
                     <TextBlock HorizontalAlignment="Center"
                                FontSize="24"
                                FontWeight="SemiBold"
-                               Foreground="#F2F4F8"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
                                Text="Add your first audiobooks" />
                     <TextBlock HorizontalAlignment="Center"
                                FontSize="13"
-                               Foreground="#929DAF"
+                               Foreground="{DynamicResource MutedTextBrush}"
                                Text="{Binding LibraryEmptyDescription}"
                                TextAlignment="Center"
                                TextWrapping="Wrap" />
                     <Button Margin="0,8,0,0"
                             Padding="19,10"
                             HorizontalAlignment="Center"
-                            Background="#7567F8"
-                            Foreground="White"
+                            Background="{DynamicResource AccentBrush}"
+                            Foreground="{DynamicResource OnAccentBrush}"
                             FontWeight="SemiBold"
                             Command="{Binding AddAudiobooksCommand}"
                             Content="Choose M4B files"
                             IsEnabled="{Binding CanAddAudiobooks}" />
-                    <TextBlock HorizontalAlignment="Center"
-                               FontSize="11"
-                               Foreground="#7D8799"
-                               Text="{Binding LibraryStatusMessage}"
-                               TextAlignment="Center"
-                               TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
 
-            <Grid RowDefinitions="Auto,*"
-                  RowSpacing="12"
-                  IsVisible="{Binding HasLibraryBooks}">
-                <Border Grid.Row="0"
-                        Padding="14,10"
-                        CornerRadius="11"
-                        Background="#181E2A"
-                        BorderBrush="#293142"
-                        BorderThickness="1">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Grid.Column="0"
-                                   VerticalAlignment="Center"
-                                   FontSize="12"
-                                   Foreground="#AFA6FF"
-                                   Text="{Binding LibraryStatusMessage}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Grid.Column="1"
-                                   Margin="18,0,0,0"
-                                   VerticalAlignment="Center"
-                                   FontSize="11"
-                                   Foreground="#737E90"
-                                   Text="Select a book to start listening" />
-                    </Grid>
-                </Border>
-
-                <ScrollViewer Grid.Row="1"
-                              HorizontalScrollBarVisibility="Disabled"
-                              VerticalScrollBarVisibility="Auto">
+            <Grid IsVisible="{Binding HasLibraryBooks}">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto"
+                              IsVisible="{Binding IsLibraryListView}">
                     <ItemsControl ItemsSource="{Binding LibraryBooks}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:LibraryBookItemViewModel">
-                                <Border Margin="0,0,0,10"
-                                        Padding="16"
-                                        CornerRadius="15"
-                                        Background="#171C26"
-                                        BorderBrush="#293142"
-                                        BorderThickness="1">
-                                    <Grid ColumnDefinitions="58,*,Auto" ColumnSpacing="15">
-                                        <Border Grid.Column="0"
-                                                Width="58"
-                                                Height="58"
-                                                CornerRadius="12"
-                                                Background="#252B42"
-                                                ClipToBounds="True">
-                                            <Grid>
-                                                <Image Source="{Binding CoverImage}"
-                                                       Stretch="UniformToFill"
-                                                       IsVisible="{Binding HasCover}" />
-                                                <TextBlock HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center"
-                                                           FontSize="25"
-                                                           Foreground="#AFA6FF"
-                                                           IsVisible="{Binding HasNoCover}"
-                                                           Text="♪" />
-                                            </Grid>
-                                        </Border>
-
-                                        <StackPanel Grid.Column="1"
-                                                    VerticalAlignment="Center"
-                                                    Spacing="4">
-                                            <TextBlock FontSize="16"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="#F0F2F6"
-                                                       Text="{Binding Title}"
-                                                       TextTrimming="CharacterEllipsis" />
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <Border Padding="7,2"
-                                                        CornerRadius="7"
-                                                        Background="#2B3042">
-                                                    <TextBlock FontSize="9"
-                                                               FontWeight="SemiBold"
-                                                               Foreground="#C2B9FF"
-                                                               Text="{Binding StorageModeText}" />
-                                                </Border>
-                                                <TextBlock VerticalAlignment="Center"
-                                                           FontSize="11"
-                                                           Foreground="#8D97A9"
-                                                           Text="{Binding FileSizeText}" />
-                                                <TextBlock VerticalAlignment="Center"
-                                                           FontSize="11"
-                                                           Foreground="#8D97A9"
-                                                           Text="•" />
-                                                <TextBlock VerticalAlignment="Center"
-                                                           FontSize="11"
-                                                           Foreground="#8D97A9"
-                                                           Text="{Binding ProgressSummary}" />
-                                            </StackPanel>
-                                            <TextBlock FontSize="10"
-                                                       Foreground="#697487"
-                                                       Text="{Binding FilePath}"
-                                                       TextTrimming="CharacterEllipsis" />
-                                        </StackPanel>
-
-                                        <StackPanel Grid.Column="2"
-                                                    MinWidth="104"
-                                                    VerticalAlignment="Center"
-                                                    Spacing="7">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:LibraryBookItemViewModel">
+                            <Border Margin="0,0,0,10"
+                                    Padding="16"
+                                    CornerRadius="15"
+                                    Background="{DynamicResource SurfaceBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid ColumnDefinitions="58,*,Auto" ColumnSpacing="15">
+                                    <Border Grid.Column="0"
+                                            Width="58"
+                                            Height="58"
+                                            CornerRadius="12"
+                                            Background="{DynamicResource ArtworkPlaceholderBrush}"
+                                            ClipToBounds="True">
+                                        <Grid>
+                                            <Image Source="{Binding CoverImage}"
+                                                   Stretch="UniformToFill"
+                                                   IsVisible="{Binding HasCover}" />
                                             <TextBlock HorizontalAlignment="Center"
-                                                       FontSize="10"
-                                                       Foreground="#8290A4"
-                                                       Text="{Binding AvailabilityText}" />
-                                            <Button Padding="16,8"
-                                                    Background="#7567F8"
-                                                    Foreground="White"
-                                                    FontWeight="SemiBold"
-                                                    Command="{Binding PlayCommand}"
-                                                    Content="Play"
-                                                    IsEnabled="{Binding IsAvailable}" />
-                                            <Button Padding="12,7"
-                                                    Background="#242B39"
-                                                    Foreground="#D6DBE5"
-                                                    FontSize="11"
-                                                    Command="{Binding ChooseCoverCommand}"
-                                                    Content="{Binding CoverButtonText}" />
+                                                       VerticalAlignment="Center"
+                                                       FontSize="25"
+                                                       Foreground="{DynamicResource AccentTextBrush}"
+                                                       IsVisible="{Binding HasNoCover}"
+                                                       Text="♪" />
+                                        </Grid>
+                                    </Border>
+
+                                    <StackPanel Grid.Column="1"
+                                                VerticalAlignment="Center"
+                                                Spacing="4">
+                                        <TextBlock FontSize="16"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                                   Text="{Binding Title}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Border Padding="7,2"
+                                                    CornerRadius="7"
+                                                    Background="{DynamicResource AccentSoftBrush}">
+                                                <TextBlock FontSize="9"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource AccentSoftTextBrush}"
+                                                           Text="{Binding StorageModeText}" />
+                                            </Border>
+                                            <TextBlock VerticalAlignment="Center"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource MutedTextBrush}"
+                                                       Text="{Binding FileSizeText}" />
+                                            <TextBlock VerticalAlignment="Center"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource MutedTextBrush}"
+                                                       Text="•" />
+                                            <TextBlock VerticalAlignment="Center"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource MutedTextBrush}"
+                                                       Text="{Binding ProgressSummary}" />
                                         </StackPanel>
+                                        <TextBlock FontSize="10"
+                                                   Foreground="{DynamicResource SubtleTextBrush}"
+                                                   Text="{Binding FilePath}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="2"
+                                                MinWidth="104"
+                                                VerticalAlignment="Center"
+                                                Spacing="7">
+                                        <TextBlock HorizontalAlignment="Center"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource MutedTextBrush}"
+                                                   Text="{Binding AvailabilityText}" />
+                                        <Button Padding="16,8"
+                                                Background="{DynamicResource AccentBrush}"
+                                                Foreground="{DynamicResource OnAccentBrush}"
+                                                FontWeight="SemiBold"
+                                                Command="{Binding PlayCommand}"
+                                                Content="Play"
+                                                IsEnabled="{Binding IsAvailable}" />
+                                        <Button Padding="12,7"
+                                                Background="{DynamicResource SurfaceRaisedBrush}"
+                                                Foreground="{DynamicResource SecondaryTextBrush}"
+                                                FontSize="11"
+                                                Command="{Binding ChooseCoverCommand}"
+                                                Content="{Binding CoverButtonText}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto"
+                              IsVisible="{Binding IsLibraryTileView}">
+                    <ItemsControl ItemsSource="{Binding LibraryBooks}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:LibraryBookItemViewModel">
+                            <Border Width="220"
+                                    Margin="0,0,12,12"
+                                    Padding="12"
+                                    CornerRadius="16"
+                                    Background="{DynamicResource SurfaceBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid RowDefinitions="180,Auto,Auto,Auto,Auto" RowSpacing="9">
+                                    <Border Grid.Row="0"
+                                            CornerRadius="12"
+                                            Background="{DynamicResource ArtworkPlaceholderBrush}"
+                                            ClipToBounds="True">
+                                        <Grid>
+                                            <Image Source="{Binding CoverImage}"
+                                                   Stretch="UniformToFill"
+                                                   IsVisible="{Binding HasCover}" />
+                                            <TextBlock HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="54"
+                                                       Foreground="{DynamicResource AccentTextBrush}"
+                                                       IsVisible="{Binding HasNoCover}"
+                                                       Text="♪" />
+                                            <Border Margin="8"
+                                                    Padding="7,3"
+                                                    HorizontalAlignment="Right"
+                                                    VerticalAlignment="Top"
+                                                    CornerRadius="7"
+                                                    Background="{DynamicResource SurfaceAltBrush}">
+                                                <TextBlock FontSize="9"
+                                                           Foreground="{DynamicResource MutedTextBrush}"
+                                                           Text="{Binding AvailabilityText}" />
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+
+                                    <TextBlock Grid.Row="1"
+                                               Height="40"
+                                               FontSize="15"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource PrimaryTextBrush}"
+                                               Text="{Binding Title}"
+                                               TextTrimming="CharacterEllipsis"
+                                               TextWrapping="Wrap" />
+
+                                    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="7">
+                                        <Border Padding="7,2"
+                                                CornerRadius="7"
+                                                Background="{DynamicResource AccentSoftBrush}">
+                                            <TextBlock FontSize="9"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource AccentSoftTextBrush}"
+                                                       Text="{Binding StorageModeText}" />
+                                        </Border>
+                                        <TextBlock VerticalAlignment="Center"
+                                                   FontSize="10"
+                                                   Foreground="{DynamicResource MutedTextBrush}"
+                                                   Text="{Binding FileSizeText}" />
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Row="3"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource AccentTextBrush}"
+                                               Text="{Binding ProgressSummary}"
+                                               TextTrimming="CharacterEllipsis" />
+
+                                    <Grid Grid.Row="4" ColumnDefinitions="*,*" ColumnSpacing="8">
+                                        <Button Grid.Column="0"
+                                                Padding="12,8"
+                                                Background="{DynamicResource AccentBrush}"
+                                                Foreground="{DynamicResource OnAccentBrush}"
+                                                FontWeight="SemiBold"
+                                                Command="{Binding PlayCommand}"
+                                                Content="Play"
+                                                IsEnabled="{Binding IsAvailable}" />
+                                        <Button Grid.Column="1"
+                                                Padding="9,8"
+                                                Background="{DynamicResource SurfaceRaisedBrush}"
+                                                Foreground="{DynamicResource SecondaryTextBrush}"
+                                                FontSize="10"
+                                                Command="{Binding ChooseCoverCommand}"
+                                                Content="{Binding CoverButtonText}" />
                                     </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
             </Grid>

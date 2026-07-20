@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using ListenShelf.Application.Library;
 using ListenShelf.Application.Playback;
 using ListenShelf.Application.Progress;
+using ListenShelf.Application.Settings;
 using ListenShelf.Desktop.Services;
 
 namespace ListenShelf.Desktop.ViewModels;
@@ -18,6 +19,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IFilePickerService _filePickerService;
     private readonly IPlaybackProgressStore _progressStore;
     private readonly ILibrarySettingsStore _librarySettingsStore;
+    private readonly IAppSettingsStore _appSettingsStore;
+    private readonly IThemeService _themeService;
     private readonly IAudiobookLibrary _audiobookLibrary;
     private bool _isUpdatingPositionFromEngine;
     private bool _isLoadingFile;
@@ -32,12 +35,16 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IFilePickerService filePickerService,
         IPlaybackProgressStore progressStore,
         ILibrarySettingsStore librarySettingsStore,
+        IAppSettingsStore appSettingsStore,
+        IThemeService themeService,
         IAudiobookLibrary audiobookLibrary)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
         _progressStore = progressStore;
         _librarySettingsStore = librarySettingsStore;
+        _appSettingsStore = appSettingsStore;
+        _themeService = themeService;
         _audiobookLibrary = audiobookLibrary;
 
         try
@@ -49,6 +56,29 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             _librarySettingsMessage = $"Library preference could not be loaded: {exception.Message}";
             _librarySettingsErrorMessage = _librarySettingsMessage;
         }
+
+        try
+        {
+            _selectedTheme = _appSettingsStore.GetTheme();
+            _appearanceSettingsMessage = $"{_selectedTheme} appearance is active.";
+        }
+        catch (Exception exception)
+        {
+            _selectedTheme = AppTheme.Dark;
+            _appearanceSettingsMessage =
+                $"Appearance preference could not be loaded: {exception.Message}";
+        }
+
+        try
+        {
+            _selectedLibraryView = _appSettingsStore.GetLibraryViewMode();
+        }
+        catch
+        {
+            _selectedLibraryView = LibraryViewMode.List;
+        }
+
+        _themeService.ApplyTheme(_selectedTheme);
 
         _audioEngine.ProgressChanged += OnProgressChanged;
         _audioEngine.StateChanged += OnStateChanged;
@@ -76,13 +106,25 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(IsLinkedModeSelected))]
     [NotifyPropertyChangedFor(nameof(IsManagedModeSelected))]
     [NotifyPropertyChangedFor(nameof(CurrentLibraryModeTitle))]
-    [NotifyPropertyChangedFor(nameof(CurrentLibraryModeDescription))]
     [NotifyPropertyChangedFor(nameof(LibraryEmptyDescription))]
     [NotifyPropertyChangedFor(nameof(CanAddAudiobooks))]
     private LibraryStorageMode? _defaultLibraryStorageMode;
 
     [ObservableProperty]
     private string _librarySettingsMessage = "This preference controls future imports only. No files will be moved.";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsDarkThemeSelected))]
+    [NotifyPropertyChangedFor(nameof(IsLightThemeSelected))]
+    private AppTheme _selectedTheme = AppTheme.Dark;
+
+    [ObservableProperty]
+    private string _appearanceSettingsMessage = "Dark appearance is active.";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsLibraryListView))]
+    [NotifyPropertyChangedFor(nameof(IsLibraryTileView))]
+    private LibraryViewMode _selectedLibraryView = LibraryViewMode.List;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasLibrarySettingsError))]
@@ -161,6 +203,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool IsManagedModeSelected => DefaultLibraryStorageMode == LibraryStorageMode.Managed;
 
+    public bool IsDarkThemeSelected => SelectedTheme == AppTheme.Dark;
+
+    public bool IsLightThemeSelected => SelectedTheme == AppTheme.Light;
+
+    public bool IsLibraryListView => SelectedLibraryView == LibraryViewMode.List;
+
+    public bool IsLibraryTileView => SelectedLibraryView == LibraryViewMode.Tiles;
+
     public bool HasLibrarySettingsError => !string.IsNullOrWhiteSpace(LibrarySettingsErrorMessage);
 
     public bool HasLibraryBooks => LibraryBooks.Count > 0;
@@ -185,7 +235,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public string PageSubtitle => SelectedSection switch
     {
         AppSection.Player => "Listen locally with automatic progress saving.",
-        AppSection.Settings => "Choose how ListenShelf should handle future audiobook imports.",
+        AppSection.Settings => "Personalize ListenShelf and choose how future imports are handled.",
         _ => "Your audiobooks, series, and collections will live here.",
     };
 
@@ -194,15 +244,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         LibraryStorageMode.Linked => "Keep files where they are",
         LibraryStorageMode.Managed => "Let ListenShelf manage copies",
         _ => "Choose how your library works",
-    };
-
-    public string CurrentLibraryModeDescription => DefaultLibraryStorageMode switch
-    {
-        LibraryStorageMode.Linked =>
-            "ListenShelf will remember your existing file locations without moving or renaming anything.",
-        LibraryStorageMode.Managed =>
-            "Future imports will be copied into a ListenShelf-managed library while originals remain untouched.",
-        _ => "Select a library style to finish setup.",
     };
 
     public string LibraryEmptyDescription => DefaultLibraryStorageMode switch
@@ -235,6 +276,18 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [RelayCommand]
     private void ShowSettings() => SelectedSection = AppSection.Settings;
+
+    [RelayCommand]
+    private void UseDarkTheme() => SaveTheme(AppTheme.Dark);
+
+    [RelayCommand]
+    private void UseLightTheme() => SaveTheme(AppTheme.Light);
+
+    [RelayCommand]
+    private void ShowLibraryAsList() => SaveLibraryViewMode(LibraryViewMode.List);
+
+    [RelayCommand]
+    private void ShowLibraryAsTiles() => SaveLibraryViewMode(LibraryViewMode.Tiles);
 
     [RelayCommand]
     private void ChooseLinkedLibrary() => SaveLibraryStorageMode(LibraryStorageMode.Linked);
@@ -629,6 +682,38 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             LibrarySettingsErrorMessage =
                 $"Library preference could not be saved: {exception.Message}";
             LibrarySettingsMessage = LibrarySettingsErrorMessage;
+        }
+    }
+
+    private void SaveTheme(AppTheme theme)
+    {
+        SelectedTheme = theme;
+        _themeService.ApplyTheme(theme);
+
+        try
+        {
+            _appSettingsStore.SaveTheme(theme);
+            AppearanceSettingsMessage = $"{theme} appearance is active and will be remembered.";
+        }
+        catch (Exception exception)
+        {
+            AppearanceSettingsMessage =
+                $"{theme} appearance is active for this session, but could not be saved: {exception.Message}";
+        }
+    }
+
+    private void SaveLibraryViewMode(LibraryViewMode viewMode)
+    {
+        SelectedLibraryView = viewMode;
+
+        try
+        {
+            _appSettingsStore.SaveLibraryViewMode(viewMode);
+        }
+        catch (Exception exception)
+        {
+            LibraryStatusMessage =
+                $"The {viewMode.ToString().ToLowerInvariant()} view is active for this session, but could not be remembered: {exception.Message}";
         }
     }
 
