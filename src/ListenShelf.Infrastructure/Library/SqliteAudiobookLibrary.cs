@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Security.Cryptography;
+using System.Text.Json;
 using ListenShelf.Application.Library;
 using ListenShelf.Infrastructure.Storage;
 
@@ -7,6 +8,35 @@ namespace ListenShelf.Infrastructure.Library;
 
 public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
 {
+    private const string BookColumnList =
+        """
+        book_id,
+        title,
+        subtitle,
+        authors_json,
+        series_name,
+        series_position,
+        original_publication_year,
+        original_publisher,
+        description,
+        genres_json,
+        narrators_json,
+        audio_publisher,
+        audiobook_release_date,
+        language,
+        isbn_10,
+        isbn_13,
+        asin,
+        edition_name,
+        abridgement,
+        edition_notes,
+        file_path,
+        storage_mode,
+        file_size_bytes,
+        added_utc,
+        cover_path
+        """;
+
     private static readonly HashSet<string> SupportedCoverExtensions =
         new(StringComparer.OrdinalIgnoreCase)
         {
@@ -40,8 +70,8 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         using var connection = _database.OpenConnection();
         using var command = connection.CreateCommand();
         command.CommandText =
-            """
-            SELECT book_id, title, file_path, storage_mode, file_size_bytes, added_utc, cover_path
+            $"""
+            SELECT {BookColumnList}
             FROM library_books
             ORDER BY added_utc DESC, title COLLATE NOCASE;
             """;
@@ -126,6 +156,54 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         }
     }
 
+    public LibraryBook UpdateMetadata(Guid bookId, AudiobookMetadata metadata)
+    {
+        if (bookId == Guid.Empty)
+        {
+            throw new ArgumentException("A valid audiobook identifier is required.", nameof(bookId));
+        }
+
+        ArgumentNullException.ThrowIfNull(metadata);
+        var normalizedMetadata = NormalizeMetadata(metadata);
+
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            UPDATE library_books
+            SET title = $title,
+                subtitle = $subtitle,
+                authors_json = $authors_json,
+                series_name = $series_name,
+                series_position = $series_position,
+                original_publication_year = $original_publication_year,
+                original_publisher = $original_publisher,
+                description = $description,
+                genres_json = $genres_json,
+                narrators_json = $narrators_json,
+                audio_publisher = $audio_publisher,
+                audiobook_release_date = $audiobook_release_date,
+                language = $language,
+                isbn_10 = $isbn_10,
+                isbn_13 = $isbn_13,
+                asin = $asin,
+                edition_name = $edition_name,
+                abridgement = $abridgement,
+                edition_notes = $edition_notes
+            WHERE book_id = $book_id;
+            """;
+        AddMetadataParameters(command, normalizedMetadata);
+        command.Parameters.AddWithValue("$book_id", bookId.ToString("D"));
+
+        if (command.ExecuteNonQuery() != 1)
+        {
+            throw new KeyNotFoundException("The selected audiobook is no longer in the library.");
+        }
+
+        return FindById(bookId)
+            ?? throw new KeyNotFoundException("The selected audiobook is no longer in the library.");
+    }
+
     private LibraryImportResult ImportLinked(FileInfo sourceFile)
     {
         var sourceKey = CreatePathKey(sourceFile.FullName);
@@ -165,7 +243,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             var managedFile = new FileInfo(destinationPath);
             var book = new LibraryBook(
                 bookId,
-                Path.GetFileNameWithoutExtension(sourceFile.Name),
+                AudiobookMetadata.FromFileName(Path.GetFileNameWithoutExtension(sourceFile.Name)),
                 managedFile.FullName,
                 LibraryStorageMode.Managed,
                 managedFile.Length,
@@ -256,7 +334,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         using var command = connection.CreateCommand();
         command.CommandText =
             $"""
-            SELECT book_id, title, file_path, storage_mode, file_size_bytes, added_utc, cover_path
+            SELECT {BookColumnList}
             FROM library_books
             WHERE {columnName} = $value;
             """;
@@ -284,7 +362,25 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
                 source_key,
                 file_size_bytes,
                 added_utc,
-                cover_path)
+                cover_path,
+                subtitle,
+                authors_json,
+                series_name,
+                series_position,
+                original_publication_year,
+                original_publisher,
+                description,
+                genres_json,
+                narrators_json,
+                audio_publisher,
+                audiobook_release_date,
+                language,
+                isbn_10,
+                isbn_13,
+                asin,
+                edition_name,
+                abridgement,
+                edition_notes)
             VALUES (
                 $book_id,
                 $title,
@@ -295,7 +391,25 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
                 $source_key,
                 $file_size_bytes,
                 $added_utc,
-                $cover_path);
+                $cover_path,
+                $subtitle,
+                $authors_json,
+                $series_name,
+                $series_position,
+                $original_publication_year,
+                $original_publisher,
+                $description,
+                $genres_json,
+                $narrators_json,
+                $audio_publisher,
+                $audiobook_release_date,
+                $language,
+                $isbn_10,
+                $isbn_13,
+                $asin,
+                $edition_name,
+                $abridgement,
+                $edition_notes);
             """;
         command.Parameters.AddWithValue("$book_id", book.Id.ToString("D"));
         command.Parameters.AddWithValue("$title", book.Title);
@@ -309,6 +423,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             "$added_utc",
             book.AddedAtUtc.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture));
         command.Parameters.AddWithValue("$cover_path", (object?)book.CoverPath ?? DBNull.Value);
+        AddMetadataParameters(command, book.Metadata, includeTitle: false);
         command.ExecuteNonQuery();
     }
 
@@ -337,24 +452,184 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         LibraryStorageMode storageMode) =>
         new(
             Guid.NewGuid(),
-            Path.GetFileNameWithoutExtension(sourceFile.Name),
+            AudiobookMetadata.FromFileName(Path.GetFileNameWithoutExtension(sourceFile.Name)),
             Path.GetFullPath(filePath),
             storageMode,
             sourceFile.Length,
             DateTimeOffset.UtcNow);
 
-    private static LibraryBook ReadBook(Microsoft.Data.Sqlite.SqliteDataReader reader) =>
-        new(
+    private static LibraryBook ReadBook(Microsoft.Data.Sqlite.SqliteDataReader reader)
+    {
+        var metadata = new AudiobookMetadata
+        {
+            Title = reader.GetString(1),
+            Subtitle = ReadNullableString(reader, 2),
+            Authors = ReadStringList(reader, 3),
+            SeriesName = ReadNullableString(reader, 4),
+            SeriesPosition = ReadNullableString(reader, 5),
+            OriginalPublicationYear = reader.IsDBNull(6) ? null : reader.GetInt32(6),
+            OriginalPublisher = ReadNullableString(reader, 7),
+            Description = ReadNullableString(reader, 8),
+            Genres = ReadStringList(reader, 9),
+            Narrators = ReadStringList(reader, 10),
+            AudioPublisher = ReadNullableString(reader, 11),
+            AudiobookReleaseDate = ReadDateOnly(reader, 12),
+            Language = ReadNullableString(reader, 13),
+            Isbn10 = ReadNullableString(reader, 14),
+            Isbn13 = ReadNullableString(reader, 15),
+            Asin = ReadNullableString(reader, 16),
+            EditionName = ReadNullableString(reader, 17),
+            Abridgement = ReadAbridgement(reader, 18),
+            EditionNotes = ReadNullableString(reader, 19),
+        };
+
+        return new LibraryBook(
             Guid.Parse(reader.GetString(0)),
-            reader.GetString(1),
-            reader.GetString(2),
-            Enum.Parse<LibraryStorageMode>(reader.GetString(3), ignoreCase: true),
-            reader.GetInt64(4),
+            metadata,
+            reader.GetString(20),
+            Enum.Parse<LibraryStorageMode>(reader.GetString(21), ignoreCase: true),
+            reader.GetInt64(22),
             DateTimeOffset.Parse(
-                reader.GetString(5),
+                reader.GetString(23),
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.RoundtripKind),
-            reader.IsDBNull(6) ? null : reader.GetString(6));
+            ReadNullableString(reader, 24));
+    }
+
+    private static void AddMetadataParameters(
+        Microsoft.Data.Sqlite.SqliteCommand command,
+        AudiobookMetadata metadata,
+        bool includeTitle = true)
+    {
+        if (includeTitle)
+        {
+            command.Parameters.AddWithValue("$title", metadata.Title);
+        }
+
+        AddNullableTextParameter(command, "$subtitle", metadata.Subtitle);
+        command.Parameters.AddWithValue("$authors_json", JsonSerializer.Serialize(metadata.Authors));
+        AddNullableTextParameter(command, "$series_name", metadata.SeriesName);
+        AddNullableTextParameter(command, "$series_position", metadata.SeriesPosition);
+        command.Parameters.AddWithValue(
+            "$original_publication_year",
+            (object?)metadata.OriginalPublicationYear ?? DBNull.Value);
+        AddNullableTextParameter(command, "$original_publisher", metadata.OriginalPublisher);
+        AddNullableTextParameter(command, "$description", metadata.Description);
+        command.Parameters.AddWithValue("$genres_json", JsonSerializer.Serialize(metadata.Genres));
+        command.Parameters.AddWithValue("$narrators_json", JsonSerializer.Serialize(metadata.Narrators));
+        AddNullableTextParameter(command, "$audio_publisher", metadata.AudioPublisher);
+        AddNullableTextParameter(
+            command,
+            "$audiobook_release_date",
+            metadata.AudiobookReleaseDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        AddNullableTextParameter(command, "$language", metadata.Language);
+        AddNullableTextParameter(command, "$isbn_10", metadata.Isbn10);
+        AddNullableTextParameter(command, "$isbn_13", metadata.Isbn13);
+        AddNullableTextParameter(command, "$asin", metadata.Asin);
+        AddNullableTextParameter(command, "$edition_name", metadata.EditionName);
+        command.Parameters.AddWithValue("$abridgement", metadata.Abridgement.ToString());
+        AddNullableTextParameter(command, "$edition_notes", metadata.EditionNotes);
+    }
+
+    private static void AddNullableTextParameter(
+        Microsoft.Data.Sqlite.SqliteCommand command,
+        string parameterName,
+        string? value) =>
+        command.Parameters.AddWithValue(parameterName, (object?)value ?? DBNull.Value);
+
+    private static AudiobookMetadata NormalizeMetadata(AudiobookMetadata metadata)
+    {
+        if (string.IsNullOrWhiteSpace(metadata.Title))
+        {
+            throw new ArgumentException("An audiobook title is required.", nameof(metadata));
+        }
+
+        var title = metadata.Title.Trim();
+
+        if (metadata.OriginalPublicationYear is < 1 or > 9999)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(metadata),
+                "The original publication year must be between 1 and 9999.");
+        }
+
+        if (!Enum.IsDefined(metadata.Abridgement))
+        {
+            throw new ArgumentOutOfRangeException(nameof(metadata), "The abridgement value is invalid.");
+        }
+
+        return metadata with
+        {
+            Title = title,
+            Subtitle = NormalizeOptionalText(metadata.Subtitle),
+            Authors = NormalizeTextList(metadata.Authors),
+            SeriesName = NormalizeOptionalText(metadata.SeriesName),
+            SeriesPosition = NormalizeOptionalText(metadata.SeriesPosition),
+            OriginalPublisher = NormalizeOptionalText(metadata.OriginalPublisher),
+            Description = NormalizeOptionalText(metadata.Description),
+            Genres = NormalizeTextList(metadata.Genres),
+            Narrators = NormalizeTextList(metadata.Narrators),
+            AudioPublisher = NormalizeOptionalText(metadata.AudioPublisher),
+            Language = NormalizeOptionalText(metadata.Language),
+            Isbn10 = NormalizeOptionalText(metadata.Isbn10),
+            Isbn13 = NormalizeOptionalText(metadata.Isbn13),
+            Asin = NormalizeOptionalText(metadata.Asin),
+            EditionName = NormalizeOptionalText(metadata.EditionName),
+            EditionNotes = NormalizeOptionalText(metadata.EditionNotes),
+        };
+    }
+
+    private static string? NormalizeOptionalText(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static IReadOnlyList<string> NormalizeTextList(IEnumerable<string> values) =>
+        values
+            .Select(value => value.Trim())
+            .Where(value => value.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+    private static string? ReadNullableString(
+        Microsoft.Data.Sqlite.SqliteDataReader reader,
+        int ordinal) =>
+        reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+
+    private static IReadOnlyList<string> ReadStringList(
+        Microsoft.Data.Sqlite.SqliteDataReader reader,
+        int ordinal)
+    {
+        if (reader.IsDBNull(ordinal))
+        {
+            return [];
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<string[]>(reader.GetString(ordinal)) ?? [];
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    private static DateOnly? ReadDateOnly(
+        Microsoft.Data.Sqlite.SqliteDataReader reader,
+        int ordinal) =>
+        reader.IsDBNull(ordinal)
+            ? null
+            : DateOnly.ParseExact(
+                reader.GetString(ordinal),
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture);
+
+    private static AudiobookAbridgement ReadAbridgement(
+        Microsoft.Data.Sqlite.SqliteDataReader reader,
+        int ordinal) =>
+        !reader.IsDBNull(ordinal)
+        && Enum.TryParse<AudiobookAbridgement>(reader.GetString(ordinal), ignoreCase: true, out var value)
+            ? value
+            : AudiobookAbridgement.Unknown;
 
     private static string NormalizeM4bPath(string filePath)
     {

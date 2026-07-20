@@ -1,0 +1,252 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+        x:Class="ListenShelf.Desktop.Views.BookMetadataEditorWindow"
+        x:DataType="vm:BookMetadataEditorViewModel"
+        Width="780"
+        Height="760"
+        MinWidth="680"
+        MinHeight="560"
+        Background="{DynamicResource AppBackgroundBrush}"
+        CanResize="True"
+        Icon="/Assets/Branding/listenshelf.ico"
+        ShowInTaskbar="False"
+        Title="Edit audiobook details"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Styles>
+        <Style Selector="TextBlock.sectionTitle">
+            <Setter Property="FontSize" Value="17" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+        </Style>
+        <Style Selector="TextBlock.fieldLabel">
+            <Setter Property="Margin" Value="1,0,0,4" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}" />
+        </Style>
+        <Style Selector="TextBox.metadataField">
+            <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style Selector="ComboBox.metadataField">
+            <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style Selector="CalendarDatePicker.metadataField">
+            <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+    </Window.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0"
+                Padding="24,20"
+                Background="{DynamicResource HeaderBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel Spacing="4">
+                <TextBlock FontSize="22"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           Text="Audiobook details" />
+                <TextBlock FontSize="12"
+                           Foreground="{DynamicResource MutedTextBrush}"
+                           Text="These details stay on this device. Separate multiple names or genres with semicolons." />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="24" Spacing="16">
+                <Border Padding="20"
+                        CornerRadius="14"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="14">
+                        <StackPanel Spacing="3">
+                            <TextBlock Classes="sectionTitle" Text="Book" />
+                            <TextBlock FontSize="11"
+                                       Foreground="{DynamicResource MutedTextBrush}"
+                                       Text="Information about the underlying written work." />
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="fieldLabel" Text="Title *" />
+                                <TextBox Classes="metadataField" Text="{Binding Title}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Classes="fieldLabel" Text="Subtitle" />
+                                <TextBox Classes="metadataField" Text="{Binding Subtitle}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel>
+                            <TextBlock Classes="fieldLabel" Text="Authors" />
+                            <TextBox Classes="metadataField"
+                                     Text="{Binding Authors}"
+                                     PlaceholderText="Matt Dinniman; another author" />
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="14">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="fieldLabel" Text="Series" />
+                                <TextBox Classes="metadataField" Text="{Binding SeriesName}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Classes="fieldLabel" Text="Series position" />
+                                <TextBox Classes="metadataField"
+                                         Text="{Binding SeriesPosition}"
+                                         PlaceholderText="1 or 1.5" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="fieldLabel" Text="Original year" />
+                                <TextBox Classes="metadataField"
+                                         Text="{Binding OriginalPublicationYear}"
+                                         PlaceholderText="2020" />
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel>
+                            <TextBlock Classes="fieldLabel" Text="Original publisher" />
+                            <TextBox Classes="metadataField" Text="{Binding OriginalPublisher}" />
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Classes="fieldLabel" Text="Genres" />
+                            <TextBox Classes="metadataField"
+                                     Text="{Binding Genres}"
+                                     PlaceholderText="Fantasy; Science Fiction" />
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Classes="fieldLabel" Text="Description" />
+                            <TextBox Classes="metadataField"
+                                     MinHeight="92"
+                                     AcceptsReturn="True"
+                                     Text="{Binding Description}"
+                                     TextWrapping="Wrap" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Padding="20"
+                        CornerRadius="14"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="14">
+                        <StackPanel Spacing="3">
+                            <TextBlock Classes="sectionTitle" Text="Audiobook edition" />
+                            <TextBlock FontSize="11"
+                                       Foreground="{DynamicResource MutedTextBrush}"
+                                       Text="Information specific to this recording and release." />
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Classes="fieldLabel" Text="Narrators" />
+                            <TextBox Classes="metadataField"
+                                     Text="{Binding Narrators}"
+                                     PlaceholderText="Jeff Hays; another narrator" />
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="fieldLabel" Text="Audio publisher" />
+                                <TextBox Classes="metadataField" Text="{Binding AudioPublisher}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Classes="fieldLabel" Text="Audiobook release date" />
+                                <CalendarDatePicker Classes="metadataField"
+                                                    SelectedDate="{Binding AudiobookReleaseDate}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="fieldLabel" Text="Edition" />
+                                <TextBox Classes="metadataField"
+                                         Text="{Binding EditionName}"
+                                         PlaceholderText="10th anniversary edition" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Classes="fieldLabel" Text="Abridgement" />
+                                <ComboBox Classes="metadataField"
+                                          ItemsSource="{Binding AbridgementOptions}"
+                                          SelectedItem="{Binding SelectedAbridgement}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Classes="fieldLabel" Text="ISBN-10" />
+                                <TextBox Classes="metadataField" Text="{Binding Isbn10}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Classes="fieldLabel" Text="ISBN-13" />
+                                <TextBox Classes="metadataField" Text="{Binding Isbn13}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Classes="fieldLabel" Text="ASIN" />
+                                <TextBox Classes="metadataField" Text="{Binding Asin}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel Width="250" HorizontalAlignment="Left">
+                            <TextBlock Classes="fieldLabel" Text="Language" />
+                            <TextBox Classes="metadataField"
+                                     Text="{Binding Language}"
+                                     PlaceholderText="English" />
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Classes="fieldLabel" Text="Edition notes" />
+                            <TextBox Classes="metadataField"
+                                     MinHeight="72"
+                                     AcceptsReturn="True"
+                                     Text="{Binding EditionNotes}"
+                                     TextWrapping="Wrap" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2"
+                Padding="24,14"
+                Background="{DynamicResource FooterBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                <TextBlock Grid.Column="0"
+                           VerticalAlignment="Center"
+                           FontSize="11"
+                           Foreground="{DynamicResource DangerTextBrush}"
+                           IsVisible="{Binding HasError}"
+                           Text="{Binding ErrorMessage}"
+                           TextWrapping="Wrap" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                    <Button Padding="18,9"
+                            Background="{DynamicResource SurfaceRaisedBrush}"
+                            Foreground="{DynamicResource SecondaryTextBrush}"
+                            Click="Cancel_OnClick"
+                            Content="Cancel" />
+                    <Button Padding="18,9"
+                            Background="{DynamicResource AccentBrush}"
+                            Foreground="{DynamicResource OnAccentBrush}"
+                            FontWeight="SemiBold"
+                            Click="Save_OnClick"
+                            Content="Save details" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

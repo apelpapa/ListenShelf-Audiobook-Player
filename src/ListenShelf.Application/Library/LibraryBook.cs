@@ -2,9 +2,12 @@ namespace ListenShelf.Application.Library;
 
 public sealed record LibraryBook(
     Guid Id,
-    string Title,
+    AudiobookMetadata Metadata,
     string FilePath,
     LibraryStorageMode StorageMode,
     long FileSizeBytes,
     DateTimeOffset AddedAtUtc,
-    string? CoverPath = null);
+    string? CoverPath = null)
+{
+    public string Title => Metadata.Title;
+}

@@ -9,4 +9,6 @@ public interface IAudiobookLibrary
     LibraryImportResult Import(string sourceFilePath, LibraryStorageMode storageMode);
 
     LibraryBook SetCover(Guid bookId, string sourceImagePath);
+
+    LibraryBook UpdateMetadata(Guid bookId, AudiobookMetadata metadata);
 }

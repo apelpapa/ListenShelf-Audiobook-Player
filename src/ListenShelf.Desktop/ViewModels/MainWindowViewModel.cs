@@ -22,6 +22,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IAppSettingsStore _appSettingsStore;
     private readonly IThemeService _themeService;
     private readonly IAudiobookLibrary _audiobookLibrary;
+    private readonly IBookMetadataEditorService _bookMetadataEditorService;
     private bool _isUpdatingPositionFromEngine;
     private bool _isLoadingFile;
     private string? _currentFilePath;
@@ -37,7 +38,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         ILibrarySettingsStore librarySettingsStore,
         IAppSettingsStore appSettingsStore,
         IThemeService themeService,
-        IAudiobookLibrary audiobookLibrary)
+        IAudiobookLibrary audiobookLibrary,
+        IBookMetadataEditorService bookMetadataEditorService)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
@@ -46,6 +48,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _appSettingsStore = appSettingsStore;
         _themeService = themeService;
         _audiobookLibrary = audiobookLibrary;
+        _bookMetadataEditorService = bookMetadataEditorService;
 
         try
         {
@@ -479,6 +482,39 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
+    private async Task EditMetadataAsync(LibraryBook book)
+    {
+        try
+        {
+            var metadata = await _bookMetadataEditorService.EditAsync(book);
+            if (metadata is null)
+            {
+                return;
+            }
+
+            IsLibraryBusy = true;
+            LibraryStatusMessage = $"Saving details for {book.Title}…";
+
+            var updatedBook = await Task.Run(() => _audiobookLibrary.UpdateMetadata(book.Id, metadata));
+            if (!string.IsNullOrWhiteSpace(_currentFilePath)
+                && PathsEqual(_currentFilePath, updatedBook.FilePath))
+            {
+                BookTitle = updatedBook.Title;
+            }
+
+            RefreshLibrary();
+            LibraryStatusMessage = $"Details saved for {updatedBook.Title}.";
+        }
+        catch (Exception exception)
+        {
+            LibraryStatusMessage = $"The audiobook details could not be saved: {exception.Message}";
+        }
+        finally
+        {
+            IsLibraryBusy = false;
+        }
+    }
+
     [RelayCommand]
     private void TogglePlayback()
     {
@@ -731,7 +767,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                     book,
                     GetProgressSummary(book),
                     PlayLibraryBookAsync,
-                    ChooseCoverAsync));
+                    ChooseCoverAsync,
+                    EditMetadataAsync));
             }
 
             OnPropertyChanged(nameof(HasLibraryBooks));

@@ -93,6 +93,24 @@ public sealed class ListenShelfDatabase
         command.ExecuteNonQuery();
 
         EnsureColumn(connection, "library_books", "cover_path", "TEXT NULL");
+        EnsureColumn(connection, "library_books", "subtitle", "TEXT NULL");
+        EnsureColumn(connection, "library_books", "authors_json", "TEXT NOT NULL DEFAULT '[]'");
+        EnsureColumn(connection, "library_books", "series_name", "TEXT NULL");
+        EnsureColumn(connection, "library_books", "series_position", "TEXT NULL");
+        EnsureColumn(connection, "library_books", "original_publication_year", "INTEGER NULL");
+        EnsureColumn(connection, "library_books", "original_publisher", "TEXT NULL");
+        EnsureColumn(connection, "library_books", "description", "TEXT NULL");
+        EnsureColumn(connection, "library_books", "genres_json", "TEXT NOT NULL DEFAULT '[]'");
+        EnsureColumn(connection, "library_books", "narrators_json", "TEXT NOT NULL DEFAULT '[]'");
+        EnsureColumn(connection, "library_books", "audio_publisher", "TEXT NULL");
+        EnsureColumn(connection, "library_books", "audiobook_release_date", "TEXT NULL");
+        EnsureColumn(connection, "library_books", "language", "TEXT NULL");
+        EnsureColumn(connection, "library_books", "isbn_10", "TEXT NULL");
+        EnsureColumn(connection, "library_books", "isbn_13", "TEXT NULL");
+        EnsureColumn(connection, "library_books", "asin", "TEXT NULL");
+        EnsureColumn(connection, "library_books", "edition_name", "TEXT NULL");
+        EnsureColumn(connection, "library_books", "abridgement", "TEXT NOT NULL DEFAULT 'Unknown'");
+        EnsureColumn(connection, "library_books", "edition_notes", "TEXT NULL");
     }
 
     private static void EnsureColumn(

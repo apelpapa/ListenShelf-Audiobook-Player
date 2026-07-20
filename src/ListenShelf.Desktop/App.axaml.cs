@@ -32,7 +32,8 @@ namespace ListenShelf.Desktop
                     new SqliteLibrarySettingsStore(database),
                     new SqliteAppSettingsStore(database),
                     new AvaloniaThemeService(),
-                    new SqliteAudiobookLibrary(database));
+                    new SqliteAudiobookLibrary(database),
+                    new AvaloniaBookMetadataEditorService(mainWindow));
 
                 mainWindow.DataContext = viewModel;
                 mainWindow.Closed += (_, _) => viewModel.Dispose();
