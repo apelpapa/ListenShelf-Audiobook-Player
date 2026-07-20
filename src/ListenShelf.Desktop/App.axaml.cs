@@ -25,15 +25,19 @@ namespace ListenShelf.Desktop
             {
                 var mainWindow = new MainWindow();
                 var database = new ListenShelfDatabase();
+                var themeService = new AvaloniaThemeService();
+                var temporaryPlayerSessionService =
+                    new AvaloniaTemporaryPlayerSessionService(mainWindow, themeService);
                 var viewModel = new MainWindowViewModel(
                     new LibVlcAudioEngine(),
                     new AvaloniaFilePickerService(mainWindow),
                     new SqlitePlaybackProgressStore(database),
                     new SqliteLibrarySettingsStore(database),
                     new SqliteAppSettingsStore(database),
-                    new AvaloniaThemeService(),
+                    themeService,
                     new SqliteAudiobookLibrary(database),
-                    new AvaloniaBookMetadataEditorService(mainWindow));
+                    new AvaloniaBookMetadataEditorService(mainWindow),
+                    temporaryPlayerSessionService);
 
                 mainWindow.DataContext = viewModel;
                 mainWindow.Closed += (_, _) => viewModel.Dispose();

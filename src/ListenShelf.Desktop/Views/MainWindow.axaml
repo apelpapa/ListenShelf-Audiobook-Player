@@ -15,7 +15,7 @@
         MinHeight="620"
         Background="{DynamicResource AppBackgroundBrush}"
         Icon="/Assets/Branding/listenshelf.ico"
-        Title="ListenShelf — Audiobook Player">
+        Title="{Binding WindowTitle}">
 
     <Window.Styles>
         <Style Selector="Button.nav">
@@ -58,7 +58,9 @@
                 </StackPanel>
 
                 <StackPanel Grid.Row="1" Spacing="5">
-                    <Button Classes="nav" Command="{Binding ShowLibraryCommand}">
+                    <Button Classes="nav"
+                            Command="{Binding ShowLibraryCommand}"
+                            IsVisible="{Binding IsPersistentSession}">
                         <Grid ColumnDefinitions="4,*" ColumnSpacing="12">
                             <Border Grid.Column="0"
                                     CornerRadius="2"
@@ -130,6 +132,7 @@
                                 BorderThickness="1"
                                 Command="{Binding ShowSettingsCommand}"
                                 IsEnabled="{Binding IsMainContentVisible}"
+                                IsVisible="{Binding IsPersistentSession}"
                                 ToolTip.Tip="Settings">
                             <Grid>
                                 <TextBlock HorizontalAlignment="Center"
@@ -169,7 +172,7 @@
                 <TextBlock HorizontalAlignment="Center"
                            FontSize="11"
                            Foreground="{DynamicResource SubtleTextBrush}"
-                           Text="Offline playback • Settings alone never move or copy your files" />
+                           Text="{Binding FooterText}" />
             </Border>
         </Grid>
     </Grid>

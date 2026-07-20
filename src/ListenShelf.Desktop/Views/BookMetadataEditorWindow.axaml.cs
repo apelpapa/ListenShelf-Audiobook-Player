@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using ListenShelf.Application.Library;
 using ListenShelf.Desktop.ViewModels;
@@ -14,6 +15,19 @@ public partial class BookMetadataEditorWindow : Window
 
     private void Cancel_OnClick(object? sender, RoutedEventArgs e) =>
         Close(null);
+
+    private void MetadataAutoComplete_OnGotFocus(
+        object? sender,
+        FocusChangedEventArgs e)
+    {
+        if (sender is not AutoCompleteBox autoCompleteBox)
+        {
+            return;
+        }
+
+        autoCompleteBox.PopulateComplete();
+        autoCompleteBox.IsDropDownOpen = true;
+    }
 
     private void Save_OnClick(object? sender, RoutedEventArgs e)
     {

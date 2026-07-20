@@ -38,6 +38,19 @@
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
             <Setter Property="CornerRadius" Value="8" />
         </Style>
+        <Style Selector="AutoCompleteBox.metadataField">
+            <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="MaxDropDownHeight" Value="240" />
+        </Style>
+        <Style Selector="NumericUpDown.metadataField">
+            <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
         <Style Selector="CalendarDatePicker.metadataField">
             <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}" />
@@ -59,7 +72,7 @@
                            Text="Audiobook details" />
                 <TextBlock FontSize="12"
                            Foreground="{DynamicResource MutedTextBrush}"
-                           Text="These details stay on this device. Separate multiple names or genres with semicolons." />
+                           Text="These details stay on this device. Reuse existing values from the searchable suggestions." />
             </StackPanel>
         </Border>
 
@@ -91,15 +104,64 @@
 
                         <StackPanel>
                             <TextBlock Classes="fieldLabel" Text="Authors" />
-                            <TextBox Classes="metadataField"
-                                     Text="{Binding Authors}"
-                                     PlaceholderText="Matt Dinniman; another author" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <AutoCompleteBox Grid.Column="0"
+                                                 Classes="metadataField"
+                                                 FilterMode="ContainsOrdinal"
+                                                 GotFocus="MetadataAutoComplete_OnGotFocus"
+                                                 IsTextCompletionEnabled="False"
+                                                 ItemsSource="{Binding AuthorSuggestions}"
+                                                 MinimumPrefixLength="0"
+                                                 Text="{Binding AuthorInput, Mode=TwoWay}"
+                                                 PlaceholderText="Type or choose an author" />
+                                <Button Grid.Column="1"
+                                        Padding="14,7"
+                                        VerticalAlignment="Stretch"
+                                        Command="{Binding AddAuthorCommand}"
+                                        Content="Add" />
+                            </Grid>
+                            <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding Authors}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:MetadataValueItemViewModel">
+                                        <Border Margin="0,0,7,7"
+                                                Padding="9,4,4,4"
+                                                CornerRadius="12"
+                                                Background="{DynamicResource AccentSoftBrush}">
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <TextBlock VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource PrimaryTextBrush}"
+                                                           Text="{Binding Value}" />
+                                                <Button Width="24"
+                                                        Height="24"
+                                                        Padding="0"
+                                                        Background="Transparent"
+                                                        Command="{Binding RemoveCommand}"
+                                                        Content="×"
+                                                        Foreground="{DynamicResource SecondaryTextBrush}"
+                                                        ToolTip.Tip="Remove author" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
 
                         <Grid ColumnDefinitions="2*,*,*" ColumnSpacing="14">
                             <StackPanel Grid.Column="0">
                                 <TextBlock Classes="fieldLabel" Text="Series" />
-                                <TextBox Classes="metadataField" Text="{Binding SeriesName}" />
+                                <AutoCompleteBox Classes="metadataField"
+                                                 FilterMode="ContainsOrdinal"
+                                                 GotFocus="MetadataAutoComplete_OnGotFocus"
+                                                 IsTextCompletionEnabled="False"
+                                                 ItemsSource="{Binding SeriesSuggestions}"
+                                                 MinimumPrefixLength="0"
+                                                 Text="{Binding SeriesName, Mode=TwoWay}"
+                                                 PlaceholderText="Type or choose a series" />
                             </StackPanel>
                             <StackPanel Grid.Column="1">
                                 <TextBlock Classes="fieldLabel" Text="Series position" />
@@ -109,22 +171,74 @@
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Classes="fieldLabel" Text="Original year" />
-                                <TextBox Classes="metadataField"
-                                         Text="{Binding OriginalPublicationYear}"
-                                         PlaceholderText="2020" />
+                                <NumericUpDown Classes="metadataField"
+                                               FormatString="0"
+                                               Increment="1"
+                                               Maximum="9999"
+                                               Minimum="1000"
+                                               Value="{Binding OriginalPublicationYear, Mode=TwoWay}" />
                             </StackPanel>
                         </Grid>
 
                         <StackPanel>
                             <TextBlock Classes="fieldLabel" Text="Original publisher" />
-                            <TextBox Classes="metadataField" Text="{Binding OriginalPublisher}" />
+                            <AutoCompleteBox Classes="metadataField"
+                                             FilterMode="ContainsOrdinal"
+                                             GotFocus="MetadataAutoComplete_OnGotFocus"
+                                             IsTextCompletionEnabled="False"
+                                             ItemsSource="{Binding OriginalPublisherSuggestions}"
+                                             MinimumPrefixLength="0"
+                                             Text="{Binding OriginalPublisher, Mode=TwoWay}"
+                                             PlaceholderText="Type or choose a publisher" />
                         </StackPanel>
 
                         <StackPanel>
                             <TextBlock Classes="fieldLabel" Text="Genres" />
-                            <TextBox Classes="metadataField"
-                                     Text="{Binding Genres}"
-                                     PlaceholderText="Fantasy; Science Fiction" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <AutoCompleteBox Grid.Column="0"
+                                                 Classes="metadataField"
+                                                 FilterMode="ContainsOrdinal"
+                                                 GotFocus="MetadataAutoComplete_OnGotFocus"
+                                                 IsTextCompletionEnabled="False"
+                                                 ItemsSource="{Binding GenreSuggestions}"
+                                                 MinimumPrefixLength="0"
+                                                 Text="{Binding GenreInput, Mode=TwoWay}"
+                                                 PlaceholderText="Type or choose a genre" />
+                                <Button Grid.Column="1"
+                                        Padding="14,7"
+                                        VerticalAlignment="Stretch"
+                                        Command="{Binding AddGenreCommand}"
+                                        Content="Add" />
+                            </Grid>
+                            <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding Genres}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:MetadataValueItemViewModel">
+                                        <Border Margin="0,0,7,7"
+                                                Padding="9,4,4,4"
+                                                CornerRadius="12"
+                                                Background="{DynamicResource AccentSoftBrush}">
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <TextBlock VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource PrimaryTextBrush}"
+                                                           Text="{Binding Value}" />
+                                                <Button Width="24"
+                                                        Height="24"
+                                                        Padding="0"
+                                                        Background="Transparent"
+                                                        Command="{Binding RemoveCommand}"
+                                                        Content="×"
+                                                        Foreground="{DynamicResource SecondaryTextBrush}"
+                                                        ToolTip.Tip="Remove genre" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
 
                         <StackPanel>
@@ -153,15 +267,64 @@
 
                         <StackPanel>
                             <TextBlock Classes="fieldLabel" Text="Narrators" />
-                            <TextBox Classes="metadataField"
-                                     Text="{Binding Narrators}"
-                                     PlaceholderText="Jeff Hays; another narrator" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <AutoCompleteBox Grid.Column="0"
+                                                 Classes="metadataField"
+                                                 FilterMode="ContainsOrdinal"
+                                                 GotFocus="MetadataAutoComplete_OnGotFocus"
+                                                 IsTextCompletionEnabled="False"
+                                                 ItemsSource="{Binding NarratorSuggestions}"
+                                                 MinimumPrefixLength="0"
+                                                 Text="{Binding NarratorInput, Mode=TwoWay}"
+                                                 PlaceholderText="Type or choose a narrator" />
+                                <Button Grid.Column="1"
+                                        Padding="14,7"
+                                        VerticalAlignment="Stretch"
+                                        Command="{Binding AddNarratorCommand}"
+                                        Content="Add" />
+                            </Grid>
+                            <ItemsControl Margin="0,8,0,0" ItemsSource="{Binding Narrators}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:MetadataValueItemViewModel">
+                                        <Border Margin="0,0,7,7"
+                                                Padding="9,4,4,4"
+                                                CornerRadius="12"
+                                                Background="{DynamicResource AccentSoftBrush}">
+                                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                                <TextBlock VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource PrimaryTextBrush}"
+                                                           Text="{Binding Value}" />
+                                                <Button Width="24"
+                                                        Height="24"
+                                                        Padding="0"
+                                                        Background="Transparent"
+                                                        Command="{Binding RemoveCommand}"
+                                                        Content="×"
+                                                        Foreground="{DynamicResource SecondaryTextBrush}"
+                                                        ToolTip.Tip="Remove narrator" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
 
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
                             <StackPanel Grid.Column="0">
                                 <TextBlock Classes="fieldLabel" Text="Audio publisher" />
-                                <TextBox Classes="metadataField" Text="{Binding AudioPublisher}" />
+                                <AutoCompleteBox Classes="metadataField"
+                                                 FilterMode="ContainsOrdinal"
+                                                 GotFocus="MetadataAutoComplete_OnGotFocus"
+                                                 IsTextCompletionEnabled="False"
+                                                 ItemsSource="{Binding AudioPublisherSuggestions}"
+                                                 MinimumPrefixLength="0"
+                                                 Text="{Binding AudioPublisher, Mode=TwoWay}"
+                                                 PlaceholderText="Type or choose a publisher" />
                             </StackPanel>
                             <StackPanel Grid.Column="1">
                                 <TextBlock Classes="fieldLabel" Text="Audiobook release date" />
@@ -202,9 +365,14 @@
 
                         <StackPanel Width="250" HorizontalAlignment="Left">
                             <TextBlock Classes="fieldLabel" Text="Language" />
-                            <TextBox Classes="metadataField"
-                                     Text="{Binding Language}"
-                                     PlaceholderText="English" />
+                            <AutoCompleteBox Classes="metadataField"
+                                             FilterMode="ContainsOrdinal"
+                                             GotFocus="MetadataAutoComplete_OnGotFocus"
+                                             IsTextCompletionEnabled="False"
+                                             ItemsSource="{Binding LanguageSuggestions}"
+                                             MinimumPrefixLength="0"
+                                             Text="{Binding Language, Mode=TwoWay}"
+                                             PlaceholderText="Type or choose a language" />
                         </StackPanel>
 
                         <StackPanel>

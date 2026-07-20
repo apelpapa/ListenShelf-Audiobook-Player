@@ -24,7 +24,7 @@
                            HorizontalAlignment="Center"
                            FontSize="13"
                            Foreground="{DynamicResource MutedTextBrush}"
-                           Text="Choose a starting preference for future imports. You can change it later in Settings."
+                           Text="Choose a starting preference. You can review it later in Settings; managed libraries stay isolated after managed data is added."
                            TextAlignment="Center"
                            TextWrapping="Wrap" />
             </StackPanel>

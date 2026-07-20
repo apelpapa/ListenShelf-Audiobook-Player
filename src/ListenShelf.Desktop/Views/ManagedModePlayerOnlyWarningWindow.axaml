@@ -1,0 +1,85 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ListenShelf.Desktop.Views.ManagedModePlayerOnlyWarningWindow"
+        Width="590"
+        SizeToContent="Height"
+        Background="{DynamicResource AppBackgroundBrush}"
+        CanResize="False"
+        Icon="/Assets/Branding/listenshelf.ico"
+        ShowInTaskbar="False"
+        Title="Open Player Only Mode"
+        WindowStartupLocation="CenterOwner">
+    <Grid RowDefinitions="Auto,Auto">
+        <Border Grid.Row="0"
+                Padding="24"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel Spacing="15">
+                <Grid ColumnDefinitions="48,*" ColumnSpacing="14">
+                    <Border Width="48"
+                            Height="48"
+                            CornerRadius="24"
+                            Background="{DynamicResource AccentSoftBrush}">
+                        <TextBlock HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="24"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource AccentTextBrush}"
+                                   Text="!" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="5">
+                        <TextBlock FontSize="20"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                   Text="Keep the managed library isolated" />
+                        <TextBlock FontSize="12"
+                                   Foreground="{DynamicResource MutedTextBrush}"
+                                   Text="ListenShelf will keep Managed Library mode selected so managed copies and player-only activity are not mixed."
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Grid>
+
+                <Border Padding="16"
+                        CornerRadius="12"
+                        Background="{DynamicResource SurfaceAltBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="9">
+                        <TextBlock FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                   Text="A separate temporary Player Only window will open." />
+                        <TextBlock FontSize="12"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Text="Files opened there, listening positions, playback speed, and other session activity will not be saved. Nothing in your managed library will change."
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock FontSize="12"
+                           Foreground="{DynamicResource MutedTextBrush}"
+                           Text="To switch permanently, all managed data must first be exported and then deleted. Export will be available before ListenShelf offers that deletion; nothing will be deleted now."
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1"
+                Padding="20,14"
+                Background="{DynamicResource FooterBackgroundBrush}">
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="10">
+                <Button Padding="18,9"
+                        Background="{DynamicResource SurfaceRaisedBrush}"
+                        Foreground="{DynamicResource SecondaryTextBrush}"
+                        Click="Cancel_OnClick"
+                        Content="Cancel" />
+                <Button Padding="18,9"
+                        Background="{DynamicResource AccentBrush}"
+                        Foreground="{DynamicResource OnAccentBrush}"
+                        FontWeight="SemiBold"
+                        Click="OpenTemporarySession_OnClick"
+                        Content="Open temporary player" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
