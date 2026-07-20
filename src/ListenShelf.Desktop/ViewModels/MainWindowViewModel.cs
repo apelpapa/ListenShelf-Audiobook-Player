@@ -244,7 +244,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public string CurrentLibraryModeTitle => DefaultLibraryStorageMode switch
     {
-        LibraryStorageMode.Linked => "Keep files where they are",
+        LibraryStorageMode.Linked => "Player Only Mode",
         LibraryStorageMode.Managed => "Let ListenShelf manage copies",
         _ => "Choose how your library works",
     };
@@ -253,7 +253,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         LibraryStorageMode.Managed =>
             "Choose one or more M4B files. ListenShelf will make verified copies and leave the originals untouched.",
-        _ => "Choose one or more M4B files. ListenShelf will remember their current locations without changing them.",
+        _ =>
+            "Choose one or more M4B files. ListenShelf will remember their locations and listening positions without managing book metadata.",
     };
 
     public string PlayPauseLabel => IsPlaying ? "Pause" : "Play";
@@ -317,7 +318,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             IsLibraryBusy = true;
             LibraryStatusMessage = storageMode == LibraryStorageMode.Managed
                 ? $"Copying {filePaths.Count} audiobook(s) into the managed library…"
-                : $"Linking {filePaths.Count} audiobook(s)…";
+                : $"Adding {filePaths.Count} audiobook(s) in Player Only Mode…";
 
             var addedCount = 0;
             var existingCount = 0;
@@ -443,6 +444,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private async Task ChooseCoverAsync(LibraryBook book)
     {
+        if (book.StorageMode != LibraryStorageMode.Managed)
+        {
+            LibraryStatusMessage = "Cover editing is available for ListenShelf-managed copies only.";
+            return;
+        }
+
         try
         {
             var imagePath = await _filePickerService.PickCoverImageAsync();
@@ -484,6 +491,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private async Task EditMetadataAsync(LibraryBook book)
     {
+        if (book.StorageMode != LibraryStorageMode.Managed)
+        {
+            LibraryStatusMessage = "Metadata editing is available for ListenShelf-managed copies only.";
+            return;
+        }
+
         try
         {
             var metadata = await _bookMetadataEditorService.EditAsync(book);

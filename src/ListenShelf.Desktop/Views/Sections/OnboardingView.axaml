@@ -24,7 +24,7 @@
                            HorizontalAlignment="Center"
                            FontSize="13"
                            Foreground="{DynamicResource MutedTextBrush}"
-                           Text="Choose a starting preference. You can change this later, and ListenShelf will eventually support both styles side by side."
+                           Text="Choose a starting preference for future imports. You can change it later in Settings."
                            TextAlignment="Center"
                            TextWrapping="Wrap" />
             </StackPanel>
@@ -46,19 +46,19 @@
                             <TextBlock FontSize="11"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource WarmAccentBrush}"
-                                       Text="KEEP CONTROL" />
+                                       Text="PLAYER ONLY" />
                             <TextBlock FontSize="19"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource PrimaryTextBrush}"
-                                       Text="Keep files where they are" />
+                                       Text="Player Only Mode" />
                             <TextBlock FontSize="12"
                                        Foreground="{DynamicResource MutedTextBrush}"
-                                       Text="ListenShelf links to your existing audiobooks. It remembers their locations but never rearranges your folders."
+                                       Text="ListenShelf remembers where your files are and saves each listening position, but does not manage copies or editable book metadata."
                                        TextWrapping="Wrap" />
                             <Border Height="1" Margin="0,4" Background="{DynamicResource SeparatorBrush}" />
                             <TextBlock FontSize="11"
                                        Foreground="{DynamicResource SecondaryTextBrush}"
-                                       Text="Best for carefully organized folders and external drives."
+                                       Text="Best when you only want playback and progress tracking."
                                        TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>

@@ -134,7 +134,7 @@
                                     <TextBlock FontSize="11"
                                                FontWeight="SemiBold"
                                                Foreground="{DynamicResource WarmAccentBrush}"
-                                               Text="LINKED LIBRARY" />
+                                               Text="PLAYER ONLY" />
                                     <Border Grid.Column="1"
                                             Padding="8,3"
                                             CornerRadius="8"
@@ -149,16 +149,16 @@
                                            FontSize="18"
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource PrimaryTextBrush}"
-                                           Text="Keep files where they are" />
+                                           Text="Player Only Mode" />
                                 <TextBlock Grid.Row="2"
                                            FontSize="12"
                                            Foreground="{DynamicResource MutedTextBrush}"
-                                           Text="ListenShelf remembers existing locations. Your folders and files remain entirely under your control."
+                                           Text="ListenShelf remembers file locations and listening positions. It does not copy files or offer editable book metadata."
                                            TextWrapping="Wrap" />
                                 <TextBlock Grid.Row="3"
                                            FontSize="11"
                                            Foreground="{DynamicResource SecondaryTextBrush}"
-                                           Text="No copying • No renaming • No moving" />
+                                           Text="Play • Resume • Leave files untouched" />
                             </Grid>
                         </Border>
                     </Button>
@@ -222,7 +222,7 @@
                                    Text="The setting applies to new imports" />
                         <TextBlock FontSize="12"
                                    Foreground="{DynamicResource MutedTextBrush}"
-                                   Text="Existing library entries stay exactly as they are when you switch modes. Linked files remain linked, and managed copies remain managed."
+                                   Text="Existing library entries stay exactly as they are when you switch modes. Player-only files remain linked to their original locations, and managed copies remain managed."
                                    TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>

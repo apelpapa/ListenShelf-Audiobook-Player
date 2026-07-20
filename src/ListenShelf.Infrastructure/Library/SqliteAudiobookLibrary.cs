@@ -117,6 +117,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
 
         var book = FindById(bookId)
             ?? throw new KeyNotFoundException("The selected audiobook is no longer in the library.");
+        EnsureMetadataCanBeManaged(book);
         var normalizedSourcePath = NormalizeCoverPath(sourceImagePath);
         var extension = Path.GetExtension(normalizedSourcePath).ToLowerInvariant();
 
@@ -164,6 +165,9 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         }
 
         ArgumentNullException.ThrowIfNull(metadata);
+        var book = FindById(bookId)
+            ?? throw new KeyNotFoundException("The selected audiobook is no longer in the library.");
+        EnsureMetadataCanBeManaged(book);
         var normalizedMetadata = NormalizeMetadata(metadata);
 
         using var connection = _database.OpenConnection();
@@ -577,6 +581,15 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             EditionName = NormalizeOptionalText(metadata.EditionName),
             EditionNotes = NormalizeOptionalText(metadata.EditionNotes),
         };
+    }
+
+    private static void EnsureMetadataCanBeManaged(LibraryBook book)
+    {
+        if (book.StorageMode != LibraryStorageMode.Managed)
+        {
+            throw new InvalidOperationException(
+                "Player Only Mode entries do not support metadata or cover editing.");
+        }
     }
 
     private static string? NormalizeOptionalText(string? value) =>

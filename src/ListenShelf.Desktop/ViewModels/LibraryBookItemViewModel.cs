@@ -37,11 +37,14 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
 
     public string Title => Book.Title;
 
+    public bool CanManageMetadata => Book.StorageMode == LibraryStorageMode.Managed;
+
     public string AuthorText => Book.Metadata.Authors.Count > 0
         ? string.Join(", ", Book.Metadata.Authors)
         : "Unknown author";
 
-    public bool HasSeries => !string.IsNullOrWhiteSpace(Book.Metadata.SeriesName);
+    public bool HasSeries =>
+        CanManageMetadata && !string.IsNullOrWhiteSpace(Book.Metadata.SeriesName);
 
     public string SeriesText
     {
@@ -73,7 +76,7 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
     public string FilePath => Book.FilePath;
 
     public string StorageModeText => Book.StorageMode == LibraryStorageMode.Linked
-        ? "LINKED"
+        ? "PLAYER ONLY"
         : "MANAGED";
 
     public string FileSizeText => FormatFileSize(Book.FileSizeBytes);
@@ -87,10 +90,10 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
     [RelayCommand(CanExecute = nameof(IsAvailable))]
     private Task PlayAsync() => _playBookAsync(Book);
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanManageMetadata))]
     private Task ChooseCoverAsync() => _chooseCoverAsync(Book);
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanManageMetadata))]
     private Task EditMetadataAsync() => _editMetadataAsync(Book);
 
     public void Dispose() => CoverImage?.Dispose();

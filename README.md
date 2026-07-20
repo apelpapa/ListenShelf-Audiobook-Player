@@ -20,7 +20,7 @@ tests/                         Test projects, added alongside behavior
 
 ## Current preview
 
-The preliminary Windows app has Library, Player, and Settings sections. First-run setup saves a choice between a linked library (keep files where they are) and a managed library (let ListenShelf manage copies). The Library can import multiple `.m4b` files, remembers linked paths, creates verified managed copies without changing the originals, prevents repeat imports from the same location, and plays cataloged books directly. Each book can also be given a manual PNG, JPEG, or WebP cover; ListenShelf keeps its own cached copy and displays it on the shelf and player without modifying the audiobook.
+The preliminary Windows app has Library, Player, and Settings sections. First-run setup saves a choice between Player Only Mode and a managed library. Player Only Mode remembers original file locations and listening positions without copying files or offering metadata editing. Managed Library mode creates verified copies without changing the originals and supports editable book details and locally cached PNG, JPEG, or WebP covers. Both modes prevent repeat imports from the same location and play cataloged books directly.
 
 The player can open one local `.m4b` file and provides play/pause, seeking, 15-second rewind, 30-second forward, playback-speed selection, volume, elapsed/remaining time, and automatic per-file position persistence in a local SQLite database.
 
