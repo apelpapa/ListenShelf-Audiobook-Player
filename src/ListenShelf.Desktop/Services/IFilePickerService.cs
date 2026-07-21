@@ -2,9 +2,9 @@ namespace ListenShelf.Desktop.Services;
 
 public interface IFilePickerService
 {
-    Task<string?> PickM4bFileAsync();
+    Task<string?> PickAudiobookFileAsync();
 
-    Task<IReadOnlyList<string>> PickM4bFilesAsync();
+    Task<IReadOnlyList<string>> PickAudiobookFilesAsync();
 
     Task<string?> PickCoverImageAsync();
 }

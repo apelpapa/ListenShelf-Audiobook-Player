@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using ListenShelf.Application.Library;
+using ListenShelf.Desktop.Services;
 using ListenShelf.Desktop.ViewModels;
 
 namespace ListenShelf.Desktop.Views;
@@ -34,7 +35,7 @@ public partial class BookMetadataEditorWindow : Window
         if (DataContext is BookMetadataEditorViewModel viewModel
             && viewModel.TryCreateMetadata(out var metadata))
         {
-            Close(metadata);
+            Close(new BookMetadataEditResult(metadata!, viewModel.SelectedCoverToSave));
         }
     }
 }

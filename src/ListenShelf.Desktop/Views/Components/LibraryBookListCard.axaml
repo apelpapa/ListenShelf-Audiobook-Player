@@ -1,0 +1,112 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+             x:Class="ListenShelf.Desktop.Views.Components.LibraryBookListCard"
+             x:DataType="vm:LibraryBookItemViewModel">
+    <Border Height="160"
+            Margin="0,0,0,10"
+            Padding="16"
+            CornerRadius="15"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1">
+        <Grid ColumnDefinitions="72,*,Auto" ColumnSpacing="15">
+            <Border Grid.Column="0"
+                    Width="72"
+                    Height="108"
+                    VerticalAlignment="Center"
+                    CornerRadius="9"
+                    Background="{DynamicResource ArtworkPlaceholderBrush}"
+                    ClipToBounds="True">
+                <Grid>
+                    <Image Source="{Binding CoverImage}"
+                           Stretch="UniformToFill"
+                           IsVisible="{Binding HasCover}" />
+                    <TextBlock HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               FontSize="25"
+                               Foreground="{DynamicResource AccentTextBrush}"
+                               IsVisible="{Binding HasNoCover}"
+                               Text="♫" />
+                </Grid>
+            </Border>
+
+            <StackPanel Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Spacing="4">
+                <TextBlock FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           Text="{Binding Title}"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock FontSize="11"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           IsVisible="{Binding CanManageMetadata}"
+                           Text="{Binding AuthorText}"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock FontSize="10"
+                           Foreground="{DynamicResource AccentTextBrush}"
+                           IsVisible="{Binding HasSeries}"
+                           Text="{Binding SeriesText}"
+                           TextTrimming="CharacterEllipsis" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Border Padding="7,2"
+                            CornerRadius="7"
+                            Background="{DynamicResource AccentSoftBrush}">
+                        <TextBlock FontSize="9"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource AccentSoftTextBrush}"
+                                   Text="{Binding StorageModeText}" />
+                    </Border>
+                    <TextBlock VerticalAlignment="Center"
+                               FontSize="11"
+                               Foreground="{DynamicResource MutedTextBrush}"
+                               Text="{Binding FileSizeText}" />
+                    <TextBlock VerticalAlignment="Center"
+                               FontSize="11"
+                               Foreground="{DynamicResource MutedTextBrush}"
+                               Text="•" />
+                    <TextBlock VerticalAlignment="Center"
+                               FontSize="11"
+                               Foreground="{DynamicResource MutedTextBrush}"
+                               Text="{Binding ProgressSummary}" />
+                </StackPanel>
+                <TextBlock FontSize="10"
+                           Foreground="{DynamicResource SubtleTextBrush}"
+                           Text="{Binding FilePath}"
+                           TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="2"
+                        MinWidth="104"
+                        VerticalAlignment="Center"
+                        Spacing="7">
+                <TextBlock HorizontalAlignment="Center"
+                           FontSize="10"
+                           Foreground="{DynamicResource MutedTextBrush}"
+                           Text="{Binding AvailabilityText}" />
+                <Button Padding="16,8"
+                        Background="{DynamicResource AccentBrush}"
+                        Foreground="{DynamicResource OnAccentBrush}"
+                        FontWeight="SemiBold"
+                        Command="{Binding PlayCommand}"
+                        Content="Play"
+                        IsEnabled="{Binding IsAvailable}" />
+                <Button Padding="12,7"
+                        Background="{DynamicResource SurfaceRaisedBrush}"
+                        Foreground="{DynamicResource SecondaryTextBrush}"
+                        FontSize="11"
+                        Command="{Binding EditMetadataCommand}"
+                        Content="{Binding DetailsButtonText}"
+                        IsVisible="{Binding CanManageMetadata}" />
+                <Button Padding="12,7"
+                        Background="{DynamicResource SurfaceRaisedBrush}"
+                        Foreground="{DynamicResource SecondaryTextBrush}"
+                        FontSize="11"
+                        Command="{Binding ChooseCoverCommand}"
+                        Content="{Binding CoverButtonText}"
+                        IsVisible="{Binding CanManageMetadata}" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

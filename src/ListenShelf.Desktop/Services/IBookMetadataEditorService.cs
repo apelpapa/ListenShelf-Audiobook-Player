@@ -4,7 +4,7 @@ namespace ListenShelf.Desktop.Services;
 
 public interface IBookMetadataEditorService
 {
-    Task<AudiobookMetadata?> EditAsync(
+    Task<BookMetadataEditResult?> EditAsync(
         LibraryBook book,
         AudiobookMetadataSuggestions suggestions);
 }

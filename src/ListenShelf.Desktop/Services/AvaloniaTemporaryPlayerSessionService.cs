@@ -10,7 +10,8 @@ namespace ListenShelf.Desktop.Services;
 
 public sealed class AvaloniaTemporaryPlayerSessionService(
     Window owner,
-    IThemeService themeService) : ITemporaryPlayerSessionService
+    IThemeService themeService,
+    IBookMetadataProvider metadataProvider) : ITemporaryPlayerSessionService
 {
     public async Task<bool> WarnAndOpenAsync(AppTheme currentTheme)
     {
@@ -30,7 +31,7 @@ public sealed class AvaloniaTemporaryPlayerSessionService(
             new TemporaryAppSettingsStore(currentTheme),
             themeService,
             new TemporaryAudiobookLibrary(),
-            new AvaloniaBookMetadataEditorService(sessionWindow),
+            new AvaloniaBookMetadataEditorService(sessionWindow, metadataProvider),
             this,
             isTemporarySession: true);
 
@@ -71,6 +72,18 @@ public sealed class AvaloniaTemporaryPlayerSessionService(
         public void SaveLibraryViewMode(LibraryViewMode viewMode)
         {
         }
+
+        public LibraryGroupMode GetLibraryGroupMode() => LibraryGroupMode.None;
+
+        public void SaveLibraryGroupMode(LibraryGroupMode groupMode)
+        {
+        }
+
+        public double GetLibraryTileWidth() => 220d;
+
+        public void SaveLibraryTileWidth(double tileWidth)
+        {
+        }
     }
 
     private sealed class TemporaryAudiobookLibrary : IAudiobookLibrary
@@ -83,6 +96,9 @@ public sealed class AvaloniaTemporaryPlayerSessionService(
             throw new NotSupportedException("Temporary Player Only sessions do not create library entries.");
 
         public LibraryBook SetCover(Guid bookId, string sourceImagePath) =>
+            throw new NotSupportedException("Temporary Player Only sessions do not save cover artwork.");
+
+        public LibraryBook SetCover(Guid bookId, ReadOnlyMemory<byte> imageData, string fileExtension) =>
             throw new NotSupportedException("Temporary Player Only sessions do not save cover artwork.");
 
         public LibraryBook UpdateMetadata(Guid bookId, AudiobookMetadata metadata) =>

@@ -6,6 +6,8 @@ public interface IAudioEngine : IDisposable
 
     event EventHandler<PlaybackStateChangedEventArgs>? StateChanged;
 
+    event EventHandler<PlaybackChaptersChangedEventArgs>? ChaptersChanged;
+
     string? CurrentFilePath { get; }
 
     TimeSpan Position { get; }
@@ -15,6 +17,10 @@ public interface IAudioEngine : IDisposable
     int Volume { get; set; }
 
     double PlaybackRate { get; }
+
+    IReadOnlyList<AudioChapter> Chapters { get; }
+
+    int CurrentChapterIndex { get; }
 
     Task LoadAsync(string filePath, CancellationToken cancellationToken = default);
 
@@ -27,4 +33,6 @@ public interface IAudioEngine : IDisposable
     void Seek(TimeSpan position);
 
     bool TrySetPlaybackRate(double rate);
+
+    bool TrySelectChapter(int chapterIndex);
 }

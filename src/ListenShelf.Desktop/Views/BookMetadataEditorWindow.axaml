@@ -3,8 +3,8 @@
         xmlns:vm="using:ListenShelf.Desktop.ViewModels"
         x:Class="ListenShelf.Desktop.Views.BookMetadataEditorWindow"
         x:DataType="vm:BookMetadataEditorViewModel"
-        Width="780"
-        Height="760"
+        Width="840"
+        Height="800"
         MinWidth="680"
         MinHeight="560"
         Background="{DynamicResource AppBackgroundBrush}"
@@ -57,6 +57,10 @@
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
             <Setter Property="CornerRadius" Value="8" />
         </Style>
+        <Style Selector="ListBox.onlineResults > ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="10,8" />
+        </Style>
     </Window.Styles>
 
     <Grid RowDefinitions="Auto,*,Auto">
@@ -78,6 +82,123 @@
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="24" Spacing="16">
+                <Border Padding="20"
+                        CornerRadius="14"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                            <StackPanel Grid.Column="0" Spacing="3">
+                                <TextBlock Classes="sectionTitle" Text="Find book details online" />
+                                <TextBlock FontSize="11"
+                                           Foreground="{DynamicResource MutedTextBrush}"
+                                           Text="Only this search text is sent to Open Library. Your file and folder names stay on this computer."
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1"
+                                       VerticalAlignment="Top"
+                                       FontSize="10"
+                                       Foreground="{DynamicResource MutedTextBrush}"
+                                       Text="DATA AND COVERS: OPEN LIBRARY" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBox Grid.Column="0"
+                                     Classes="metadataField"
+                                     Text="{Binding OnlineSearchQuery, Mode=TwoWay}"
+                                     PlaceholderText="Title, author, or ISBN" />
+                            <Button Grid.Column="1"
+                                    Padding="16,8"
+                                    Background="{DynamicResource AccentBrush}"
+                                    Command="{Binding SearchOnlineCommand}"
+                                    Content="Search"
+                                    Foreground="{DynamicResource OnAccentBrush}"
+                                    FontWeight="SemiBold" />
+                        </Grid>
+
+                        <ProgressBar Height="3"
+                                     IsIndeterminate="True"
+                                     IsVisible="{Binding IsOnlineLookupBusy}" />
+
+                        <TextBlock FontSize="11"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   IsVisible="{Binding HasOnlineSearchStatus}"
+                                   Text="{Binding OnlineSearchStatus}"
+                                   TextWrapping="Wrap" />
+
+                        <ListBox Classes="onlineResults"
+                                 MaxHeight="245"
+                                 IsVisible="{Binding HasOnlineSearchResults}"
+                                 ItemsSource="{Binding OnlineSearchResults}"
+                                 SelectedItem="{Binding SelectedOnlineSearchResult, Mode=TwoWay}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:OnlineBookSearchResultViewModel">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <StackPanel Grid.Column="0" Spacing="2">
+                                            <TextBlock FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource PrimaryTextBrush}"
+                                                       Text="{Binding TitleText}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock FontSize="11"
+                                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                                       Text="{Binding AuthorText}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock FontSize="10"
+                                                       Foreground="{DynamicResource MutedTextBrush}"
+                                                       Text="{Binding DetailsText}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                        <Border Grid.Column="1"
+                                                Padding="8,3"
+                                                VerticalAlignment="Center"
+                                                CornerRadius="10"
+                                                Background="{DynamicResource AccentSoftBrush}"
+                                                IsVisible="{Binding HasCover}">
+                                            <TextBlock FontSize="9"
+                                                       Foreground="{DynamicResource AccentTextBrush}"
+                                                       Text="COVER" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <Button HorizontalAlignment="Right"
+                                Padding="16,8"
+                                Command="{Binding UseSelectedOnlineResultCommand}"
+                                Content="Use selected result" />
+
+                        <Grid ColumnDefinitions="72,*"
+                              ColumnSpacing="12"
+                              IsVisible="{Binding HasOnlineCoverPreview}">
+                            <Border Grid.Column="0"
+                                    Width="72"
+                                    Height="104"
+                                    CornerRadius="7"
+                                    ClipToBounds="True"
+                                    Background="{DynamicResource SurfaceRaisedBrush}">
+                                <Image Source="{Binding OnlineCoverPreview}"
+                                       Stretch="UniformToFill" />
+                            </Border>
+                            <StackPanel Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Spacing="5">
+                                <TextBlock FontSize="12"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"
+                                           Text="Selected cover" />
+                                <CheckBox Content="{Binding OnlineCoverOptionText}"
+                                          IsChecked="{Binding SaveOnlineCover, Mode=TwoWay}" />
+                                <TextBlock FontSize="10"
+                                           Foreground="{DynamicResource MutedTextBrush}"
+                                           Text="The cover is downloaded now and stored locally only when you save."
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
                 <Border Padding="20"
                         CornerRadius="14"
                         Background="{DynamicResource SurfaceBrush}"
@@ -411,6 +532,7 @@
                             Background="{DynamicResource AccentBrush}"
                             Foreground="{DynamicResource OnAccentBrush}"
                             FontWeight="SemiBold"
+                            IsEnabled="{Binding CanSave}"
                             Click="Save_OnClick"
                             Content="Save details" />
                 </StackPanel>

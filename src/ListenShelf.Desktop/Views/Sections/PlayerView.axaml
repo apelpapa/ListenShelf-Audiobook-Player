@@ -79,7 +79,7 @@
                             Background="{DynamicResource SurfaceRaisedBrush}">
                         <TextBlock FontSize="12"
                                    Foreground="{DynamicResource SecondaryTextBrush}"
-                                   Text="M4B • LOCAL" />
+                                   Text="{Binding FileFormatText}" />
                     </Border>
                 </Grid>
 
@@ -107,6 +107,56 @@
                                        Text="{Binding RemainingText}" />
                         </Grid>
                     </StackPanel>
+
+                    <Border Padding="11,9"
+                            CornerRadius="11"
+                            Background="{DynamicResource SurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            IsVisible="{Binding HasChapters}">
+                        <Grid RowDefinitions="Auto,Auto" RowSpacing="7">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                <TextBlock FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource SubtleTextBrush}"
+                                           Text="CHAPTERS" />
+                                <TextBlock Grid.Column="1"
+                                           FontSize="10"
+                                           Foreground="{DynamicResource MutedTextBrush}"
+                                           Text="{Binding ChapterPositionText}" />
+                            </Grid>
+
+                            <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                <Button Grid.Column="0"
+                                        Width="82"
+                                        Padding="8,7"
+                                        Background="{DynamicResource SurfaceAltBrush}"
+                                        Foreground="{DynamicResource SecondaryTextBrush}"
+                                        FontSize="10"
+                                        Command="{Binding PreviousChapterCommand}"
+                                        Content="← Previous" />
+                                <ComboBox Grid.Column="1"
+                                          MinWidth="180"
+                                          ItemsSource="{Binding Chapters}"
+                                          SelectedItem="{Binding SelectedChapter, Mode=TwoWay}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:PlaybackChapterItemViewModel">
+                                            <TextBlock Text="{Binding DisplayText}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <Button Grid.Column="2"
+                                        Width="70"
+                                        Padding="8,7"
+                                        Background="{DynamicResource SurfaceAltBrush}"
+                                        Foreground="{DynamicResource SecondaryTextBrush}"
+                                        FontSize="10"
+                                        Command="{Binding NextChapterCommand}"
+                                        Content="Next →" />
+                            </Grid>
+                        </Grid>
+                    </Border>
 
                     <StackPanel HorizontalAlignment="Center"
                                 Orientation="Horizontal"

@@ -14,6 +14,19 @@ namespace ListenShelf.Desktop.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
     private static readonly TimeSpan AutomaticSaveInterval = TimeSpan.FromSeconds(10);
+    private const double DefaultLibraryTileWidth = 220d;
+    private const double MinimumLibraryTileWidth = 180d;
+    private const double MaximumLibraryTileWidth = 320d;
+    private static readonly LibraryGroupOptionViewModel[] GroupOptions =
+    [
+        new(LibraryGroupMode.None, "None"),
+        new(LibraryGroupMode.Series, "Series"),
+        new(LibraryGroupMode.Author, "Author"),
+        new(LibraryGroupMode.Narrator, "Narrator"),
+        new(LibraryGroupMode.Genre, "Genre"),
+        new(LibraryGroupMode.Publisher, "Publisher"),
+        new(LibraryGroupMode.Year, "Year"),
+    ];
 
     private readonly IAudioEngine _audioEngine;
     private readonly IFilePickerService _filePickerService;
@@ -25,6 +38,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IBookMetadataEditorService _bookMetadataEditorService;
     private readonly ITemporaryPlayerSessionService _temporaryPlayerSessionService;
     private bool _isUpdatingPositionFromEngine;
+    private bool _isUpdatingChapterFromEngine;
     private bool _isLoadingFile;
     private string? _currentFilePath;
     private TimeSpan? _pendingResumePosition;
@@ -86,10 +100,34 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             _selectedLibraryView = LibraryViewMode.List;
         }
 
+        try
+        {
+            var savedGroupMode = _appSettingsStore.GetLibraryGroupMode();
+            _selectedLibraryGroupOption = GroupOptions.First(option =>
+                option.Mode == savedGroupMode);
+        }
+        catch
+        {
+            _selectedLibraryGroupOption = GroupOptions[0];
+        }
+
+        try
+        {
+            _libraryTileWidth = Math.Clamp(
+                _appSettingsStore.GetLibraryTileWidth(),
+                MinimumLibraryTileWidth,
+                MaximumLibraryTileWidth);
+        }
+        catch
+        {
+            _libraryTileWidth = DefaultLibraryTileWidth;
+        }
+
         _themeService.ApplyTheme(_selectedTheme);
 
         _audioEngine.ProgressChanged += OnProgressChanged;
         _audioEngine.StateChanged += OnStateChanged;
+        _audioEngine.ChaptersChanged += OnChaptersChanged;
         _audioEngine.Volume = (int)Volume;
         _audioEngine.TrySetPlaybackRate(SelectedPlaybackRate);
 
@@ -106,6 +144,36 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         [0.75d, 1d, 1.25d, 1.5d, 1.75d, 2d];
 
     public ObservableCollection<LibraryBookItemViewModel> LibraryBooks { get; } = [];
+
+    public ObservableCollection<PlaybackChapterItemViewModel> Chapters { get; } = [];
+
+    public ObservableCollection<LibraryGroupViewModel> LibraryGroups { get; } = [];
+
+    public IReadOnlyList<LibraryGroupOptionViewModel> LibraryGroupOptions => GroupOptions;
+
+    public double MinimumTileWidth => MinimumLibraryTileWidth;
+
+    public double MaximumTileWidth => MaximumLibraryTileWidth;
+
+    public string LibraryTileSizeText => $"{LibraryTileWidth:0} px";
+
+    public bool IsLibraryGroupingActive =>
+        SelectedLibraryGroupOption.Mode != LibraryGroupMode.None;
+
+    public bool IsLibraryGroupOverviewVisible =>
+        IsLibraryGroupingActive && ActiveLibraryGroup is null;
+
+    public bool IsLibraryGroupDetailVisible =>
+        IsLibraryGroupingActive && ActiveLibraryGroup is not null;
+
+    public bool IsUngroupedLibraryVisible => !IsLibraryGroupingActive;
+
+    public string ActiveLibraryGroupName => ActiveLibraryGroup?.Name ?? string.Empty;
+
+    public string ActiveLibraryGroupCountText => ActiveLibraryGroup?.CountText ?? string.Empty;
+
+    public IReadOnlyList<LibraryBookItemViewModel> ActiveLibraryGroupBooks =>
+        ActiveLibraryGroup?.Books ?? [];
 
     public bool IsTemporarySession { get; }
 
@@ -154,6 +222,25 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private LibraryViewMode _selectedLibraryView = LibraryViewMode.List;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsLibraryGroupingActive))]
+    [NotifyPropertyChangedFor(nameof(IsLibraryGroupOverviewVisible))]
+    [NotifyPropertyChangedFor(nameof(IsLibraryGroupDetailVisible))]
+    [NotifyPropertyChangedFor(nameof(IsUngroupedLibraryVisible))]
+    private LibraryGroupOptionViewModel _selectedLibraryGroupOption = GroupOptions[0];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsLibraryGroupOverviewVisible))]
+    [NotifyPropertyChangedFor(nameof(IsLibraryGroupDetailVisible))]
+    [NotifyPropertyChangedFor(nameof(ActiveLibraryGroupName))]
+    [NotifyPropertyChangedFor(nameof(ActiveLibraryGroupCountText))]
+    [NotifyPropertyChangedFor(nameof(ActiveLibraryGroupBooks))]
+    private LibraryGroupViewModel? _activeLibraryGroup;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LibraryTileSizeText))]
+    private double _libraryTileWidth = DefaultLibraryTileWidth;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasLibrarySettingsError))]
     private string _librarySettingsErrorMessage = string.Empty;
 
@@ -162,13 +249,16 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private bool _isLibraryBusy;
 
     [ObservableProperty]
-    private string _libraryStatusMessage = "Add one or more M4B files to begin building your shelf.";
+    private string _libraryStatusMessage = "Add M4B, M4A, or MP3 audiobooks to begin building your shelf.";
 
     [ObservableProperty]
     private string _bookTitle = "No audiobook selected";
 
     [ObservableProperty]
-    private string _fileName = "Open an M4B file to begin listening.";
+    private string _fileName = "Open an audiobook to begin listening.";
+
+    [ObservableProperty]
+    private string _fileFormatText = "AUDIO • LOCAL";
 
     [ObservableProperty]
     private string _statusText = "Ready";
@@ -181,6 +271,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanControlPlayback))]
+    [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
+    [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
     private bool _isFileLoaded;
 
     [ObservableProperty]
@@ -189,7 +281,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanControlPlayback))]
+    [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
+    [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
     private bool _isBusy;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ChapterPositionText))]
+    [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
+    [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
+    private PlaybackChapterItemViewModel? _selectedChapter;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ElapsedText))]
@@ -215,6 +315,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public bool HasNoCurrentCover => !HasCurrentCover;
 
     public bool CanControlPlayback => IsFileLoaded && !IsBusy;
+
+    public bool HasChapters => Chapters.Count > 0;
+
+    public string ChapterPositionText => SelectedChapter is null
+        ? string.Empty
+        : $"Chapter {SelectedChapter.Index + 1} of {Chapters.Count}";
 
     public bool IsLibrarySection => SelectedSection == AppSection.Library;
 
@@ -262,7 +368,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         };
 
     public string PageSubtitle => IsTemporarySession
-        ? "Play a local M4B without adding it to the library or saving any session activity."
+        ? "Play a local audiobook without adding it to the library or saving any session activity."
         : SelectedSection switch
         {
             AppSection.Player => "Listen locally with automatic progress saving.",
@@ -280,9 +386,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public string LibraryEmptyDescription => DefaultLibraryStorageMode switch
     {
         LibraryStorageMode.Managed =>
-            "Choose one or more M4B files. ListenShelf will make verified copies and leave the originals untouched.",
+            "Choose M4B, M4A, or MP3 files. ListenShelf will make verified copies and leave the originals untouched.",
         _ =>
-            "Choose one or more M4B files. ListenShelf will remember their locations and listening positions without managing book metadata.",
+            "Choose M4B, M4A, or MP3 files. ListenShelf will remember their locations and listening positions without managing book metadata.",
     };
 
     public string PlayPauseLabel => IsPlaying ? "Pause" : "Play";
@@ -320,6 +426,43 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [RelayCommand]
     private void ShowLibraryAsTiles() => SaveLibraryViewMode(LibraryViewMode.Tiles);
+
+    partial void OnSelectedLibraryGroupOptionChanged(LibraryGroupOptionViewModel value)
+    {
+        ActiveLibraryGroup = null;
+        RebuildLibraryGroups();
+
+        try
+        {
+            _appSettingsStore.SaveLibraryGroupMode(value.Mode);
+        }
+        catch (Exception exception)
+        {
+            LibraryStatusMessage =
+                $"Grouped by {value.DisplayName.ToLowerInvariant()} for this session, but the choice could not be remembered: {exception.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private void ReturnToLibraryGroups() => ActiveLibraryGroup = null;
+
+    partial void OnLibraryTileWidthChanged(double value)
+    {
+        foreach (var book in LibraryBooks)
+        {
+            book.SetTileWidth(value);
+        }
+
+        try
+        {
+            _appSettingsStore.SaveLibraryTileWidth(value);
+        }
+        catch (Exception exception)
+        {
+            LibraryStatusMessage =
+                $"The tile size changed for this session, but could not be remembered: {exception.Message}";
+        }
+    }
 
     [RelayCommand]
     private async Task ChooseLinkedLibraryAsync()
@@ -366,7 +509,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         try
         {
-            var filePaths = await _filePickerService.PickM4bFilesAsync();
+            var filePaths = await _filePickerService.PickAudiobookFilesAsync();
             if (filePaths.Count == 0)
             {
                 return;
@@ -420,7 +563,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         try
         {
             ErrorMessage = string.Empty;
-            var filePath = await _filePickerService.PickM4bFileAsync();
+            var filePath = await _filePickerService.PickAudiobookFileAsync();
             if (filePath is null)
             {
                 return;
@@ -448,6 +591,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             IsFileLoaded = false;
             _currentFilePath = null;
             _pendingResumePosition = null;
+            ClearChapters();
             SetCurrentCover(null);
 
             await _audioEngine.LoadAsync(filePath);
@@ -462,6 +606,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
             BookTitle = libraryBook?.Title ?? Path.GetFileNameWithoutExtension(_currentFilePath);
             FileName = Path.GetFileName(_currentFilePath);
+            FileFormatText = $"{Path.GetExtension(_currentFilePath).TrimStart('.').ToUpperInvariant()} • LOCAL";
             SetCurrentCover(libraryBook?.CoverPath);
             ProgressText = IsTemporarySession
                 ? "Temporary session — position will not be saved."
@@ -562,8 +707,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         {
             var suggestions = AudiobookMetadataSuggestions.FromBooks(
                 _audiobookLibrary.GetBooks());
-            var metadata = await _bookMetadataEditorService.EditAsync(book, suggestions);
-            if (metadata is null)
+            var editResult = await _bookMetadataEditorService.EditAsync(book, suggestions);
+            if (editResult is null)
             {
                 return;
             }
@@ -571,15 +716,35 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             IsLibraryBusy = true;
             LibraryStatusMessage = $"Saving details for {book.Title}…";
 
-            var updatedBook = await Task.Run(() => _audiobookLibrary.UpdateMetadata(book.Id, metadata));
+            var updatedBook = await Task.Run(() =>
+                _audiobookLibrary.UpdateMetadata(book.Id, editResult.Metadata));
+            Exception? coverError = null;
+            if (editResult.CoverImage is { } coverImage)
+            {
+                try
+                {
+                    updatedBook = await Task.Run(() => _audiobookLibrary.SetCover(
+                        book.Id,
+                        coverImage.Bytes,
+                        coverImage.FileExtension));
+                }
+                catch (Exception exception)
+                {
+                    coverError = exception;
+                }
+            }
+
             if (!string.IsNullOrWhiteSpace(_currentFilePath)
                 && PathsEqual(_currentFilePath, updatedBook.FilePath))
             {
                 BookTitle = updatedBook.Title;
+                SetCurrentCover(updatedBook.CoverPath);
             }
 
             RefreshLibrary();
-            LibraryStatusMessage = $"Details saved for {updatedBook.Title}.";
+            LibraryStatusMessage = coverError is null
+                ? $"Details saved for {updatedBook.Title}."
+                : $"Details saved for {updatedBook.Title}, but its online cover could not be saved: {coverError.Message}";
         }
         catch (Exception exception)
         {
@@ -627,6 +792,32 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
+    private bool CanSelectPreviousChapter() =>
+        CanControlPlayback && SelectedChapter is { Index: > 0 };
+
+    [RelayCommand(CanExecute = nameof(CanSelectPreviousChapter))]
+    private void PreviousChapter()
+    {
+        if (SelectedChapter is { Index: > 0 } chapter)
+        {
+            SelectChapter(chapter.Index - 1);
+        }
+    }
+
+    private bool CanSelectNextChapter() =>
+        CanControlPlayback
+        && SelectedChapter is { } chapter
+        && chapter.Index + 1 < Chapters.Count;
+
+    [RelayCommand(CanExecute = nameof(CanSelectNextChapter))]
+    private void NextChapter()
+    {
+        if (SelectedChapter is { } chapter && chapter.Index + 1 < Chapters.Count)
+        {
+            SelectChapter(chapter.Index + 1);
+        }
+    }
+
     partial void OnPositionSecondsChanged(double value)
     {
         if (!_isUpdatingPositionFromEngine && CanControlPlayback)
@@ -651,6 +842,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
+    partial void OnSelectedChapterChanged(PlaybackChapterItemViewModel? value)
+    {
+        if (!_isUpdatingChapterFromEngine && value is not null)
+        {
+            SelectChapter(value.Index);
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed)
@@ -662,6 +861,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _disposed = true;
         _audioEngine.ProgressChanged -= OnProgressChanged;
         _audioEngine.StateChanged -= OnStateChanged;
+        _audioEngine.ChaptersChanged -= OnChaptersChanged;
         _audioEngine.Dispose();
         SetCurrentCover(null);
         DisposeLibraryItems();
@@ -738,6 +938,53 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                     break;
             }
         });
+    }
+
+    private void OnChaptersChanged(object? sender, PlaybackChaptersChangedEventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            _isUpdatingChapterFromEngine = true;
+            Chapters.Clear();
+            foreach (var chapter in e.Chapters)
+            {
+                Chapters.Add(new PlaybackChapterItemViewModel(
+                    chapter.Index,
+                    chapter.Title,
+                    chapter.Start,
+                    chapter.Duration));
+            }
+
+            SelectedChapter = e.CurrentChapterIndex >= 0 && e.CurrentChapterIndex < Chapters.Count
+                ? Chapters[e.CurrentChapterIndex]
+                : null;
+            _isUpdatingChapterFromEngine = false;
+
+            OnPropertyChanged(nameof(HasChapters));
+            OnPropertyChanged(nameof(ChapterPositionText));
+            PreviousChapterCommand.NotifyCanExecuteChanged();
+            NextChapterCommand.NotifyCanExecuteChanged();
+        });
+    }
+
+    private void SelectChapter(int chapterIndex)
+    {
+        if (!_audioEngine.TrySelectChapter(chapterIndex))
+        {
+            ErrorMessage = "That chapter could not be opened.";
+        }
+    }
+
+    private void ClearChapters()
+    {
+        _isUpdatingChapterFromEngine = true;
+        Chapters.Clear();
+        SelectedChapter = null;
+        _isUpdatingChapterFromEngine = false;
+        OnPropertyChanged(nameof(HasChapters));
+        OnPropertyChanged(nameof(ChapterPositionText));
+        PreviousChapterCommand.NotifyCanExecuteChanged();
+        NextChapterCommand.NotifyCanExecuteChanged();
     }
 
     private void SaveCurrentProgress(bool force) =>
@@ -847,10 +1094,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 LibraryBooks.Add(new LibraryBookItemViewModel(
                     book,
                     GetProgressSummary(book),
+                    LibraryTileWidth,
                     PlayLibraryBookAsync,
                     ChooseCoverAsync,
                     EditMetadataAsync));
             }
+
+            RebuildLibraryGroups();
 
             OnPropertyChanged(nameof(HasLibraryBooks));
             OnPropertyChanged(nameof(IsLibraryEmpty));
@@ -898,6 +1148,155 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             item.Dispose();
         }
     }
+
+    private void RebuildLibraryGroups()
+    {
+        var activeGroupName = ActiveLibraryGroup?.Name;
+        LibraryGroups.Clear();
+
+        var groupMode = SelectedLibraryGroupOption.Mode;
+        if (groupMode == LibraryGroupMode.None)
+        {
+            LibraryGroups.Add(new LibraryGroupViewModel(
+                "All audiobooks",
+                LibraryBooks.ToArray(),
+                showHeader: false));
+            ActiveLibraryGroup = null;
+            return;
+        }
+
+        var groupedBooks = new Dictionary<string, List<LibraryBookItemViewModel>>(
+            StringComparer.OrdinalIgnoreCase);
+        foreach (var book in LibraryBooks)
+        {
+            foreach (var groupName in GetGroupNames(book, groupMode))
+            {
+                if (!groupedBooks.TryGetValue(groupName, out var group))
+                {
+                    group = [];
+                    groupedBooks[groupName] = group;
+                }
+
+                group.Add(book);
+            }
+        }
+
+        var groups = groupedBooks
+            .Select(pair => CreateLibraryGroup(
+                pair.Key,
+                OrderGroupBooks(pair.Value, groupMode).ToArray()));
+        groups = groupMode == LibraryGroupMode.Year
+            ? groups
+                .OrderBy(group => IsFallbackGroup(group.Name))
+                .ThenByDescending(group => ParseYear(group.Name))
+            : groups
+                .OrderBy(group => IsFallbackGroup(group.Name))
+                .ThenBy(group => group.Name, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var group in groups)
+        {
+            LibraryGroups.Add(group);
+        }
+
+
+        ActiveLibraryGroup = string.IsNullOrWhiteSpace(activeGroupName)
+            ? null
+            : LibraryGroups.FirstOrDefault(group =>
+                string.Equals(group.Name, activeGroupName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private LibraryGroupViewModel CreateLibraryGroup(
+        string name,
+        IReadOnlyList<LibraryBookItemViewModel> books)
+    {
+        return new LibraryGroupViewModel(
+            name,
+            books,
+            showHeader: true,
+            openRequested: group => ActiveLibraryGroup = group);
+    }
+
+    private static IReadOnlyList<string> GetGroupNames(
+        LibraryBookItemViewModel book,
+        LibraryGroupMode groupMode)
+    {
+        var metadata = book.Book.Metadata;
+        IEnumerable<string?> values;
+        switch (groupMode)
+        {
+            case LibraryGroupMode.Series:
+                values = new string?[] { metadata.SeriesName };
+                break;
+            case LibraryGroupMode.Author:
+                values = metadata.Authors;
+                break;
+            case LibraryGroupMode.Narrator:
+                values = metadata.Narrators;
+                break;
+            case LibraryGroupMode.Genre:
+                values = metadata.Genres;
+                break;
+            case LibraryGroupMode.Publisher:
+                values = new string?[] { metadata.AudioPublisher, metadata.OriginalPublisher };
+                break;
+            case LibraryGroupMode.Year:
+                values = new string?[] { metadata.OriginalPublicationYear?.ToString() };
+                break;
+            default:
+                values = [];
+                break;
+        }
+
+        var normalized = values
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return normalized.Length > 0 ? normalized : [GetFallbackGroupName(groupMode)];
+    }
+
+    private static IEnumerable<LibraryBookItemViewModel> OrderGroupBooks(
+        IEnumerable<LibraryBookItemViewModel> books,
+        LibraryGroupMode groupMode)
+    {
+        return groupMode == LibraryGroupMode.Series
+            ? books
+                .OrderBy(book => ParseSeriesPosition(book.Book.Metadata.SeriesPosition))
+                .ThenBy(book => book.Title, StringComparer.OrdinalIgnoreCase)
+            : books.OrderBy(book => book.Title, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static string GetFallbackGroupName(LibraryGroupMode groupMode) => groupMode switch
+    {
+        LibraryGroupMode.Series => "No series",
+        LibraryGroupMode.Author => "Unknown author",
+        LibraryGroupMode.Narrator => "Unknown narrator",
+        LibraryGroupMode.Genre => "Uncategorized",
+        LibraryGroupMode.Publisher => "Unknown publisher",
+        LibraryGroupMode.Year => "Year unknown",
+        _ => "Other",
+    };
+
+    private static bool IsFallbackGroup(string groupName) =>
+        groupName is "No series"
+            or "Unknown author"
+            or "Unknown narrator"
+            or "Uncategorized"
+            or "Unknown publisher"
+            or "Year unknown";
+
+    private static int ParseYear(string value) =>
+        int.TryParse(value, out var year) ? year : int.MinValue;
+
+    private static decimal ParseSeriesPosition(string? value) =>
+        decimal.TryParse(
+            value,
+            System.Globalization.NumberStyles.Number,
+            System.Globalization.CultureInfo.InvariantCulture,
+            out var position)
+                ? position
+                : decimal.MaxValue;
 
     private static bool PathsEqual(string firstPath, string secondPath) =>
         string.Equals(

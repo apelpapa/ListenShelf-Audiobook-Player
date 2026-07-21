@@ -1,4 +1,5 @@
 using Avalonia.Media.Imaging;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ListenShelf.Application.Library;
 
@@ -13,6 +14,7 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
     public LibraryBookItemViewModel(
         LibraryBook book,
         string progressSummary,
+        double tileWidth,
         Func<LibraryBook, Task> playBookAsync,
         Func<LibraryBook, Task> chooseCoverAsync,
         Func<LibraryBook, Task> editMetadataAsync)
@@ -23,6 +25,7 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
         _chooseCoverAsync = chooseCoverAsync;
         _editMetadataAsync = editMetadataAsync;
         CoverImage = TryLoadCover(book.CoverPath);
+        SetTileWidth(tileWidth);
     }
 
     public LibraryBook Book { get; }
@@ -83,6 +86,30 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
 
     public string ProgressSummary { get; }
 
+    [ObservableProperty]
+    private double _tileWidth;
+
+    [ObservableProperty]
+    private double _tileArtworkWidth;
+
+    [ObservableProperty]
+    private double _tileArtworkHeight;
+
+    [ObservableProperty]
+    private double _tileHeight;
+
+    [ObservableProperty]
+    private double _groupStackArtworkWidth;
+
+    [ObservableProperty]
+    private double _groupStackArtworkHeight;
+
+    [ObservableProperty]
+    private double _groupStackHeight;
+
+    [ObservableProperty]
+    private double _groupStackTileHeight;
+
     public bool IsAvailable => File.Exists(Book.FilePath);
 
     public string AvailabilityText => IsAvailable ? "Ready" : "Missing file";
@@ -95,6 +122,18 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
 
     [RelayCommand(CanExecute = nameof(CanManageMetadata))]
     private Task EditMetadataAsync() => _editMetadataAsync(Book);
+
+    public void SetTileWidth(double tileWidth)
+    {
+        TileWidth = tileWidth;
+        TileArtworkWidth = Math.Max(140d, tileWidth - 40d);
+        TileArtworkHeight = TileArtworkWidth * 1.5d;
+        TileHeight = TileArtworkHeight + 266d;
+        GroupStackArtworkWidth = Math.Max(120d, tileWidth - 60d);
+        GroupStackArtworkHeight = GroupStackArtworkWidth * 1.5d;
+        GroupStackHeight = GroupStackArtworkHeight + 14d;
+        GroupStackTileHeight = GroupStackHeight + 105d;
+    }
 
     public void Dispose() => CoverImage?.Dispose();
 

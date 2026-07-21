@@ -10,5 +10,7 @@ public interface IAudiobookLibrary
 
     LibraryBook SetCover(Guid bookId, string sourceImagePath);
 
+    LibraryBook SetCover(Guid bookId, ReadOnlyMemory<byte> imageData, string fileExtension);
+
     LibraryBook UpdateMetadata(Guid bookId, AudiobookMetadata metadata);
 }

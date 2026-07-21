@@ -9,4 +9,12 @@ public interface IAppSettingsStore
     LibraryViewMode GetLibraryViewMode();
 
     void SaveLibraryViewMode(LibraryViewMode viewMode);
+
+    LibraryGroupMode GetLibraryGroupMode();
+
+    void SaveLibraryGroupMode(LibraryGroupMode groupMode);
+
+    double GetLibraryTileWidth();
+
+    void SaveLibraryTileWidth(double tileWidth);
 }

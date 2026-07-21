@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+             x:Class="ListenShelf.Desktop.Views.Components.LibraryGroupDetailHeader"
+             x:DataType="vm:MainWindowViewModel">
+    <Border Margin="3,0,3,12"
+            Padding="10"
+            CornerRadius="11"
+            Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+            <Button Grid.Column="0"
+                    Padding="11,7"
+                    VerticalAlignment="Center"
+                    Background="{DynamicResource SurfaceAltBrush}"
+                    Foreground="{DynamicResource SecondaryTextBrush}"
+                    Command="{Binding ReturnToLibraryGroupsCommand}"
+                    Content="&#x2190; Back to groups" />
+
+            <StackPanel Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Spacing="2">
+                <TextBlock FontSize="17"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           Text="{Binding ActiveLibraryGroupName}"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock FontSize="10"
+                           Foreground="{DynamicResource MutedTextBrush}"
+                           Text="Viewing this stack" />
+            </StackPanel>
+
+            <Border Grid.Column="2"
+                    Padding="9,4"
+                    VerticalAlignment="Center"
+                    CornerRadius="9"
+                    Background="{DynamicResource SurfaceAltBrush}">
+                <TextBlock FontSize="10"
+                           Foreground="{DynamicResource MutedTextBrush}"
+                           Text="{Binding ActiveLibraryGroupCountText}" />
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

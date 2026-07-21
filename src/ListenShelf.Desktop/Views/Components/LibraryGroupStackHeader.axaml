@@ -1,0 +1,119 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+             x:Class="ListenShelf.Desktop.Views.Components.LibraryGroupStackHeader"
+             x:DataType="vm:LibraryGroupViewModel">
+    <Button Width="430"
+            Height="100"
+            Margin="3,7,3,5"
+            Padding="12,8"
+            HorizontalContentAlignment="Stretch"
+            Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1"
+            Command="{Binding OpenGroupCommand}"
+            Cursor="Hand"
+            IsVisible="{Binding ShowHeader}"
+            ToolTip.Tip="{Binding InteractionHint}">
+        <Grid ColumnDefinitions="82,*,Auto" ColumnSpacing="14">
+            <Grid Grid.Column="0"
+                  Width="78"
+                  Height="82"
+                  HorizontalAlignment="Left">
+                <Border Width="46"
+                        Height="69"
+                        Margin="22,0,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        CornerRadius="6"
+                        Background="{DynamicResource AccentSoftBrush}"
+                        BorderBrush="{DynamicResource AccentBrush}"
+                        BorderThickness="1"
+                        IsVisible="{Binding HasThirdBook}">
+                    <Border Width="3"
+                            Margin="0,5,3,5"
+                            HorizontalAlignment="Right"
+                            CornerRadius="2"
+                            Background="{DynamicResource AccentBrush}"
+                            Opacity="0.35" />
+                </Border>
+
+                <Border Width="46"
+                        Height="69"
+                        Margin="11,6,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        CornerRadius="6"
+                        Background="{DynamicResource SurfaceAltBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        IsVisible="{Binding HasSecondBook}">
+                    <Border Width="3"
+                            Margin="0,5,3,5"
+                            HorizontalAlignment="Right"
+                            CornerRadius="2"
+                            Background="{DynamicResource MutedTextBrush}"
+                            Opacity="0.25" />
+                </Border>
+
+                <Border Width="46"
+                        Height="69"
+                        Margin="0,12,0,0"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        CornerRadius="6"
+                        Background="{DynamicResource ArtworkPlaceholderBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        ClipToBounds="True">
+                    <Grid>
+                        <Image Source="{Binding PreviewCoverImage}"
+                               Stretch="UniformToFill"
+                               IsVisible="{Binding HasPreviewCover}" />
+                        <TextBlock HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="22"
+                                   Foreground="{DynamicResource AccentTextBrush}"
+                                   IsVisible="{Binding HasNoPreviewCover}"
+                                   Text="&#x266B;" />
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <StackPanel Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Spacing="4">
+                <TextBlock FontSize="17"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           Text="{Binding Name}"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock FontSize="11"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           Text="{Binding PreviewTitle}"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock FontSize="10"
+                           Foreground="{DynamicResource AccentTextBrush}"
+                           Text="{Binding InteractionHint}" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="2"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal"
+                        Spacing="10">
+                <Border Padding="9,4"
+                        CornerRadius="9"
+                        Background="{DynamicResource SurfaceAltBrush}">
+                    <TextBlock FontSize="10"
+                               Foreground="{DynamicResource MutedTextBrush}"
+                               Text="{Binding CountText}" />
+                </Border>
+                <TextBlock Width="12"
+                           VerticalAlignment="Center"
+                           FontSize="10"
+                           Foreground="{DynamicResource AccentTextBrush}"
+                           Text="{Binding ExpansionGlyph}" />
+            </StackPanel>
+        </Grid>
+    </Button>
+</UserControl>

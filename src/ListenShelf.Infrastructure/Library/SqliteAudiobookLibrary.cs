@@ -93,7 +93,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             throw new ArgumentOutOfRangeException(nameof(storageMode));
         }
 
-        var normalizedSourcePath = NormalizeM4bPath(sourceFilePath);
+        var normalizedSourcePath = NormalizeAudiobookPath(sourceFilePath);
         var sourceFile = new FileInfo(normalizedSourcePath);
         if (!sourceFile.Exists)
         {
@@ -110,23 +110,55 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
 
     public LibraryBook SetCover(Guid bookId, string sourceImagePath)
     {
+        var normalizedSourcePath = NormalizeCoverPath(sourceImagePath);
+        var extension = Path.GetExtension(normalizedSourcePath).ToLowerInvariant();
+
+        return SaveCover(
+            bookId,
+            extension,
+            temporaryPath => File.Copy(normalizedSourcePath, temporaryPath, overwrite: false),
+            normalizedSourcePath);
+    }
+
+    public LibraryBook SetCover(
+        Guid bookId,
+        ReadOnlyMemory<byte> imageData,
+        string fileExtension)
+    {
+        if (imageData.IsEmpty)
+        {
+            throw new ArgumentException("Cover image data is required.", nameof(imageData));
+        }
+
+        var extension = NormalizeCoverExtension(fileExtension);
+        return SaveCover(
+            bookId,
+            extension,
+            temporaryPath => File.WriteAllBytes(temporaryPath, imageData.ToArray()));
+    }
+
+    private LibraryBook SaveCover(
+        Guid bookId,
+        string extension,
+        Action<string> writeTemporaryFile,
+        string? sourcePath = null)
+    {
         if (bookId == Guid.Empty)
         {
             throw new ArgumentException("A valid audiobook identifier is required.", nameof(bookId));
         }
 
+        ArgumentNullException.ThrowIfNull(writeTemporaryFile);
         var book = FindById(bookId)
             ?? throw new KeyNotFoundException("The selected audiobook is no longer in the library.");
         EnsureMetadataCanBeManaged(book);
-        var normalizedSourcePath = NormalizeCoverPath(sourceImagePath);
-        var extension = Path.GetExtension(normalizedSourcePath).ToLowerInvariant();
 
         Directory.CreateDirectory(_coverCachePath);
 
         var destinationPath = Path.Combine(_coverCachePath, $"{bookId:N}{extension}");
         var temporaryPath = Path.Combine(_coverCachePath, $"{bookId:N}.{Guid.NewGuid():N}.importing");
 
-        if (PathsEqual(normalizedSourcePath, destinationPath))
+        if (sourcePath is not null && PathsEqual(sourcePath, destinationPath))
         {
             UpdateCoverPath(bookId, destinationPath);
             return book with { CoverPath = destinationPath };
@@ -134,7 +166,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
 
         try
         {
-            File.Copy(normalizedSourcePath, temporaryPath, overwrite: false);
+            writeTemporaryFile(temporaryPath);
             File.Move(temporaryPath, destinationPath, overwrite: true);
             UpdateCoverPath(bookId, destinationPath);
 
@@ -644,7 +676,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             ? value
             : AudiobookAbridgement.Unknown;
 
-    private static string NormalizeM4bPath(string filePath)
+    private static string NormalizeAudiobookPath(string filePath)
     {
         if (string.IsNullOrWhiteSpace(filePath))
         {
@@ -652,9 +684,9 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         }
 
         var normalizedPath = Path.GetFullPath(filePath);
-        if (!string.Equals(Path.GetExtension(normalizedPath), ".m4b", StringComparison.OrdinalIgnoreCase))
+        if (!AudiobookFileFormats.IsSupported(normalizedPath))
         {
-            throw new NotSupportedException("ListenShelf currently imports M4B audiobooks only.");
+            throw new NotSupportedException("ListenShelf currently imports M4B, M4A, and MP3 audiobooks.");
         }
 
         return normalizedPath;
@@ -679,6 +711,28 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         }
 
         return normalizedPath;
+    }
+
+    private static string NormalizeCoverExtension(string fileExtension)
+    {
+        if (string.IsNullOrWhiteSpace(fileExtension))
+        {
+            throw new ArgumentException("A cover image extension is required.", nameof(fileExtension));
+        }
+
+        var normalized = fileExtension.Trim();
+        if (!normalized.StartsWith('.'))
+        {
+            normalized = $".{normalized}";
+        }
+
+        normalized = normalized.ToLowerInvariant();
+        if (!SupportedCoverExtensions.Contains(normalized))
+        {
+            throw new NotSupportedException("ListenShelf currently supports PNG, JPEG, and WebP cover images.");
+        }
+
+        return normalized;
     }
 
     private void TryDeleteOldCover(string oldCoverPath)

@@ -5,6 +5,7 @@ using ListenShelf.Desktop.Services;
 using ListenShelf.Desktop.ViewModels;
 using ListenShelf.Desktop.Views;
 using ListenShelf.Infrastructure.Library;
+using ListenShelf.Infrastructure.Metadata;
 using ListenShelf.Infrastructure.Progress;
 using ListenShelf.Infrastructure.Settings;
 using ListenShelf.Infrastructure.Storage;
@@ -26,8 +27,12 @@ namespace ListenShelf.Desktop
                 var mainWindow = new MainWindow();
                 var database = new ListenShelfDatabase();
                 var themeService = new AvaloniaThemeService();
+                var metadataProvider = new OpenLibraryBookMetadataProvider();
                 var temporaryPlayerSessionService =
-                    new AvaloniaTemporaryPlayerSessionService(mainWindow, themeService);
+                    new AvaloniaTemporaryPlayerSessionService(
+                        mainWindow,
+                        themeService,
+                        metadataProvider);
                 var viewModel = new MainWindowViewModel(
                     new LibVlcAudioEngine(),
                     new AvaloniaFilePickerService(mainWindow),
@@ -36,7 +41,7 @@ namespace ListenShelf.Desktop
                     new SqliteAppSettingsStore(database),
                     themeService,
                     new SqliteAudiobookLibrary(database),
-                    new AvaloniaBookMetadataEditorService(mainWindow),
+                    new AvaloniaBookMetadataEditorService(mainWindow, metadataProvider),
                     temporaryPlayerSessionService);
 
                 mainWindow.DataContext = viewModel;

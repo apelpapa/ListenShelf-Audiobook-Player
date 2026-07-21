@@ -1,4 +1,6 @@
 using LibVLCSharp.Shared;
+using LibVLCSharp.Shared.Structures;
+using ListenShelf.Application.Library;
 using ListenShelf.Application.Playback;
 
 namespace ListenShelf.Playback.LibVlc;
@@ -8,6 +10,8 @@ public sealed class LibVlcAudioEngine : IAudioEngine
     private readonly LibVLC _libVlc;
     private readonly MediaPlayer _mediaPlayer;
     private Media? _currentMedia;
+    private IReadOnlyList<AudioChapter> _chapters = [];
+    private int _currentChapterIndex = -1;
     private double _requestedPlaybackRate = 1d;
     private bool _hasReachedEnd;
     private bool _disposed;
@@ -27,6 +31,7 @@ public sealed class LibVlcAudioEngine : IAudioEngine
         _mediaPlayer.EncounteredError += OnEncounteredError;
         _mediaPlayer.TimeChanged += OnTimeChanged;
         _mediaPlayer.LengthChanged += OnLengthChanged;
+        _mediaPlayer.ChapterChanged += OnChapterChanged;
 
         Volume = 80;
     }
@@ -34,6 +39,8 @@ public sealed class LibVlcAudioEngine : IAudioEngine
     public event EventHandler<PlaybackProgressChangedEventArgs>? ProgressChanged;
 
     public event EventHandler<PlaybackStateChangedEventArgs>? StateChanged;
+
+    public event EventHandler<PlaybackChaptersChangedEventArgs>? ChaptersChanged;
 
     public string? CurrentFilePath { get; private set; }
 
@@ -48,6 +55,10 @@ public sealed class LibVlcAudioEngine : IAudioEngine
     }
 
     public double PlaybackRate => _requestedPlaybackRate;
+
+    public IReadOnlyList<AudioChapter> Chapters => _chapters;
+
+    public int CurrentChapterIndex => _currentChapterIndex;
 
     public Task LoadAsync(string filePath, CancellationToken cancellationToken = default)
     {
@@ -64,9 +75,9 @@ public sealed class LibVlcAudioEngine : IAudioEngine
             throw new FileNotFoundException("The selected audiobook could not be found.", filePath);
         }
 
-        if (!string.Equals(Path.GetExtension(filePath), ".m4b", StringComparison.OrdinalIgnoreCase))
+        if (!AudiobookFileFormats.IsSupported(filePath))
         {
-            throw new NotSupportedException("This preliminary player currently opens M4B files only.");
+            throw new NotSupportedException("ListenShelf currently opens M4B, M4A, and MP3 audiobooks.");
         }
 
         RaiseState(PlaybackState.Loading);
@@ -80,6 +91,7 @@ public sealed class LibVlcAudioEngine : IAudioEngine
         previousMedia?.Dispose();
 
         CurrentFilePath = Path.GetFullPath(filePath);
+        SetChapters([], -1);
         RaiseProgress(TimeSpan.Zero, TimeSpan.Zero);
         RaiseState(PlaybackState.Ready);
 
@@ -150,6 +162,27 @@ public sealed class LibVlcAudioEngine : IAudioEngine
         return _currentMedia is null || _mediaPlayer.SetRate((float)rate) == 0;
     }
 
+    public bool TrySelectChapter(int chapterIndex)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (_currentMedia is null || chapterIndex < 0 || chapterIndex >= _chapters.Count)
+        {
+            return false;
+        }
+
+        try
+        {
+            _mediaPlayer.Chapter = chapterIndex;
+            RefreshChapters(chapterIndex);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed)
@@ -167,6 +200,7 @@ public sealed class LibVlcAudioEngine : IAudioEngine
         _mediaPlayer.EncounteredError -= OnEncounteredError;
         _mediaPlayer.TimeChanged -= OnTimeChanged;
         _mediaPlayer.LengthChanged -= OnLengthChanged;
+        _mediaPlayer.ChapterChanged -= OnChapterChanged;
 
         _mediaPlayer.Stop();
         _mediaPlayer.Dispose();
@@ -180,6 +214,7 @@ public sealed class LibVlcAudioEngine : IAudioEngine
     {
         _hasReachedEnd = false;
         _mediaPlayer.SetRate((float)_requestedPlaybackRate);
+        RefreshChapters();
         RaiseState(PlaybackState.Playing);
         RaiseProgress(Position, Duration);
     }
@@ -207,8 +242,66 @@ public sealed class LibVlcAudioEngine : IAudioEngine
     private void OnTimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e) =>
         RaiseProgress(TimeSpan.FromMilliseconds(Math.Max(0, e.Time)), Duration);
 
-    private void OnLengthChanged(object? sender, MediaPlayerLengthChangedEventArgs e) =>
+    private void OnLengthChanged(object? sender, MediaPlayerLengthChangedEventArgs e)
+    {
+        RefreshChapters();
         RaiseProgress(Position, TimeSpan.FromMilliseconds(Math.Max(0, e.Length)));
+    }
+
+    private void OnChapterChanged(object? sender, MediaPlayerChapterChangedEventArgs e) =>
+        RefreshChapters(e.Chapter);
+
+    private void RefreshChapters(int? currentChapterIndex = null)
+    {
+        if (_currentMedia is null)
+        {
+            SetChapters([], -1);
+            return;
+        }
+
+        try
+        {
+            var descriptions = _mediaPlayer.FullChapterDescriptions(-1) ?? [];
+            var chapterCount = Math.Max(_mediaPlayer.ChapterCount, descriptions.Length);
+            if (chapterCount <= 0)
+            {
+                SetChapters([], -1);
+                return;
+            }
+
+            var chapters = new List<AudioChapter>(chapterCount);
+            for (var index = 0; index < chapterCount; index++)
+            {
+                ChapterDescription? description =
+                    index < descriptions.Length ? descriptions[index] : null;
+                var chapterName = description?.Name;
+                var title = string.IsNullOrWhiteSpace(chapterName)
+                    ? $"Chapter {index + 1}"
+                    : chapterName.Trim();
+                chapters.Add(new AudioChapter(
+                    index,
+                    title,
+                    TimeSpan.FromMilliseconds(Math.Max(0L, description?.TimeOffset ?? 0L)),
+                    TimeSpan.FromMilliseconds(Math.Max(0L, description?.Duration ?? 0L))));
+            }
+
+            var current = currentChapterIndex ?? _mediaPlayer.Chapter;
+            SetChapters(chapters, current >= 0 && current < chapters.Count ? current : 0);
+        }
+        catch
+        {
+            SetChapters([], -1);
+        }
+    }
+
+    private void SetChapters(IReadOnlyList<AudioChapter> chapters, int currentChapterIndex)
+    {
+        _chapters = chapters;
+        _currentChapterIndex = currentChapterIndex;
+        ChaptersChanged?.Invoke(
+            this,
+            new PlaybackChaptersChangedEventArgs(_chapters, _currentChapterIndex));
+    }
 
     private void RaiseProgress(TimeSpan position, TimeSpan duration) =>
         ProgressChanged?.Invoke(this, new PlaybackProgressChangedEventArgs(position, duration));
