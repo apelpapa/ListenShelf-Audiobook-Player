@@ -40,6 +40,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private bool _isUpdatingPositionFromEngine;
     private bool _isUpdatingChapterFromEngine;
     private bool _isLoadingFile;
+    private bool _hasPlaybackEnded;
     private string? _currentFilePath;
     private TimeSpan? _pendingResumePosition;
     private DateTimeOffset _lastSavedAtUtc = DateTimeOffset.MinValue;
@@ -768,9 +769,23 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         {
             _audioEngine.Pause();
         }
-        else if (!_audioEngine.Play())
+        else
         {
-            ErrorMessage = "Playback could not be started.";
+            if (_hasPlaybackEnded)
+            {
+                var replayPosition = _audioEngine.Position;
+                var duration = _audioEngine.Duration;
+                _pendingResumePosition =
+                    replayPosition + TimeSpan.FromSeconds(1) < duration
+                        ? replayPosition
+                        : null;
+            }
+
+            if (!_audioEngine.Play())
+            {
+                _pendingResumePosition = null;
+                ErrorMessage = "Playback could not be started.";
+            }
         }
     }
 
@@ -885,6 +900,18 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void OnStateChanged(object? sender, PlaybackStateChangedEventArgs e)
     {
+        if (e.State == PlaybackState.Ended)
+        {
+            _hasPlaybackEnded = true;
+        }
+        else if (e.State is PlaybackState.Loading
+            or PlaybackState.Playing
+            or PlaybackState.Stopped
+            or PlaybackState.Error)
+        {
+            _hasPlaybackEnded = false;
+        }
+
         Dispatcher.UIThread.Post(() =>
         {
             switch (e.State)

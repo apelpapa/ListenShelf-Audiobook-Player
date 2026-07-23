@@ -13,6 +13,7 @@ public sealed class LibVlcAudioEngine : IAudioEngine
     private IReadOnlyList<AudioChapter> _chapters = [];
     private int _currentChapterIndex = -1;
     private double _requestedPlaybackRate = 1d;
+    private TimeSpan? _restartPosition;
     private bool _hasReachedEnd;
     private bool _disposed;
 
@@ -44,7 +45,8 @@ public sealed class LibVlcAudioEngine : IAudioEngine
 
     public string? CurrentFilePath { get; private set; }
 
-    public TimeSpan Position => TimeSpan.FromMilliseconds(Math.Max(0, _mediaPlayer.Time));
+    public TimeSpan Position =>
+        _restartPosition ?? TimeSpan.FromMilliseconds(Math.Max(0, _mediaPlayer.Time));
 
     public TimeSpan Duration => TimeSpan.FromMilliseconds(Math.Max(0, _mediaPlayer.Length));
 
@@ -80,20 +82,7 @@ public sealed class LibVlcAudioEngine : IAudioEngine
             throw new NotSupportedException("ListenShelf currently opens M4B, M4A, and MP3 audiobooks.");
         }
 
-        RaiseState(PlaybackState.Loading);
-        _hasReachedEnd = false;
-        _mediaPlayer.Stop();
-
-        var nextMedia = new Media(_libVlc, filePath, FromType.FromPath);
-        var previousMedia = _currentMedia;
-        _currentMedia = nextMedia;
-        _mediaPlayer.Media = nextMedia;
-        previousMedia?.Dispose();
-
-        CurrentFilePath = Path.GetFullPath(filePath);
-        SetChapters([], -1);
-        RaiseProgress(TimeSpan.Zero, TimeSpan.Zero);
-        RaiseState(PlaybackState.Ready);
+        LoadMedia(filePath);
 
         return Task.CompletedTask;
     }
@@ -107,7 +96,11 @@ public sealed class LibVlcAudioEngine : IAudioEngine
             return false;
         }
 
-        _hasReachedEnd = false;
+        if (_hasReachedEnd)
+        {
+            LoadMedia(CurrentFilePath!);
+        }
+
         var started = _mediaPlayer.Play();
         if (!started)
         {
@@ -145,6 +138,14 @@ public sealed class LibVlcAudioEngine : IAudioEngine
                 ? maximum
                 : position;
 
+        if (_hasReachedEnd)
+        {
+            _restartPosition = clampedPosition;
+            RaiseProgress(clampedPosition, Duration);
+            RaiseState(PlaybackState.Ready);
+            return;
+        }
+
         _mediaPlayer.Time = (long)clampedPosition.TotalMilliseconds;
         RaiseProgress(clampedPosition, Duration);
     }
@@ -171,6 +172,16 @@ public sealed class LibVlcAudioEngine : IAudioEngine
             return false;
         }
 
+        if (_hasReachedEnd)
+        {
+            var chapter = _chapters[chapterIndex];
+            _restartPosition = chapter.Start;
+            SetChapters(_chapters, chapterIndex);
+            RaiseProgress(chapter.Start, Duration);
+            RaiseState(PlaybackState.Ready);
+            return true;
+        }
+
         try
         {
             _mediaPlayer.Chapter = chapterIndex;
@@ -181,6 +192,25 @@ public sealed class LibVlcAudioEngine : IAudioEngine
         {
             return false;
         }
+    }
+
+    private void LoadMedia(string filePath)
+    {
+        RaiseState(PlaybackState.Loading);
+        _hasReachedEnd = false;
+        _restartPosition = null;
+        _mediaPlayer.Stop();
+
+        var nextMedia = new Media(_libVlc, filePath, FromType.FromPath);
+        var previousMedia = _currentMedia;
+        _currentMedia = nextMedia;
+        _mediaPlayer.Media = nextMedia;
+        previousMedia?.Dispose();
+
+        CurrentFilePath = Path.GetFullPath(filePath);
+        SetChapters([], -1);
+        RaiseProgress(TimeSpan.Zero, TimeSpan.Zero);
+        RaiseState(PlaybackState.Ready);
     }
 
     public void Dispose()
@@ -232,6 +262,7 @@ public sealed class LibVlcAudioEngine : IAudioEngine
     private void OnEndReached(object? sender, EventArgs e)
     {
         _hasReachedEnd = true;
+        _restartPosition = null;
         RaiseProgress(Duration, Duration);
         RaiseState(PlaybackState.Ended);
     }
