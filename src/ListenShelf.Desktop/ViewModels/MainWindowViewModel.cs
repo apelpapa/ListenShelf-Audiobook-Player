@@ -37,12 +37,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IAudiobookLibrary _audiobookLibrary;
     private readonly IBookMetadataEditorService _bookMetadataEditorService;
     private readonly ITemporaryPlayerSessionService _temporaryPlayerSessionService;
+    private readonly DispatcherTimer _sleepTimer;
     private bool _isUpdatingPositionFromEngine;
     private bool _isUpdatingChapterFromEngine;
     private bool _isLoadingFile;
     private bool _hasPlaybackEnded;
+    private bool _sleepTimerPausePending;
     private string? _currentFilePath;
     private TimeSpan? _pendingResumePosition;
+    private DateTimeOffset? _sleepTimerDeadlineUtc;
     private DateTimeOffset _lastSavedAtUtc = DateTimeOffset.MinValue;
     private Bitmap? _currentCoverImage;
     private bool _disposed;
@@ -69,6 +72,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _bookMetadataEditorService = bookMetadataEditorService;
         _temporaryPlayerSessionService = temporaryPlayerSessionService;
         IsTemporarySession = isTemporarySession;
+        _sleepTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(1),
+        };
+        _sleepTimer.Tick += OnSleepTimerTick;
 
         try
         {
@@ -309,6 +317,16 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private double _selectedPlaybackRate = 1d;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SleepTimerButtonText))]
+    [NotifyPropertyChangedFor(nameof(SleepTimerStatusText))]
+    private bool _isSleepTimerActive;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SleepTimerButtonText))]
+    [NotifyPropertyChangedFor(nameof(SleepTimerStatusText))]
+    private TimeSpan _sleepTimerRemaining;
+
     public Bitmap? CurrentCoverImage => _currentCoverImage;
 
     public bool HasCurrentCover => CurrentCoverImage is not null;
@@ -318,6 +336,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public bool CanControlPlayback => IsFileLoaded && !IsBusy;
 
     public bool HasChapters => Chapters.Count > 0;
+
+    public string SleepTimerButtonText => IsSleepTimerActive
+        ? $"Sleep {FormatSleepTimerRemaining(SleepTimerRemaining)}"
+        : "Sleep timer";
+
+    public string SleepTimerStatusText => IsSleepTimerActive
+        ? $"Playback pauses in {FormatSleepTimerRemaining(SleepTimerRemaining)}."
+        : "Choose when playback should pause.";
 
     public string ChapterPositionText => SelectedChapter is null
         ? string.Empty
@@ -807,6 +833,40 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
+    [RelayCommand]
+    private void StartSleepTimer15() => StartSleepTimer(TimeSpan.FromMinutes(15));
+
+    [RelayCommand]
+    private void StartSleepTimer30() => StartSleepTimer(TimeSpan.FromMinutes(30));
+
+    [RelayCommand]
+    private void StartSleepTimer45() => StartSleepTimer(TimeSpan.FromMinutes(45));
+
+    [RelayCommand]
+    private void StartSleepTimer60() => StartSleepTimer(TimeSpan.FromMinutes(60));
+
+    [RelayCommand]
+    private void StartSleepTimer90() => StartSleepTimer(TimeSpan.FromMinutes(90));
+
+    [RelayCommand]
+    private void AddTenMinutesToSleepTimer()
+    {
+        if (!IsSleepTimerActive || _sleepTimerDeadlineUtc is not { } deadline)
+        {
+            return;
+        }
+
+        _sleepTimerDeadlineUtc = deadline + TimeSpan.FromMinutes(10);
+        UpdateSleepTimerRemaining();
+    }
+
+    [RelayCommand]
+    private void CancelSleepTimer()
+    {
+        _sleepTimerPausePending = false;
+        StopSleepTimer();
+    }
+
     private bool CanSelectPreviousChapter() =>
         CanControlPlayback && SelectedChapter is { Index: > 0 };
 
@@ -874,6 +934,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         SaveCurrentProgress(force: true);
         _disposed = true;
+        _sleepTimer.Stop();
+        _sleepTimer.Tick -= OnSleepTimerTick;
         _audioEngine.ProgressChanged -= OnProgressChanged;
         _audioEngine.StateChanged -= OnStateChanged;
         _audioEngine.ChaptersChanged -= OnChaptersChanged;
@@ -926,6 +988,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 case PlaybackState.Playing:
                     StatusText = "Playing";
                     IsPlaying = true;
+                    _sleepTimerPausePending = false;
                     if (_pendingResumePosition is { } resumePosition)
                     {
                         _pendingResumePosition = null;
@@ -934,7 +997,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                     _isLoadingFile = false;
                     break;
                 case PlaybackState.Paused:
-                    StatusText = "Paused";
+                    StatusText = _sleepTimerPausePending
+                        ? "Paused by sleep timer"
+                        : "Paused";
+                    _sleepTimerPausePending = false;
                     IsPlaying = false;
                     if (!_isLoadingFile)
                     {
@@ -950,6 +1016,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                     }
                     break;
                 case PlaybackState.Ended:
+                    StopSleepTimer();
+                    _sleepTimerPausePending = false;
                     StatusText = "Finished";
                     IsPlaying = false;
                     if (!_isLoadingFile)
@@ -958,6 +1026,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                     }
                     break;
                 case PlaybackState.Error:
+                    StopSleepTimer();
+                    _sleepTimerPausePending = false;
                     StatusText = "Playback error";
                     ErrorMessage = e.Message ?? "An unexpected playback error occurred.";
                     IsPlaying = false;
@@ -1012,6 +1082,67 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(ChapterPositionText));
         PreviousChapterCommand.NotifyCanExecuteChanged();
         NextChapterCommand.NotifyCanExecuteChanged();
+    }
+
+    private void StartSleepTimer(TimeSpan duration)
+    {
+        if (!IsFileLoaded || duration <= TimeSpan.Zero)
+        {
+            return;
+        }
+
+        _sleepTimerPausePending = false;
+        _sleepTimerDeadlineUtc = DateTimeOffset.UtcNow + duration;
+        SleepTimerRemaining = duration;
+        IsSleepTimerActive = true;
+        _sleepTimer.Start();
+    }
+
+    private void OnSleepTimerTick(object? sender, EventArgs e)
+    {
+        if (!UpdateSleepTimerRemaining())
+        {
+            return;
+        }
+
+        StopSleepTimer();
+        if (IsPlaying && CanControlPlayback)
+        {
+            _sleepTimerPausePending = true;
+            StatusText = "Pausing for sleep timer…";
+            _audioEngine.Pause();
+        }
+        else
+        {
+            StatusText = "Sleep timer finished";
+        }
+    }
+
+    private bool UpdateSleepTimerRemaining()
+    {
+        if (_sleepTimerDeadlineUtc is not { } deadline)
+        {
+            StopSleepTimer();
+            return false;
+        }
+
+        var remaining = deadline - DateTimeOffset.UtcNow;
+        if (remaining <= TimeSpan.Zero)
+        {
+            SleepTimerRemaining = TimeSpan.Zero;
+            return true;
+        }
+
+        SleepTimerRemaining = remaining;
+        return false;
+    }
+
+    private void StopSleepTimer()
+    {
+        _sleepTimer.Stop();
+        _sleepTimerDeadlineUtc = null;
+        SleepTimerRemaining = TimeSpan.Zero;
+        IsSleepTimerActive = false;
     }
 
     private void SaveCurrentProgress(bool force) =>
@@ -1376,6 +1507,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         var time = TimeSpan.FromSeconds(Math.Max(0d, seconds));
         return totalSeconds >= 3600d
+            ? $"{(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}"
+            : $"{time.Minutes}:{time.Seconds:00}";
+    }
+
+    private static string FormatSleepTimerRemaining(TimeSpan remaining)
+    {
+        var totalSeconds = Math.Max(0L, (long)Math.Ceiling(remaining.TotalSeconds));
+        var time = TimeSpan.FromSeconds(totalSeconds);
+        return time.TotalHours >= 1d
             ? $"{(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}"
             : $"{time.Minutes}:{time.Seconds:00}";
     }

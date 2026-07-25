@@ -72,15 +72,54 @@
                                    Foreground="{DynamicResource PrimaryTextBrush}"
                                    Text="{Binding StatusText}" />
                     </StackPanel>
-                    <Border Grid.Column="1"
-                            Padding="10,5"
-                            VerticalAlignment="Top"
-                            CornerRadius="10"
-                            Background="{DynamicResource SurfaceRaisedBrush}">
-                        <TextBlock FontSize="12"
-                                   Foreground="{DynamicResource SecondaryTextBrush}"
-                                   Text="{Binding FileFormatText}" />
-                    </Border>
+                    <StackPanel Grid.Column="1"
+                                VerticalAlignment="Top"
+                                Orientation="Horizontal"
+                                Spacing="8">
+                        <Border Padding="10,5"
+                                CornerRadius="10"
+                                Background="{DynamicResource SurfaceRaisedBrush}">
+                            <TextBlock FontSize="12"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       Text="{Binding FileFormatText}" />
+                        </Border>
+
+                        <Button MinWidth="108"
+                                Padding="10,5"
+                                Background="{DynamicResource SurfaceRaisedBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                Foreground="{DynamicResource SecondaryTextBrush}"
+                                FontSize="12"
+                                IsEnabled="{Binding IsFileLoaded}"
+                                Content="{Binding SleepTimerButtonText}"
+                                ToolTip.Tip="{Binding SleepTimerStatusText}">
+                            <Button.Flyout>
+                                <MenuFlyout>
+                                    <MenuItem Header="{Binding SleepTimerStatusText}"
+                                              IsEnabled="False" />
+                                    <Separator />
+                                    <MenuItem Header="15 minutes"
+                                              Command="{Binding StartSleepTimer15Command}" />
+                                    <MenuItem Header="30 minutes"
+                                              Command="{Binding StartSleepTimer30Command}" />
+                                    <MenuItem Header="45 minutes"
+                                              Command="{Binding StartSleepTimer45Command}" />
+                                    <MenuItem Header="60 minutes"
+                                              Command="{Binding StartSleepTimer60Command}" />
+                                    <MenuItem Header="90 minutes"
+                                              Command="{Binding StartSleepTimer90Command}" />
+                                    <Separator />
+                                    <MenuItem Header="Add 10 minutes"
+                                              Command="{Binding AddTenMinutesToSleepTimerCommand}"
+                                              IsEnabled="{Binding IsSleepTimerActive}" />
+                                    <MenuItem Header="Cancel timer"
+                                              Command="{Binding CancelSleepTimerCommand}"
+                                              IsEnabled="{Binding IsSleepTimerActive}" />
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+                    </StackPanel>
                 </Grid>
 
                 <StackPanel Grid.Row="1"
