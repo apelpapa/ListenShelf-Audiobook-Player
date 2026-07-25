@@ -206,6 +206,7 @@
                                 Foreground="{DynamicResource SecondaryTextBrush}"
                                 Command="{Binding SkipBackwardCommand}"
                                 IsEnabled="{Binding CanControlPlayback}"
+                                ToolTip.Tip="Rewind 15 seconds (Left Arrow, J, or Previous media button)"
                                 Content="−15 sec" />
                         <Button Width="112"
                                 Height="56"
@@ -215,6 +216,7 @@
                                 FontWeight="SemiBold"
                                 Command="{Binding TogglePlaybackCommand}"
                                 IsEnabled="{Binding CanControlPlayback}"
+                                ToolTip.Tip="Play or pause (Space, K, or Play/Pause media button)"
                                 Content="{Binding PlayPauseLabel}" />
                         <Button Width="92"
                                 Height="48"
@@ -222,6 +224,7 @@
                                 Foreground="{DynamicResource SecondaryTextBrush}"
                                 Command="{Binding SkipForwardCommand}"
                                 IsEnabled="{Binding CanControlPlayback}"
+                                ToolTip.Tip="Forward 30 seconds (Right Arrow, L, or Next media button)"
                                 Content="+30 sec" />
                     </StackPanel>
 

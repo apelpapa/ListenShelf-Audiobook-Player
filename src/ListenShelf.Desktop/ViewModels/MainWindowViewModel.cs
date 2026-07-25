@@ -349,6 +349,45 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         ? string.Empty
         : $"Chapter {SelectedChapter.Index + 1} of {Chapters.Count}";
 
+    public bool TryHandlePlaybackControl(PlaybackControlAction action)
+    {
+        if (!CanControlPlayback)
+        {
+            return false;
+        }
+
+        switch (action)
+        {
+            case PlaybackControlAction.TogglePlayPause:
+                TogglePlayback();
+                break;
+            case PlaybackControlAction.Play:
+                if (!IsPlaying)
+                {
+                    TogglePlayback();
+                }
+
+                break;
+            case PlaybackControlAction.Pause:
+                if (IsPlaying)
+                {
+                    _audioEngine.Pause();
+                }
+
+                break;
+            case PlaybackControlAction.SkipBackward:
+                SkipBackward();
+                break;
+            case PlaybackControlAction.SkipForward:
+                SkipForward();
+                break;
+            default:
+                return false;
+        }
+
+        return true;
+    }
+
     public bool IsLibrarySection => SelectedSection == AppSection.Library;
 
     public bool IsPlayerSection => SelectedSection == AppSection.Player;
