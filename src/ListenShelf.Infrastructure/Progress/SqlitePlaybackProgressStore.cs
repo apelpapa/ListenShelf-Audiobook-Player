@@ -40,14 +40,25 @@ public sealed class SqlitePlaybackProgressStore : IPlaybackProgressStore
             return null;
         }
 
-        var position = TimeSpan.FromMilliseconds(Math.Max(0L, reader.GetInt64(1)));
-        var duration = TimeSpan.FromMilliseconds(Math.Max(0L, reader.GetInt64(2)));
-        var updatedAtUtc = DateTimeOffset.Parse(
-            reader.GetString(3),
-            CultureInfo.InvariantCulture,
-            DateTimeStyles.RoundtripKind);
+        return ReadProgress(reader);
+    }
 
-        return new PlaybackProgress(reader.GetString(0), position, duration, updatedAtUtc);
+    public PlaybackProgress? GetMostRecent()
+    {
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT file_path, position_ms, duration_ms, updated_utc
+            FROM playback_progress
+            ORDER BY updated_utc DESC
+            LIMIT 1;
+            """;
+
+        using var reader = command.ExecuteReader();
+        return reader.Read()
+            ? ReadProgress(reader)
+            : null;
     }
 
     public void Save(PlaybackProgress progress)
@@ -105,4 +116,16 @@ public sealed class SqlitePlaybackProgressStore : IPlaybackProgressStore
         OperatingSystem.IsWindows()
             ? normalizedPath.ToUpperInvariant()
             : normalizedPath;
+
+    private static PlaybackProgress ReadProgress(Microsoft.Data.Sqlite.SqliteDataReader reader)
+    {
+        var position = TimeSpan.FromMilliseconds(Math.Max(0L, reader.GetInt64(1)));
+        var duration = TimeSpan.FromMilliseconds(Math.Max(0L, reader.GetInt64(2)));
+        var updatedAtUtc = DateTimeOffset.Parse(
+            reader.GetString(3),
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.RoundtripKind);
+
+        return new PlaybackProgress(reader.GetString(0), position, duration, updatedAtUtc);
+    }
 }

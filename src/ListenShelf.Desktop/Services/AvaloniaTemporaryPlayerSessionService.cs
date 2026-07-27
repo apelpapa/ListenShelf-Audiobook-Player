@@ -45,6 +45,8 @@ public sealed class AvaloniaTemporaryPlayerSessionService(
     {
         public PlaybackProgress? Get(string filePath) => null;
 
+        public PlaybackProgress? GetMostRecent() => null;
+
         public void Save(PlaybackProgress progress)
         {
         }

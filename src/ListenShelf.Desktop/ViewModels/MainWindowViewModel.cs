@@ -48,6 +48,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private DateTimeOffset? _sleepTimerDeadlineUtc;
     private DateTimeOffset _lastSavedAtUtc = DateTimeOffset.MinValue;
     private Bitmap? _currentCoverImage;
+    private bool _initializationStarted;
     private bool _disposed;
 
     public MainWindowViewModel(
@@ -151,6 +152,65 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public IReadOnlyList<double> PlaybackRates { get; } =
         [0.75d, 1d, 1.25d, 1.5d, 1.75d, 2d];
+
+    public async Task InitializeAsync()
+    {
+        if (_initializationStarted)
+        {
+            return;
+        }
+
+        _initializationStarted = true;
+        if (IsTemporarySession || IsOnboardingVisible)
+        {
+            return;
+        }
+
+        PlaybackProgress? mostRecentProgress;
+        try
+        {
+            mostRecentProgress = _progressStore.GetMostRecent();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Your last audiobook could not be restored: {exception.Message}";
+            return;
+        }
+
+        if (mostRecentProgress is null)
+        {
+            return;
+        }
+
+        if (!File.Exists(mostRecentProgress.FilePath))
+        {
+            StatusText = "Last audiobook unavailable";
+            ErrorMessage =
+                $"The last audiobook could not be found at {mostRecentProgress.FilePath}";
+            return;
+        }
+
+        LibraryBook? libraryBook = null;
+        try
+        {
+            libraryBook = _audiobookLibrary
+                .GetBooks()
+                .FirstOrDefault(book => PathsEqual(book.FilePath, mostRecentProgress.FilePath));
+        }
+        catch
+        {
+            // The file can still be restored with its filename when library details are unavailable.
+        }
+
+        if (await LoadFileAsync(
+                mostRecentProgress.FilePath,
+                libraryBook,
+                autoPlay: false,
+                knownProgress: mostRecentProgress))
+        {
+            SelectedSection = AppSection.Player;
+        }
+    }
 
     public ObservableCollection<LibraryBookItemViewModel> LibraryBooks { get; } = [];
 
@@ -635,7 +695,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            await LoadAndPlayFileAsync(filePath);
+            await LoadFileAsync(filePath);
         }
         catch (Exception exception)
         {
@@ -644,7 +704,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private async Task LoadAndPlayFileAsync(string filePath, LibraryBook? libraryBook = null)
+    private async Task<bool> LoadFileAsync(
+        string filePath,
+        LibraryBook? libraryBook = null,
+        bool autoPlay = true,
+        PlaybackProgress? knownProgress = null)
     {
         try
         {
@@ -665,7 +729,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             _currentFilePath = Path.GetFullPath(filePath);
             var savedProgress = IsTemporarySession
                 ? null
-                : _progressStore.Get(_currentFilePath);
+                : knownProgress ?? _progressStore.Get(_currentFilePath);
             _pendingResumePosition = savedProgress?.Position > TimeSpan.Zero
                 ? savedProgress.Position
                 : null;
@@ -677,22 +741,41 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             ProgressText = IsTemporarySession
                 ? "Temporary session — position will not be saved."
                 : _pendingResumePosition is { } resumePosition
-                    ? $"Resuming from {FormatTime(resumePosition.TotalSeconds, savedProgress?.Duration.TotalSeconds ?? 0d)}"
-                    : "Starting from the beginning";
+                    ? autoPlay
+                        ? $"Resuming from {FormatTime(resumePosition.TotalSeconds, savedProgress?.Duration.TotalSeconds ?? 0d)}"
+                        : $"Ready at {FormatTime(resumePosition.TotalSeconds, savedProgress?.Duration.TotalSeconds ?? 0d)}"
+                    : autoPlay
+                        ? "Starting from the beginning"
+                        : "Ready at the beginning";
             IsFileLoaded = true;
             _lastSavedAtUtc = DateTimeOffset.UtcNow;
 
-            if (!_audioEngine.Play())
+            if (autoPlay)
             {
-                _isLoadingFile = false;
-                ErrorMessage = "The audiobook could not be started.";
+                if (!_audioEngine.Play())
+                {
+                    _isLoadingFile = false;
+                    ErrorMessage = "The audiobook could not be started.";
+                    return false;
+                }
             }
+            else
+            {
+                await Dispatcher.UIThread.InvokeAsync(
+                    () => ApplyRestoredProgress(savedProgress),
+                    DispatcherPriority.Background);
+                _isLoadingFile = false;
+                StatusText = "Ready to play";
+            }
+
+            return true;
         }
         catch (Exception exception)
         {
             _isLoadingFile = false;
             ErrorMessage = exception.Message;
             StatusText = "Could not open audiobook";
+            return false;
         }
         finally
         {
@@ -711,7 +794,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         SelectedSection = AppSection.Player;
-        await LoadAndPlayFileAsync(book.FilePath, book);
+        await LoadFileAsync(book.FilePath, book);
     }
 
     private async Task ChooseCoverAsync(LibraryBook book)
@@ -859,7 +942,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         if (CanControlPlayback)
         {
-            _audioEngine.Seek(_audioEngine.Position - TimeSpan.FromSeconds(15));
+            SeekPlayback(CurrentPlaybackPosition - TimeSpan.FromSeconds(15));
         }
     }
 
@@ -868,7 +951,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         if (CanControlPlayback)
         {
-            _audioEngine.Seek(_audioEngine.Position + TimeSpan.FromSeconds(30));
+            SeekPlayback(CurrentPlaybackPosition + TimeSpan.FromSeconds(30));
         }
     }
 
@@ -936,7 +1019,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         if (!_isUpdatingPositionFromEngine && CanControlPlayback)
         {
-            _audioEngine.Seek(TimeSpan.FromSeconds(value));
+            SeekPlayback(TimeSpan.FromSeconds(value));
         }
     }
 
@@ -1184,8 +1267,79 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IsSleepTimerActive = false;
     }
 
+    private TimeSpan CurrentPlaybackPosition =>
+        _pendingResumePosition ?? _audioEngine.Position;
+
+    private TimeSpan CurrentPlaybackDuration =>
+        _audioEngine.Duration > TimeSpan.Zero
+            ? _audioEngine.Duration
+            : TimeSpan.FromSeconds(Math.Max(0d, DurationSeconds));
+
+    private void SeekPlayback(TimeSpan position)
+    {
+        var maximum = CurrentPlaybackDuration > TimeSpan.Zero
+            ? CurrentPlaybackDuration
+            : TimeSpan.MaxValue;
+        var clampedPosition = position < TimeSpan.Zero
+            ? TimeSpan.Zero
+            : position > maximum
+                ? maximum
+                : position;
+
+        if (_pendingResumePosition is not null)
+        {
+            _pendingResumePosition = clampedPosition > TimeSpan.Zero
+                ? clampedPosition
+                : null;
+        }
+
+        _audioEngine.Seek(clampedPosition);
+    }
+
+    private void ApplyRestoredProgress(PlaybackProgress? progress)
+    {
+        var durationSeconds = Math.Max(0d, progress?.Duration.TotalSeconds ?? 0d);
+        var positionSeconds = Math.Clamp(
+            progress?.Position.TotalSeconds ?? 0d,
+            0d,
+            durationSeconds > 0d ? durationSeconds : double.MaxValue);
+
+        _isUpdatingPositionFromEngine = true;
+        DurationSeconds = durationSeconds;
+        PositionSeconds = positionSeconds;
+        _isUpdatingPositionFromEngine = false;
+
+        SelectChapterContaining(TimeSpan.FromSeconds(positionSeconds));
+    }
+
+    private void SelectChapterContaining(TimeSpan position)
+    {
+        if (Chapters.Count == 0)
+        {
+            return;
+        }
+
+        var chapter = Chapters[0];
+        foreach (var candidate in Chapters)
+        {
+            if (candidate.Start > position)
+            {
+                break;
+            }
+
+            chapter = candidate;
+        }
+
+        _isUpdatingChapterFromEngine = true;
+        SelectedChapter = chapter;
+        _isUpdatingChapterFromEngine = false;
+        OnPropertyChanged(nameof(ChapterPositionText));
+        PreviousChapterCommand.NotifyCanExecuteChanged();
+        NextChapterCommand.NotifyCanExecuteChanged();
+    }
+
     private void SaveCurrentProgress(bool force) =>
-        SaveProgress(_audioEngine.Position, _audioEngine.Duration, force);
+        SaveProgress(CurrentPlaybackPosition, CurrentPlaybackDuration, force);
 
     private void SaveProgress(TimeSpan position, TimeSpan duration, bool force)
     {

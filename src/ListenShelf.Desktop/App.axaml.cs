@@ -45,6 +45,7 @@ namespace ListenShelf.Desktop
                     temporaryPlayerSessionService);
 
                 mainWindow.DataContext = viewModel;
+                mainWindow.Opened += async (_, _) => await viewModel.InitializeAsync();
                 mainWindow.Closed += (_, _) => viewModel.Dispose();
                 desktop.MainWindow = mainWindow;
             }

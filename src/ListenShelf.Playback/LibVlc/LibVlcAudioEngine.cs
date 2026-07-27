@@ -7,13 +7,17 @@ namespace ListenShelf.Playback.LibVlc;
 
 public sealed class LibVlcAudioEngine : IAudioEngine
 {
+    private static readonly TimeSpan MediaPreloadTimeout = TimeSpan.FromSeconds(10);
     private readonly LibVLC _libVlc;
     private readonly MediaPlayer _mediaPlayer;
     private Media? _currentMedia;
     private IReadOnlyList<AudioChapter> _chapters = [];
     private int _currentChapterIndex = -1;
     private double _requestedPlaybackRate = 1d;
+    private TimeSpan _knownDuration;
     private TimeSpan? _restartPosition;
+    private TaskCompletionSource<bool>? _mediaPreloadCompletion;
+    private bool _isPreloadingMedia;
     private bool _hasReachedEnd;
     private bool _disposed;
 
@@ -48,7 +52,14 @@ public sealed class LibVlcAudioEngine : IAudioEngine
     public TimeSpan Position =>
         _restartPosition ?? TimeSpan.FromMilliseconds(Math.Max(0, _mediaPlayer.Time));
 
-    public TimeSpan Duration => TimeSpan.FromMilliseconds(Math.Max(0, _mediaPlayer.Length));
+    public TimeSpan Duration
+    {
+        get
+        {
+            var playerDuration = TimeSpan.FromMilliseconds(Math.Max(0, _mediaPlayer.Length));
+            return playerDuration > _knownDuration ? playerDuration : _knownDuration;
+        }
+    }
 
     public int Volume
     {
@@ -62,7 +73,9 @@ public sealed class LibVlcAudioEngine : IAudioEngine
 
     public int CurrentChapterIndex => _currentChapterIndex;
 
-    public Task LoadAsync(string filePath, CancellationToken cancellationToken = default)
+    public async Task LoadAsync(
+        string filePath,
+        CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         cancellationToken.ThrowIfCancellationRequested();
@@ -83,8 +96,7 @@ public sealed class LibVlcAudioEngine : IAudioEngine
         }
 
         LoadMedia(filePath);
-
-        return Task.CompletedTask;
+        await PreloadCurrentMediaAsync(cancellationToken);
     }
 
     public bool Play()
@@ -198,6 +210,7 @@ public sealed class LibVlcAudioEngine : IAudioEngine
     {
         RaiseState(PlaybackState.Loading);
         _hasReachedEnd = false;
+        _knownDuration = TimeSpan.Zero;
         _restartPosition = null;
         _mediaPlayer.Stop();
 
@@ -211,6 +224,49 @@ public sealed class LibVlcAudioEngine : IAudioEngine
         SetChapters([], -1);
         RaiseProgress(TimeSpan.Zero, TimeSpan.Zero);
         RaiseState(PlaybackState.Ready);
+    }
+
+    private async Task PreloadCurrentMediaAsync(CancellationToken cancellationToken)
+    {
+        if (_currentMedia is null)
+        {
+            return;
+        }
+
+        var previousMute = _mediaPlayer.Mute;
+        _isPreloadingMedia = true;
+        _mediaPreloadCompletion = new TaskCompletionSource<bool>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+
+        try
+        {
+            _mediaPlayer.Mute = true;
+            if (!_mediaPlayer.Play())
+            {
+                return;
+            }
+
+            try
+            {
+                await _mediaPreloadCompletion.Task.WaitAsync(
+                    MediaPreloadTimeout,
+                    cancellationToken);
+            }
+            catch (TimeoutException)
+            {
+                // Some files expose no input metadata until normal playback.
+                // The player remains usable even when preloading times out.
+            }
+        }
+        finally
+        {
+            _mediaPlayer.Stop();
+            _mediaPlayer.Mute = previousMute;
+            _mediaPreloadCompletion = null;
+            _isPreloadingMedia = false;
+            RaiseProgress(TimeSpan.Zero, Duration);
+            RaiseState(PlaybackState.Ready);
+        }
     }
 
     public void Dispose()
@@ -238,22 +294,42 @@ public sealed class LibVlcAudioEngine : IAudioEngine
         _libVlc.Dispose();
     }
 
-    private void OnOpening(object? sender, EventArgs e) => RaiseState(PlaybackState.Loading);
+    private void OnOpening(object? sender, EventArgs e)
+    {
+        if (!_isPreloadingMedia)
+        {
+            RaiseState(PlaybackState.Loading);
+        }
+    }
 
     private void OnPlaying(object? sender, EventArgs e)
     {
         _hasReachedEnd = false;
         _mediaPlayer.SetRate((float)_requestedPlaybackRate);
         RefreshChapters();
+
+        if (_isPreloadingMedia)
+        {
+            _knownDuration = TimeSpan.FromMilliseconds(Math.Max(0, _mediaPlayer.Length));
+            _mediaPreloadCompletion?.TrySetResult(true);
+            return;
+        }
+
         RaiseState(PlaybackState.Playing);
         RaiseProgress(Position, Duration);
     }
 
-    private void OnPaused(object? sender, EventArgs e) => RaiseState(PlaybackState.Paused);
+    private void OnPaused(object? sender, EventArgs e)
+    {
+        if (!_isPreloadingMedia)
+        {
+            RaiseState(PlaybackState.Paused);
+        }
+    }
 
     private void OnStopped(object? sender, EventArgs e)
     {
-        if (!_hasReachedEnd)
+        if (!_isPreloadingMedia && !_hasReachedEnd)
         {
             RaiseState(PlaybackState.Stopped);
         }
@@ -261,22 +337,37 @@ public sealed class LibVlcAudioEngine : IAudioEngine
 
     private void OnEndReached(object? sender, EventArgs e)
     {
+        if (_isPreloadingMedia)
+        {
+            _mediaPreloadCompletion?.TrySetResult(true);
+            return;
+        }
+
         _hasReachedEnd = true;
         _restartPosition = null;
         RaiseProgress(Duration, Duration);
         RaiseState(PlaybackState.Ended);
     }
 
-    private void OnEncounteredError(object? sender, EventArgs e) =>
+    private void OnEncounteredError(object? sender, EventArgs e)
+    {
+        if (_isPreloadingMedia)
+        {
+            _mediaPreloadCompletion?.TrySetResult(false);
+            return;
+        }
+
         RaiseState(PlaybackState.Error, "VLC encountered an error while playing this audiobook.");
+    }
 
     private void OnTimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e) =>
         RaiseProgress(TimeSpan.FromMilliseconds(Math.Max(0, e.Time)), Duration);
 
     private void OnLengthChanged(object? sender, MediaPlayerLengthChangedEventArgs e)
     {
+        _knownDuration = TimeSpan.FromMilliseconds(Math.Max(0, e.Length));
         RefreshChapters();
-        RaiseProgress(Position, TimeSpan.FromMilliseconds(Math.Max(0, e.Length)));
+        RaiseProgress(Position, _knownDuration);
     }
 
     private void OnChapterChanged(object? sender, MediaPlayerChapterChangedEventArgs e) =>
