@@ -86,6 +86,18 @@ public sealed class AvaloniaTemporaryPlayerSessionService(
         public void SaveLibraryTileWidth(double tileWidth)
         {
         }
+
+        public double GetPlaybackVolume() => 80d;
+
+        public void SavePlaybackVolume(double volume)
+        {
+        }
+
+        public double GetPlaybackRate() => 1d;
+
+        public void SavePlaybackRate(double rate)
+        {
+        }
     }
 
     private sealed class TemporaryAudiobookLibrary : IAudiobookLibrary

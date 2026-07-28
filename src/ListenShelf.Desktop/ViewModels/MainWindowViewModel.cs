@@ -17,6 +17,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private const double DefaultLibraryTileWidth = 220d;
     private const double MinimumLibraryTileWidth = 180d;
     private const double MaximumLibraryTileWidth = 320d;
+    private const double DefaultPlaybackVolume = 80d;
+    private const double MinimumPlaybackVolume = 0d;
+    private const double MaximumPlaybackVolume = 100d;
+    private const double DefaultPlaybackRate = 1d;
     private static readonly LibraryGroupOptionViewModel[] GroupOptions =
     [
         new(LibraryGroupMode.None, "None"),
@@ -131,6 +135,33 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         catch
         {
             _libraryTileWidth = DefaultLibraryTileWidth;
+        }
+
+        try
+        {
+            var savedVolume = _appSettingsStore.GetPlaybackVolume();
+            _volume = double.IsFinite(savedVolume)
+                ? Math.Clamp(
+                    savedVolume,
+                    MinimumPlaybackVolume,
+                    MaximumPlaybackVolume)
+                : DefaultPlaybackVolume;
+        }
+        catch
+        {
+            _volume = DefaultPlaybackVolume;
+        }
+
+        try
+        {
+            var savedPlaybackRate = _appSettingsStore.GetPlaybackRate();
+            _selectedPlaybackRate = PlaybackRates.Contains(savedPlaybackRate)
+                ? savedPlaybackRate
+                : DefaultPlaybackRate;
+        }
+        catch
+        {
+            _selectedPlaybackRate = DefaultPlaybackRate;
         }
 
         _themeService.ApplyTheme(_selectedTheme);
@@ -1025,17 +1056,55 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     partial void OnVolumeChanged(double value)
     {
-        if (!_disposed)
+        if (_disposed)
         {
-            _audioEngine.Volume = (int)Math.Round(value);
+            return;
+        }
+
+        var safeVolume = double.IsFinite(value)
+            ? Math.Clamp(value, MinimumPlaybackVolume, MaximumPlaybackVolume)
+            : DefaultPlaybackVolume;
+
+        if (safeVolume != value)
+        {
+            Volume = safeVolume;
+            return;
+        }
+
+        _audioEngine.Volume = (int)Math.Round(safeVolume);
+
+        try
+        {
+            _appSettingsStore.SavePlaybackVolume(safeVolume);
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage =
+                $"Volume changed for this session, but could not be remembered: {exception.Message}";
         }
     }
 
     partial void OnSelectedPlaybackRateChanged(double value)
     {
-        if (!_disposed && !_audioEngine.TrySetPlaybackRate(value))
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (!PlaybackRates.Contains(value) || !_audioEngine.TrySetPlaybackRate(value))
         {
             ErrorMessage = $"Playback at {value:0.##}× is not supported for this file.";
+            return;
+        }
+
+        try
+        {
+            _appSettingsStore.SavePlaybackRate(value);
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage =
+                $"Playback speed changed for this session, but could not be remembered: {exception.Message}";
         }
     }
 

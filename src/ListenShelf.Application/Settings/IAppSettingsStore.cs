@@ -17,4 +17,12 @@ public interface IAppSettingsStore
     double GetLibraryTileWidth();
 
     void SaveLibraryTileWidth(double tileWidth);
+
+    double GetPlaybackVolume();
+
+    void SavePlaybackVolume(double volume);
+
+    double GetPlaybackRate();
+
+    void SavePlaybackRate(double rate);
 }
