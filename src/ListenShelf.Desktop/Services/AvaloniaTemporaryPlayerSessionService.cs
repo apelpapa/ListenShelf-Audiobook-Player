@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using ListenShelf.Application.Bookmarks;
 using ListenShelf.Application.Library;
 using ListenShelf.Application.Progress;
 using ListenShelf.Application.Settings;
@@ -27,11 +28,13 @@ public sealed class AvaloniaTemporaryPlayerSessionService(
             new LibVlcAudioEngine(),
             new AvaloniaFilePickerService(sessionWindow),
             new TemporaryPlaybackProgressStore(),
+            new TemporaryPlaybackBookmarkStore(),
             new TemporaryLibrarySettingsStore(),
             new TemporaryAppSettingsStore(currentTheme),
             themeService,
             new TemporaryAudiobookLibrary(),
             new AvaloniaBookMetadataEditorService(sessionWindow, metadataProvider),
+            new AvaloniaBookmarkEditorService(sessionWindow),
             this,
             isTemporarySession: true);
 
@@ -48,6 +51,19 @@ public sealed class AvaloniaTemporaryPlayerSessionService(
         public PlaybackProgress? GetMostRecent() => null;
 
         public void Save(PlaybackProgress progress)
+        {
+        }
+    }
+
+    private sealed class TemporaryPlaybackBookmarkStore : IPlaybackBookmarkStore
+    {
+        public IReadOnlyList<PlaybackBookmark> GetForFile(string filePath) => [];
+
+        public void Save(PlaybackBookmark bookmark)
+        {
+        }
+
+        public void Delete(Guid bookmarkId)
         {
         }
     }

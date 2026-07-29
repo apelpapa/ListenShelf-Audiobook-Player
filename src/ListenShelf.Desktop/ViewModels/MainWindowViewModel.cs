@@ -3,6 +3,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ListenShelf.Application.Bookmarks;
 using ListenShelf.Application.Library;
 using ListenShelf.Application.Playback;
 using ListenShelf.Application.Progress;
@@ -35,11 +36,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IAudioEngine _audioEngine;
     private readonly IFilePickerService _filePickerService;
     private readonly IPlaybackProgressStore _progressStore;
+    private readonly IPlaybackBookmarkStore _bookmarkStore;
     private readonly ILibrarySettingsStore _librarySettingsStore;
     private readonly IAppSettingsStore _appSettingsStore;
     private readonly IThemeService _themeService;
     private readonly IAudiobookLibrary _audiobookLibrary;
     private readonly IBookMetadataEditorService _bookMetadataEditorService;
+    private readonly IBookmarkEditorService _bookmarkEditorService;
     private readonly ITemporaryPlayerSessionService _temporaryPlayerSessionService;
     private readonly DispatcherTimer _sleepTimer;
     private bool _isUpdatingPositionFromEngine;
@@ -59,22 +62,26 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IAudioEngine audioEngine,
         IFilePickerService filePickerService,
         IPlaybackProgressStore progressStore,
+        IPlaybackBookmarkStore bookmarkStore,
         ILibrarySettingsStore librarySettingsStore,
         IAppSettingsStore appSettingsStore,
         IThemeService themeService,
         IAudiobookLibrary audiobookLibrary,
         IBookMetadataEditorService bookMetadataEditorService,
+        IBookmarkEditorService bookmarkEditorService,
         ITemporaryPlayerSessionService temporaryPlayerSessionService,
         bool isTemporarySession = false)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
         _progressStore = progressStore;
+        _bookmarkStore = bookmarkStore;
         _librarySettingsStore = librarySettingsStore;
         _appSettingsStore = appSettingsStore;
         _themeService = themeService;
         _audiobookLibrary = audiobookLibrary;
         _bookMetadataEditorService = bookMetadataEditorService;
+        _bookmarkEditorService = bookmarkEditorService;
         _temporaryPlayerSessionService = temporaryPlayerSessionService;
         IsTemporarySession = isTemporarySession;
         _sleepTimer = new DispatcherTimer
@@ -247,6 +254,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<PlaybackChapterItemViewModel> Chapters { get; } = [];
 
+    public ObservableCollection<PlaybackBookmarkItemViewModel> Bookmarks { get; } = [];
+
     public ObservableCollection<LibraryGroupViewModel> LibraryGroups { get; } = [];
 
     public IReadOnlyList<LibraryGroupOptionViewModel> LibraryGroupOptions => GroupOptions;
@@ -371,8 +380,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanControlPlayback))]
+    [NotifyPropertyChangedFor(nameof(CanCreateBookmark))]
+    [NotifyPropertyChangedFor(nameof(CanDisplayBookmarkPanel))]
     [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
+    [NotifyCanExecuteChangedFor(nameof(AddBookmarkCommand))]
     private bool _isFileLoaded;
 
     [ObservableProperty]
@@ -381,8 +393,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanControlPlayback))]
+    [NotifyPropertyChangedFor(nameof(CanCreateBookmark))]
     [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
+    [NotifyCanExecuteChangedFor(nameof(AddBookmarkCommand))]
     private bool _isBusy;
 
     [ObservableProperty]
@@ -426,7 +440,19 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool CanControlPlayback => IsFileLoaded && !IsBusy;
 
+    public bool CanCreateBookmark => IsPersistentSession && CanControlPlayback;
+
+    public bool CanDisplayBookmarkPanel => IsPersistentSession && IsFileLoaded;
+
     public bool HasChapters => Chapters.Count > 0;
+
+    public bool HasBookmarks => Bookmarks.Count > 0;
+
+    public bool HasNoBookmarks => !HasBookmarks;
+
+    public string BookmarkCountText => Bookmarks.Count == 1
+        ? "1 bookmark"
+        : $"{Bookmarks.Count} bookmarks";
 
     public string SleepTimerButtonText => IsSleepTimerActive
         ? $"Sleep {FormatSleepTimerRemaining(SleepTimerRemaining)}"
@@ -753,6 +779,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             _currentFilePath = null;
             _pendingResumePosition = null;
             ClearChapters();
+            ClearBookmarks();
             SetCurrentCover(null);
 
             await _audioEngine.LoadAsync(filePath);
@@ -769,6 +796,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             FileName = Path.GetFileName(_currentFilePath);
             FileFormatText = $"{Path.GetExtension(_currentFilePath).TrimStart('.').ToUpperInvariant()} • LOCAL";
             SetCurrentCover(libraryBook?.CoverPath);
+            RefreshBookmarks();
             ProgressText = IsTemporarySession
                 ? "Temporary session — position will not be saved."
                 : _pendingResumePosition is { } resumePosition
@@ -1018,6 +1046,46 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         _sleepTimerPausePending = false;
         StopSleepTimer();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanCreateBookmark))]
+    private async Task AddBookmarkAsync()
+    {
+        if (!CanCreateBookmark || string.IsNullOrWhiteSpace(_currentFilePath))
+        {
+            return;
+        }
+
+        try
+        {
+            ErrorMessage = string.Empty;
+            var position = CurrentPlaybackPosition;
+            var chapter = FindChapterContaining(position);
+            var editResult = await _bookmarkEditorService.EditAsync(bookmark: null);
+            if (editResult is null)
+            {
+                return;
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            _bookmarkStore.Save(new PlaybackBookmark(
+                Guid.NewGuid(),
+                _currentFilePath,
+                position,
+                editResult.Name,
+                editResult.Note,
+                chapter?.Index,
+                chapter?.Title,
+                now,
+                now));
+            RefreshBookmarks();
+            ProgressText =
+                $"Bookmark saved at {FormatTime(position.TotalSeconds, CurrentPlaybackDuration.TotalSeconds)}";
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"The bookmark could not be saved: {exception.Message}";
+        }
     }
 
     private bool CanSelectPreviousChapter() =>
@@ -1275,6 +1343,102 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         NextChapterCommand.NotifyCanExecuteChanged();
     }
 
+    private void RefreshBookmarks()
+    {
+        ClearBookmarks();
+        if (IsTemporarySession || string.IsNullOrWhiteSpace(_currentFilePath))
+        {
+            return;
+        }
+
+        try
+        {
+            foreach (var bookmark in _bookmarkStore.GetForFile(_currentFilePath))
+            {
+                Bookmarks.Add(new PlaybackBookmarkItemViewModel(
+                    bookmark,
+                    JumpToBookmark,
+                    EditBookmarkAsync,
+                    DeleteBookmark));
+            }
+
+            NotifyBookmarkCollectionChanged();
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage =
+                $"Playback is available, but bookmarks could not be loaded: {exception.Message}";
+        }
+    }
+
+    private void ClearBookmarks()
+    {
+        Bookmarks.Clear();
+        NotifyBookmarkCollectionChanged();
+    }
+
+    private void NotifyBookmarkCollectionChanged()
+    {
+        OnPropertyChanged(nameof(HasBookmarks));
+        OnPropertyChanged(nameof(HasNoBookmarks));
+        OnPropertyChanged(nameof(BookmarkCountText));
+    }
+
+    private void JumpToBookmark(PlaybackBookmark bookmark)
+    {
+        if (!CanControlPlayback
+            || string.IsNullOrWhiteSpace(_currentFilePath)
+            || !PathsEqual(_currentFilePath, bookmark.FilePath))
+        {
+            return;
+        }
+
+        SeekPlayback(bookmark.Position);
+        SelectChapterContaining(bookmark.Position);
+        ProgressText =
+            $"Jumped to bookmark at {FormatTime(bookmark.Position.TotalSeconds, CurrentPlaybackDuration.TotalSeconds)}";
+    }
+
+    private async Task EditBookmarkAsync(PlaybackBookmark bookmark)
+    {
+        try
+        {
+            ErrorMessage = string.Empty;
+            var editResult = await _bookmarkEditorService.EditAsync(bookmark);
+            if (editResult is null)
+            {
+                return;
+            }
+
+            _bookmarkStore.Save(bookmark with
+            {
+                Name = editResult.Name,
+                Note = editResult.Note,
+                UpdatedAtUtc = DateTimeOffset.UtcNow,
+            });
+            RefreshBookmarks();
+            ProgressText = "Bookmark changes saved.";
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"The bookmark could not be updated: {exception.Message}";
+        }
+    }
+
+    private void DeleteBookmark(PlaybackBookmark bookmark)
+    {
+        try
+        {
+            _bookmarkStore.Delete(bookmark.Id);
+            RefreshBookmarks();
+            ProgressText = "Bookmark deleted.";
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"The bookmark could not be deleted: {exception.Message}";
+        }
+    }
+
     private void StartSleepTimer(TimeSpan duration)
     {
         if (!IsFileLoaded || duration <= TimeSpan.Zero)
@@ -1383,9 +1547,25 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void SelectChapterContaining(TimeSpan position)
     {
-        if (Chapters.Count == 0)
+        var chapter = FindChapterContaining(position);
+        if (chapter is null)
         {
             return;
+        }
+
+        _isUpdatingChapterFromEngine = true;
+        SelectedChapter = chapter;
+        _isUpdatingChapterFromEngine = false;
+        OnPropertyChanged(nameof(ChapterPositionText));
+        PreviousChapterCommand.NotifyCanExecuteChanged();
+        NextChapterCommand.NotifyCanExecuteChanged();
+    }
+
+    private PlaybackChapterItemViewModel? FindChapterContaining(TimeSpan position)
+    {
+        if (Chapters.Count == 0)
+        {
+            return null;
         }
 
         var chapter = Chapters[0];
@@ -1399,12 +1579,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             chapter = candidate;
         }
 
-        _isUpdatingChapterFromEngine = true;
-        SelectedChapter = chapter;
-        _isUpdatingChapterFromEngine = false;
-        OnPropertyChanged(nameof(ChapterPositionText));
-        PreviousChapterCommand.NotifyCanExecuteChanged();
-        NextChapterCommand.NotifyCanExecuteChanged();
+        return chapter;
     }
 
     private void SaveCurrentProgress(bool force) =>

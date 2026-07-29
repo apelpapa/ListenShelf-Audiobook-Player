@@ -122,10 +122,13 @@
                     </StackPanel>
                 </Grid>
 
-                <StackPanel Grid.Row="1"
-                            VerticalAlignment="Center"
-                            Spacing="22">
-                    <StackPanel Spacing="8">
+                <ScrollViewer Grid.Row="1"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="0,14"
+                                VerticalAlignment="Center"
+                                Spacing="18">
+                        <StackPanel Spacing="8">
                         <Slider Minimum="0"
                                 Maximum="{Binding SeekMaximum}"
                                 Value="{Binding PositionSeconds, Mode=TwoWay}"
@@ -145,7 +148,7 @@
                                        Foreground="{DynamicResource MutedTextBrush}"
                                        Text="{Binding RemainingText}" />
                         </Grid>
-                    </StackPanel>
+                        </StackPanel>
 
                     <Border Padding="11,9"
                             CornerRadius="11"
@@ -197,6 +200,107 @@
                         </Grid>
                     </Border>
 
+                    <Border MaxHeight="180"
+                            Padding="11,9"
+                            CornerRadius="11"
+                            Background="{DynamicResource SurfaceRaisedBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            IsVisible="{Binding CanDisplayBookmarkPanel}">
+                        <Grid RowDefinitions="Auto,*" RowSpacing="7">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                <TextBlock FontSize="10"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource SubtleTextBrush}"
+                                           Text="BOOKMARKS" />
+                                <TextBlock Grid.Column="1"
+                                           VerticalAlignment="Center"
+                                           FontSize="10"
+                                           Foreground="{DynamicResource MutedTextBrush}"
+                                           IsVisible="{Binding HasBookmarks}"
+                                           Text="{Binding BookmarkCountText}" />
+
+                                <Button Grid.Column="2"
+                                        Padding="9,5"
+                                        Background="{DynamicResource AccentBrush}"
+                                        Foreground="{DynamicResource OnAccentBrush}"
+                                        FontSize="10"
+                                        Command="{Binding AddBookmarkCommand}"
+                                        Content="+ Add bookmark"
+                                        IsEnabled="{Binding CanCreateBookmark}"
+                                        ToolTip.Tip="Save the current listening position" />
+                            </Grid>
+
+                            <Grid Grid.Row="1">
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource MutedTextBrush}"
+                                           IsVisible="{Binding HasNoBookmarks}"
+                                           Text="No bookmarks for this audiobook yet." />
+
+                                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                              IsVisible="{Binding HasBookmarks}"
+                                              VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl ItemsSource="{Binding Bookmarks}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:PlaybackBookmarkItemViewModel">
+                                            <Border Margin="0,0,0,6"
+                                                    Padding="9,7"
+                                                    CornerRadius="8"
+                                                    Background="{DynamicResource SurfaceAltBrush}">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                    <StackPanel Grid.Column="0" Spacing="2">
+                                                        <TextBlock FontSize="12"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                                                   Text="{Binding NameText}"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock FontSize="10"
+                                                                   Foreground="{DynamicResource AccentTextBrush}"
+                                                                   Text="{Binding LocationText}"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock MaxHeight="34"
+                                                                   FontSize="10"
+                                                                   Foreground="{DynamicResource MutedTextBrush}"
+                                                                   IsVisible="{Binding HasNote}"
+                                                                   Text="{Binding NoteText}"
+                                                                   TextWrapping="Wrap" />
+                                                    </StackPanel>
+
+                                                    <StackPanel Grid.Column="1"
+                                                                VerticalAlignment="Center"
+                                                                Orientation="Horizontal"
+                                                                Spacing="5">
+                                                        <Button Padding="9,5"
+                                                                Background="{DynamicResource AccentBrush}"
+                                                                Foreground="{DynamicResource OnAccentBrush}"
+                                                                FontSize="10"
+                                                                Command="{Binding JumpCommand}"
+                                                                Content="Jump" />
+                                                        <Button Padding="9,5"
+                                                                Background="{DynamicResource SurfaceRaisedBrush}"
+                                                                Foreground="{DynamicResource SecondaryTextBrush}"
+                                                                FontSize="10"
+                                                                Command="{Binding EditCommand}"
+                                                                Content="Edit" />
+                                                        <Button Padding="9,5"
+                                                                Background="{DynamicResource SurfaceRaisedBrush}"
+                                                                Foreground="{DynamicResource DangerTextBrush}"
+                                                                FontSize="10"
+                                                                Command="{Binding DeleteCommand}"
+                                                                Content="Delete" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
                     <StackPanel HorizontalAlignment="Center"
                                 Orientation="Horizontal"
                                 Spacing="14">
@@ -234,7 +338,8 @@
                                Foreground="{DynamicResource DangerTextBrush}"
                                Text="{Binding ErrorMessage}"
                                TextWrapping="Wrap" />
-                </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
 
                 <Grid Grid.Row="2" ColumnDefinitions="Auto,150,*,Auto,90">
                     <TextBlock Grid.Column="0"

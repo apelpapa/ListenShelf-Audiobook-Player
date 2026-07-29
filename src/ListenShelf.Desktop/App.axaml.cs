@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using ListenShelf.Desktop.Services;
 using ListenShelf.Desktop.ViewModels;
 using ListenShelf.Desktop.Views;
+using ListenShelf.Infrastructure.Bookmarks;
 using ListenShelf.Infrastructure.Library;
 using ListenShelf.Infrastructure.Metadata;
 using ListenShelf.Infrastructure.Progress;
@@ -37,11 +38,13 @@ namespace ListenShelf.Desktop
                     new LibVlcAudioEngine(),
                     new AvaloniaFilePickerService(mainWindow),
                     new SqlitePlaybackProgressStore(database),
+                    new SqlitePlaybackBookmarkStore(database),
                     new SqliteLibrarySettingsStore(database),
                     new SqliteAppSettingsStore(database),
                     themeService,
                     new SqliteAudiobookLibrary(database),
                     new AvaloniaBookMetadataEditorService(mainWindow, metadataProvider),
+                    new AvaloniaBookmarkEditorService(mainWindow),
                     temporaryPlayerSessionService);
 
                 mainWindow.DataContext = viewModel;

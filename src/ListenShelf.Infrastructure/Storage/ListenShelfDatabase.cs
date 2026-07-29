@@ -74,6 +74,22 @@ public sealed class ListenShelfDatabase
                 setting_value TEXT NOT NULL
             );
 
+            CREATE TABLE IF NOT EXISTS playback_bookmarks (
+                bookmark_id TEXT NOT NULL PRIMARY KEY,
+                file_key TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                position_ms INTEGER NOT NULL CHECK (position_ms >= 0),
+                name TEXT NULL,
+                note TEXT NULL,
+                chapter_index INTEGER NULL CHECK (chapter_index >= 0),
+                chapter_title TEXT NULL,
+                created_utc TEXT NOT NULL,
+                updated_utc TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS ix_playback_bookmarks_file_position
+            ON playback_bookmarks(file_key, position_ms, created_utc);
+
             CREATE TABLE IF NOT EXISTS library_books (
                 book_id TEXT NOT NULL PRIMARY KEY,
                 title TEXT NOT NULL,
