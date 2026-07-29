@@ -1,6 +1,8 @@
 # ListenShelf — Audiobook Player
 
-ListenShelf is a private, offline-first audiobook library and player. It began as a focused Windows M4B playback slice built with Avalonia and .NET 10; the architecture keeps macOS, Linux, and possible future mobile clients open.
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
+ListenShelf is a free and open-source, privacy-first audiobook library and player. It began as a focused Windows M4B playback slice built with Avalonia and .NET 10; the architecture keeps macOS, Linux, and possible future mobile clients open.
 
 > **Alpha:** ListenShelf is early software. Windows preview downloads are available from [GitHub Releases](https://github.com/apelpapa/ListenShelf-Audiobook-Player/releases).
 
@@ -40,6 +42,24 @@ Create all Windows x64 release assets from the repository root:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build\Publish-WindowsRelease.ps1
 ```
 
-## License status
+## Free software and optional skins
 
-ListenShelf does not yet have a project license. The source is visible for this alpha, but no open-source reuse license has been selected. Distributed third-party components retain their own licenses as listed in `THIRD-PARTY-NOTICES.txt`.
+Copyright © 2026 Abel Papazian.
+
+ListenShelf's application code and bundled free themes are licensed under the
+[GNU General Public License version 3 only](LICENSE). You may use, study,
+modify, and redistribute them—including commercially—under the GPL's terms.
+Distributed third-party components retain their own licenses as listed in
+[`THIRD-PARTY-NOTICES.txt`](THIRD-PARTY-NOTICES.txt).
+
+The complete player is intended to remain free, with no advertisements or paid
+functional features that do not create an ongoing cost to provide. If
+monetization is introduced for a full release, the current plan is to offer
+optional official cosmetic skins. The standard light and dark appearances will
+remain included for free. Official paid skin packages will be distributed
+separately under their own asset licenses and are not part of this repository
+unless explicitly stated otherwise.
+
+The GPL covers the software, not permission to present a fork as the official
+ListenShelf product. The ListenShelf name, logo, icon, and other source-identifying
+branding remain governed by the [`TRADEMARKS.md`](TRADEMARKS.md) brand policy.

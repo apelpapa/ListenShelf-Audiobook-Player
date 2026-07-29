@@ -7,7 +7,9 @@
     <VersionPrefix>0.1.0</VersionPrefix>
     <VersionSuffix>alpha.1</VersionSuffix>
     <Authors>apelpapa</Authors>
+    <Copyright>Copyright © 2026 Abel Papazian</Copyright>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
     <Product>ListenShelf — Audiobook Player</Product>
-    <Description>A private, offline-first audiobook library and player.</Description>
+    <Description>A free and open-source, privacy-first audiobook library and player.</Description>
   </PropertyGroup>
 </Project>
