@@ -53,7 +53,6 @@
             <StackPanel Grid.Row="2" Spacing="2">
                 <TextBlock FontSize="11"
                            Foreground="{DynamicResource SecondaryTextBrush}"
-                           IsVisible="{Binding CanManageMetadata}"
                            Text="{Binding AuthorText}"
                            TextTrimming="CharacterEllipsis" />
                 <TextBlock FontSize="10"
@@ -64,14 +63,6 @@
             </StackPanel>
 
             <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="7">
-                <Border Padding="7,2"
-                        CornerRadius="7"
-                        Background="{DynamicResource AccentSoftBrush}">
-                    <TextBlock FontSize="9"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentSoftTextBrush}"
-                               Text="{Binding StorageModeText}" />
-                </Border>
                 <TextBlock VerticalAlignment="Center"
                            FontSize="10"
                            Foreground="{DynamicResource MutedTextBrush}"
@@ -100,16 +91,14 @@
                         Foreground="{DynamicResource SecondaryTextBrush}"
                         FontSize="10"
                         Command="{Binding EditMetadataCommand}"
-                        Content="{Binding DetailsButtonText}"
-                        IsVisible="{Binding CanManageMetadata}" />
+                        Content="{Binding DetailsButtonText}" />
                 <Button Grid.Column="1"
                         Padding="9,8"
                         Background="{DynamicResource SurfaceRaisedBrush}"
                         Foreground="{DynamicResource SecondaryTextBrush}"
                         FontSize="10"
                         Command="{Binding ChooseCoverCommand}"
-                        Content="{Binding CoverButtonText}"
-                        IsVisible="{Binding CanManageMetadata}" />
+                        Content="{Binding CoverButtonText}" />
             </Grid>
         </Grid>
     </Border>

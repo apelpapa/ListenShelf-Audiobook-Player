@@ -21,7 +21,6 @@ public sealed record AudiobookMetadataSuggestions
         ArgumentNullException.ThrowIfNull(books);
 
         var metadata = books
-            .Where(book => book.StorageMode == LibraryStorageMode.Managed)
             .Select(book => book.Metadata)
             .ToArray();
 

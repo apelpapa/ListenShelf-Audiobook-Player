@@ -29,23 +29,16 @@ namespace ListenShelf.Desktop
                 var database = new ListenShelfDatabase();
                 var themeService = new AvaloniaThemeService();
                 var metadataProvider = new OpenLibraryBookMetadataProvider();
-                var temporaryPlayerSessionService =
-                    new AvaloniaTemporaryPlayerSessionService(
-                        mainWindow,
-                        themeService,
-                        metadataProvider);
                 var viewModel = new MainWindowViewModel(
                     new LibVlcAudioEngine(),
                     new AvaloniaFilePickerService(mainWindow),
                     new SqlitePlaybackProgressStore(database),
                     new SqlitePlaybackBookmarkStore(database),
-                    new SqliteLibrarySettingsStore(database),
                     new SqliteAppSettingsStore(database),
                     themeService,
                     new SqliteAudiobookLibrary(database),
                     new AvaloniaBookMetadataEditorService(mainWindow, metadataProvider),
-                    new AvaloniaBookmarkEditorService(mainWindow),
-                    temporaryPlayerSessionService);
+                    new AvaloniaBookmarkEditorService(mainWindow));
 
                 mainWindow.DataContext = viewModel;
                 mainWindow.Opened += async (_, _) => await viewModel.InitializeAsync();

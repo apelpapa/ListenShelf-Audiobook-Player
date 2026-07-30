@@ -40,14 +40,11 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
 
     public string Title => Book.Title;
 
-    public bool CanManageMetadata => Book.StorageMode == LibraryStorageMode.Managed;
-
     public string AuthorText => Book.Metadata.Authors.Count > 0
         ? string.Join(", ", Book.Metadata.Authors)
         : "Unknown author";
 
-    public bool HasSeries =>
-        CanManageMetadata && !string.IsNullOrWhiteSpace(Book.Metadata.SeriesName);
+    public bool HasSeries => !string.IsNullOrWhiteSpace(Book.Metadata.SeriesName);
 
     public string SeriesText
     {
@@ -77,10 +74,6 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
     public string FileName => Path.GetFileName(Book.FilePath);
 
     public string FilePath => Book.FilePath;
-
-    public string StorageModeText => Book.StorageMode == LibraryStorageMode.Linked
-        ? "PLAYER ONLY"
-        : "MANAGED";
 
     public string FileSizeText => FormatFileSize(Book.FileSizeBytes);
 
@@ -117,10 +110,10 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
     [RelayCommand(CanExecute = nameof(IsAvailable))]
     private Task PlayAsync() => _playBookAsync(Book);
 
-    [RelayCommand(CanExecute = nameof(CanManageMetadata))]
+    [RelayCommand]
     private Task ChooseCoverAsync() => _chooseCoverAsync(Book);
 
-    [RelayCommand(CanExecute = nameof(CanManageMetadata))]
+    [RelayCommand]
     private Task EditMetadataAsync() => _editMetadataAsync(Book);
 
     public void SetTileWidth(double tileWidth)

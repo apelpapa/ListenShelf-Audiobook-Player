@@ -109,142 +109,17 @@
                     <TextBlock FontSize="19"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource PrimaryTextBrush}"
-                               Text="Library file handling" />
+                               Text="Library storage" />
                     <TextBlock FontSize="13"
                                Foreground="{DynamicResource MutedTextBrush}"
-                               Text="Choose how this library handles audiobook files."
+                               Text="ListenShelf keeps organized, verified copies while leaving your original files untouched."
                                TextWrapping="Wrap" />
                 </StackPanel>
 
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
-                    <Button Grid.Column="0"
-                            Padding="0"
-                            HorizontalContentAlignment="Stretch"
-                            VerticalContentAlignment="Stretch"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Command="{Binding ChooseLinkedLibraryCommand}">
-                        <Border Padding="22"
-                                CornerRadius="17"
-                                Background="{DynamicResource SurfaceBrush}"
-                                BorderBrush="{DynamicResource BorderBrush}"
-                                BorderThickness="1">
-                            <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
-                                <Border Grid.RowSpan="4"
-                                        Margin="-22"
-                                        CornerRadius="17"
-                                        BorderBrush="{DynamicResource AccentBrush}"
-                                        BorderThickness="2"
-                                        IsHitTestVisible="False"
-                                        IsVisible="{Binding IsLinkedModeSelected}" />
-                                <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                                    <TextBlock FontSize="11"
-                                               FontWeight="SemiBold"
-                                               Foreground="{DynamicResource WarmAccentBrush}"
-                                               Text="PLAYER ONLY" />
-                                    <Border Grid.Column="1"
-                                            Padding="8,3"
-                                            CornerRadius="8"
-                                            Background="{DynamicResource AccentSoftBrush}"
-                                            IsVisible="{Binding IsLinkedModeSelected}">
-                                        <TextBlock FontSize="10"
-                                                   Foreground="{DynamicResource AccentSoftTextBrush}"
-                                                   Text="SELECTED" />
-                                    </Border>
-                                </Grid>
-                                <TextBlock Grid.Row="1"
-                                           FontSize="18"
-                                           FontWeight="SemiBold"
-                                           Foreground="{DynamicResource PrimaryTextBrush}"
-                                           Text="Player Only Mode" />
-                                <TextBlock Grid.Row="2"
-                                           FontSize="12"
-                                           Foreground="{DynamicResource MutedTextBrush}"
-                                           Text="ListenShelf remembers file locations and listening positions. It does not copy files or offer editable book metadata."
-                                           TextWrapping="Wrap" />
-                                <TextBlock Grid.Row="3"
-                                           FontSize="11"
-                                           Foreground="{DynamicResource SecondaryTextBrush}"
-                                           Text="Play • Resume • Leave files untouched" />
-                            </Grid>
-                        </Border>
-                    </Button>
-
-                    <Button Grid.Column="1"
-                            Padding="0"
-                            HorizontalContentAlignment="Stretch"
-                            VerticalContentAlignment="Stretch"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Command="{Binding ChooseManagedLibraryCommand}">
-                        <Border Padding="22"
-                                CornerRadius="17"
-                                Background="{DynamicResource SurfaceBrush}"
-                                BorderBrush="{DynamicResource BorderBrush}"
-                                BorderThickness="1">
-                            <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
-                                <Border Grid.RowSpan="4"
-                                        Margin="-22"
-                                        CornerRadius="17"
-                                        BorderBrush="{DynamicResource AccentBrush}"
-                                        BorderThickness="2"
-                                        IsHitTestVisible="False"
-                                        IsVisible="{Binding IsManagedModeSelected}" />
-                                <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                                    <TextBlock FontSize="11"
-                                               FontWeight="SemiBold"
-                                               Foreground="{DynamicResource CoralAccentBrush}"
-                                               Text="MANAGED LIBRARY" />
-                                    <Border Grid.Column="1"
-                                            Padding="8,3"
-                                            CornerRadius="8"
-                                            Background="{DynamicResource AccentSoftBrush}"
-                                            IsVisible="{Binding IsManagedModeSelected}">
-                                        <TextBlock FontSize="10"
-                                                   Foreground="{DynamicResource AccentSoftTextBrush}"
-                                                   Text="SELECTED" />
-                                    </Border>
-                                </Grid>
-                                <TextBlock Grid.Row="1"
-                                           FontSize="18"
-                                           FontWeight="SemiBold"
-                                           Foreground="{DynamicResource PrimaryTextBrush}"
-                                           Text="Let ListenShelf manage copies" />
-                                <TextBlock Grid.Row="2"
-                                           FontSize="12"
-                                           Foreground="{DynamicResource MutedTextBrush}"
-                                           Text="Future imports are copied into a ListenShelf library and organized for you. Originals stay untouched."
-                                           TextWrapping="Wrap" />
-                                <TextBlock Grid.Row="3"
-                                           FontSize="11"
-                                           Foreground="{DynamicResource SecondaryTextBrush}"
-                                           Text="Copy first • Verify • Manage the copy" />
-                            </Grid>
-                        </Border>
-                    </Button>
-                </Grid>
-
                 <Border Padding="17"
                         CornerRadius="13"
-                        Background="{DynamicResource SurfaceAltBrush}"
-                        BorderBrush="{DynamicResource SeparatorBrush}"
-                        BorderThickness="1">
-                    <StackPanel Spacing="5">
-                        <TextBlock FontSize="12"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource SecondaryTextBrush}"
-                                   Text="Managed libraries stay isolated" />
-                        <TextBlock FontSize="12"
-                                   Foreground="{DynamicResource MutedTextBrush}"
-                                   Text="While managed data exists, choosing Player Only opens a separate temporary window that saves nothing. A permanent switch will require exporting and deleting all managed data; export will be added before deletion is offered."
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-
-                <Border Padding="17"
-                        CornerRadius="13"
-                        Background="{DynamicResource SurfaceAltBrush}"
-                        BorderBrush="{DynamicResource SeparatorBrush}"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1">
                     <StackPanel Spacing="5">
                         <TextBlock FontSize="11"
@@ -257,15 +132,10 @@
                                    TextWrapping="Wrap" />
                         <TextBlock FontSize="11"
                                    Foreground="{DynamicResource SubtleTextBrush}"
-                                   Text="Managed imports are copied here. Their original source files are left untouched."
+                                   Text="Audiobooks added to ListenShelf are copied here and verified before being added to your shelf. Original source files are left untouched."
                                    TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
-
-                <TextBlock FontSize="12"
-                           Foreground="{DynamicResource AccentTextBrush}"
-                           Text="{Binding LibrarySettingsMessage}"
-                           TextWrapping="Wrap" />
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

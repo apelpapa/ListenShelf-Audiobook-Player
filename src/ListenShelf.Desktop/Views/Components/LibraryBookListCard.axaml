@@ -41,7 +41,6 @@
                            TextTrimming="CharacterEllipsis" />
                 <TextBlock FontSize="11"
                            Foreground="{DynamicResource SecondaryTextBrush}"
-                           IsVisible="{Binding CanManageMetadata}"
                            Text="{Binding AuthorText}"
                            TextTrimming="CharacterEllipsis" />
                 <TextBlock FontSize="10"
@@ -50,14 +49,6 @@
                            Text="{Binding SeriesText}"
                            TextTrimming="CharacterEllipsis" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Border Padding="7,2"
-                            CornerRadius="7"
-                            Background="{DynamicResource AccentSoftBrush}">
-                        <TextBlock FontSize="9"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource AccentSoftTextBrush}"
-                                   Text="{Binding StorageModeText}" />
-                    </Border>
                     <TextBlock VerticalAlignment="Center"
                                FontSize="11"
                                Foreground="{DynamicResource MutedTextBrush}"
@@ -97,15 +88,13 @@
                         Foreground="{DynamicResource SecondaryTextBrush}"
                         FontSize="11"
                         Command="{Binding EditMetadataCommand}"
-                        Content="{Binding DetailsButtonText}"
-                        IsVisible="{Binding CanManageMetadata}" />
+                        Content="{Binding DetailsButtonText}" />
                 <Button Padding="12,7"
                         Background="{DynamicResource SurfaceRaisedBrush}"
                         Foreground="{DynamicResource SecondaryTextBrush}"
                         FontSize="11"
                         Command="{Binding ChooseCoverCommand}"
-                        Content="{Binding CoverButtonText}"
-                        IsVisible="{Binding CanManageMetadata}" />
+                        Content="{Binding CoverButtonText}" />
             </StackPanel>
         </Grid>
     </Border>

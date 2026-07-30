@@ -59,8 +59,7 @@
 
                 <StackPanel Grid.Row="1" Spacing="5">
                     <Button Classes="nav"
-                            Command="{Binding ShowLibraryCommand}"
-                            IsVisible="{Binding IsPersistentSession}">
+                            Command="{Binding ShowLibraryCommand}">
                         <Grid ColumnDefinitions="4,*" ColumnSpacing="12">
                             <Border Grid.Column="0"
                                     CornerRadius="2"
@@ -117,13 +116,6 @@
                                 Content="Add audiobooks"
                                 IsEnabled="{Binding CanAddAudiobooks}"
                                 IsVisible="{Binding IsLibrarySection}" />
-                        <Button Padding="20,11"
-                                Background="{DynamicResource AccentBrush}"
-                                Foreground="{DynamicResource OnAccentBrush}"
-                                FontWeight="SemiBold"
-                                Command="{Binding OpenFileCommand}"
-                                Content="Open audiobook"
-                                IsVisible="{Binding IsPlayerSection}" />
                         <Button Width="40"
                                 Height="40"
                                 Padding="0"
@@ -131,8 +123,6 @@
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="1"
                                 Command="{Binding ShowSettingsCommand}"
-                                IsEnabled="{Binding IsMainContentVisible}"
-                                IsVisible="{Binding IsPersistentSession}"
                                 ToolTip.Tip="Settings">
                             <Grid>
                                 <TextBlock HorizontalAlignment="Center"
@@ -155,13 +145,9 @@
             </Border>
 
             <Grid Grid.Row="1" Margin="26">
-                <sections:OnboardingView IsVisible="{Binding IsOnboardingVisible}" />
-
-                <Grid IsVisible="{Binding IsMainContentVisible}">
-                    <sections:LibraryView IsVisible="{Binding IsLibrarySection}" />
-                    <sections:PlayerView IsVisible="{Binding IsPlayerSection}" />
-                    <sections:SettingsView IsVisible="{Binding IsSettingsSection}" />
-                </Grid>
+                <sections:LibraryView IsVisible="{Binding IsLibrarySection}" />
+                <sections:PlayerView IsVisible="{Binding IsPlayerSection}" />
+                <sections:SettingsView IsVisible="{Binding IsSettingsSection}" />
             </Grid>
 
             <Border Grid.Row="2"

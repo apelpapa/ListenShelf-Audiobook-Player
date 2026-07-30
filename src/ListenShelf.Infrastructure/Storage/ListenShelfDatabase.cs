@@ -95,7 +95,7 @@ public sealed class ListenShelfDatabase
                 title TEXT NOT NULL,
                 file_path TEXT NOT NULL,
                 file_key TEXT NOT NULL UNIQUE,
-                storage_mode TEXT NOT NULL CHECK (storage_mode IN ('Linked', 'Managed')),
+                storage_mode TEXT NOT NULL CHECK (storage_mode = 'Managed'),
                 source_path TEXT NULL,
                 source_key TEXT NULL,
                 file_size_bytes INTEGER NOT NULL CHECK (file_size_bytes >= 0),
@@ -107,6 +107,14 @@ public sealed class ListenShelfDatabase
             WHERE source_key IS NOT NULL;
             """;
         command.ExecuteNonQuery();
+
+        using var obsoleteSettingsCommand = connection.CreateCommand();
+        obsoleteSettingsCommand.CommandText =
+            """
+            DELETE FROM app_settings
+            WHERE setting_key = 'library.default_storage_mode';
+            """;
+        obsoleteSettingsCommand.ExecuteNonQuery();
 
         EnsureColumn(connection, "library_books", "cover_path", "TEXT NULL");
         EnsureColumn(connection, "library_books", "subtitle", "TEXT NULL");

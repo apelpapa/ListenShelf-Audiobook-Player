@@ -37,13 +37,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IFilePickerService _filePickerService;
     private readonly IPlaybackProgressStore _progressStore;
     private readonly IPlaybackBookmarkStore _bookmarkStore;
-    private readonly ILibrarySettingsStore _librarySettingsStore;
     private readonly IAppSettingsStore _appSettingsStore;
     private readonly IThemeService _themeService;
     private readonly IAudiobookLibrary _audiobookLibrary;
     private readonly IBookMetadataEditorService _bookMetadataEditorService;
     private readonly IBookmarkEditorService _bookmarkEditorService;
-    private readonly ITemporaryPlayerSessionService _temporaryPlayerSessionService;
     private readonly DispatcherTimer _sleepTimer;
     private bool _isUpdatingPositionFromEngine;
     private bool _isUpdatingChapterFromEngine;
@@ -63,42 +61,26 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IFilePickerService filePickerService,
         IPlaybackProgressStore progressStore,
         IPlaybackBookmarkStore bookmarkStore,
-        ILibrarySettingsStore librarySettingsStore,
         IAppSettingsStore appSettingsStore,
         IThemeService themeService,
         IAudiobookLibrary audiobookLibrary,
         IBookMetadataEditorService bookMetadataEditorService,
-        IBookmarkEditorService bookmarkEditorService,
-        ITemporaryPlayerSessionService temporaryPlayerSessionService,
-        bool isTemporarySession = false)
+        IBookmarkEditorService bookmarkEditorService)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
         _progressStore = progressStore;
         _bookmarkStore = bookmarkStore;
-        _librarySettingsStore = librarySettingsStore;
         _appSettingsStore = appSettingsStore;
         _themeService = themeService;
         _audiobookLibrary = audiobookLibrary;
         _bookMetadataEditorService = bookMetadataEditorService;
         _bookmarkEditorService = bookmarkEditorService;
-        _temporaryPlayerSessionService = temporaryPlayerSessionService;
-        IsTemporarySession = isTemporarySession;
         _sleepTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1),
         };
         _sleepTimer.Tick += OnSleepTimerTick;
-
-        try
-        {
-            _defaultLibraryStorageMode = _librarySettingsStore.GetDefaultStorageMode();
-        }
-        catch (Exception exception)
-        {
-            _librarySettingsMessage = $"Library preference could not be loaded: {exception.Message}";
-            _librarySettingsErrorMessage = _librarySettingsMessage;
-        }
 
         try
         {
@@ -179,12 +161,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _audioEngine.Volume = (int)Volume;
         _audioEngine.TrySetPlaybackRate(SelectedPlaybackRate);
 
-        if (IsTemporarySession)
-        {
-            SelectedSection = AppSection.Player;
-            ProgressText = "Temporary session — position will not be saved.";
-        }
-
         RefreshLibrary();
     }
 
@@ -199,11 +175,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         _initializationStarted = true;
-        if (IsTemporarySession || IsOnboardingVisible)
-        {
-            return;
-        }
-
         PlaybackProgress? mostRecentProgress;
         try
         {
@@ -220,14 +191,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        if (!File.Exists(mostRecentProgress.FilePath))
-        {
-            StatusText = "Last audiobook unavailable";
-            ErrorMessage =
-                $"The last audiobook could not be found at {mostRecentProgress.FilePath}";
-            return;
-        }
-
         LibraryBook? libraryBook = null;
         try
         {
@@ -237,11 +200,23 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
         catch
         {
-            // The file can still be restored with its filename when library details are unavailable.
+            return;
+        }
+
+        if (libraryBook is null)
+        {
+            return;
+        }
+
+        if (!File.Exists(libraryBook.FilePath))
+        {
+            StatusText = "Last audiobook unavailable";
+            ErrorMessage =
+                $"The last audiobook could not be found at {libraryBook.FilePath}";
+            return;
         }
 
         if (await LoadFileAsync(
-                mostRecentProgress.FilePath,
                 libraryBook,
                 autoPlay: false,
                 knownProgress: mostRecentProgress))
@@ -284,17 +259,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public IReadOnlyList<LibraryBookItemViewModel> ActiveLibraryGroupBooks =>
         ActiveLibraryGroup?.Books ?? [];
 
-    public bool IsTemporarySession { get; }
+    public string WindowTitle => "ListenShelf — Audiobook Player";
 
-    public bool IsPersistentSession => !IsTemporarySession;
-
-    public string WindowTitle => IsTemporarySession
-        ? "ListenShelf — Temporary Player Only Session"
-        : "ListenShelf — Audiobook Player";
-
-    public string FooterText => IsTemporarySession
-        ? "Temporary Player Only session • Nothing opened or changed here will be saved"
-        : "Offline playback • Settings alone never move or copy your files";
+    public string FooterText =>
+        "Offline playback • Imports are copied and verified • Originals stay untouched";
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLibrarySection))]
@@ -303,19 +271,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(PageTitle))]
     [NotifyPropertyChangedFor(nameof(PageSubtitle))]
     private AppSection _selectedSection = AppSection.Library;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsOnboardingVisible))]
-    [NotifyPropertyChangedFor(nameof(IsMainContentVisible))]
-    [NotifyPropertyChangedFor(nameof(IsLinkedModeSelected))]
-    [NotifyPropertyChangedFor(nameof(IsManagedModeSelected))]
-    [NotifyPropertyChangedFor(nameof(CurrentLibraryModeTitle))]
-    [NotifyPropertyChangedFor(nameof(LibraryEmptyDescription))]
-    [NotifyPropertyChangedFor(nameof(CanAddAudiobooks))]
-    private LibraryStorageMode? _defaultLibraryStorageMode;
-
-    [ObservableProperty]
-    private string _librarySettingsMessage = "Choose how ListenShelf handles audiobook files.";
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsDarkThemeSelected))]
@@ -348,10 +303,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(LibraryTileSizeText))]
     private double _libraryTileWidth = DefaultLibraryTileWidth;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasLibrarySettingsError))]
-    private string _librarySettingsErrorMessage = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanAddAudiobooks))]
@@ -440,9 +391,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool CanControlPlayback => IsFileLoaded && !IsBusy;
 
-    public bool CanCreateBookmark => IsPersistentSession && CanControlPlayback;
+    public bool CanCreateBookmark => CanControlPlayback;
 
-    public bool CanDisplayBookmarkPanel => IsPersistentSession && IsFileLoaded;
+    public bool CanDisplayBookmarkPanel => IsFileLoaded;
 
     public bool HasChapters => Chapters.Count > 0;
 
@@ -511,14 +462,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool IsSettingsSection => SelectedSection == AppSection.Settings;
 
-    public bool IsOnboardingVisible => DefaultLibraryStorageMode is null;
-
-    public bool IsMainContentVisible => !IsOnboardingVisible;
-
-    public bool IsLinkedModeSelected => DefaultLibraryStorageMode == LibraryStorageMode.Linked;
-
-    public bool IsManagedModeSelected => DefaultLibraryStorageMode == LibraryStorageMode.Managed;
-
     public bool IsDarkThemeSelected => SelectedTheme == AppTheme.Dark;
 
     public bool IsLightThemeSelected => SelectedTheme == AppTheme.Light;
@@ -527,13 +470,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool IsLibraryTileView => SelectedLibraryView == LibraryViewMode.Tiles;
 
-    public bool HasLibrarySettingsError => !string.IsNullOrWhiteSpace(LibrarySettingsErrorMessage);
-
     public bool HasLibraryBooks => LibraryBooks.Count > 0;
 
     public bool IsLibraryEmpty => !HasLibraryBooks;
 
-    public bool CanAddAudiobooks => !IsLibraryBusy && DefaultLibraryStorageMode is not null;
+    public bool CanAddAudiobooks => !IsLibraryBusy;
 
     public string LibraryBookCountText => LibraryBooks.Count == 1
         ? "1 audiobook"
@@ -541,38 +482,22 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public string ManagedLibraryPath => _audiobookLibrary.ManagedLibraryPath;
 
-    public string PageTitle => IsTemporarySession
-        ? "Player Only Session"
-        : SelectedSection switch
+    public string PageTitle => SelectedSection switch
         {
             AppSection.Player => "Player",
             AppSection.Settings => "Settings",
             _ => "Library",
         };
 
-    public string PageSubtitle => IsTemporarySession
-        ? "Play a local audiobook without adding it to the library or saving any session activity."
-        : SelectedSection switch
+    public string PageSubtitle => SelectedSection switch
         {
             AppSection.Player => "Listen locally with automatic progress saving.",
-            AppSection.Settings => "Personalize ListenShelf and choose how files are handled.",
+            AppSection.Settings => "Personalize ListenShelf and review library storage.",
             _ => "Your audiobooks, series, and collections will live here.",
         };
 
-    public string CurrentLibraryModeTitle => DefaultLibraryStorageMode switch
-    {
-        LibraryStorageMode.Linked => "Player Only Mode",
-        LibraryStorageMode.Managed => "Let ListenShelf manage copies",
-        _ => "Choose how your library works",
-    };
-
-    public string LibraryEmptyDescription => DefaultLibraryStorageMode switch
-    {
-        LibraryStorageMode.Managed =>
-            "Choose M4B, M4A, or MP3 files. ListenShelf will make verified copies and leave the originals untouched.",
-        _ =>
-            "Choose M4B, M4A, or MP3 files. ListenShelf will remember their locations and listening positions without managing book metadata.",
-    };
+    public string LibraryEmptyDescription =>
+        "Choose M4B, M4A, or MP3 files. ListenShelf will make verified copies and leave the originals untouched.";
 
     public string PlayPauseLabel => IsPlaying ? "Pause" : "Play";
 
@@ -648,44 +573,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
-    private async Task ChooseLinkedLibraryAsync()
-    {
-        if (DefaultLibraryStorageMode != LibraryStorageMode.Managed)
-        {
-            SaveLibraryStorageMode(LibraryStorageMode.Linked);
-            return;
-        }
-
-        try
-        {
-            var hasManagedData = _audiobookLibrary
-                .GetBooks()
-                .Any(book => book.StorageMode == LibraryStorageMode.Managed);
-
-            if (!hasManagedData)
-            {
-                SaveLibraryStorageMode(LibraryStorageMode.Linked);
-                return;
-            }
-
-            var opened = await _temporaryPlayerSessionService.WarnAndOpenAsync(SelectedTheme);
-            LibrarySettingsMessage = opened
-                ? "Managed Library remains selected. The temporary Player Only window will not save session activity."
-                : "Managed Library remains selected. No files or settings were changed.";
-        }
-        catch (Exception exception)
-        {
-            LibrarySettingsMessage = $"Player Only Mode could not be opened: {exception.Message}";
-        }
-    }
-
-    [RelayCommand]
-    private void ChooseManagedLibrary() => SaveLibraryStorageMode(LibraryStorageMode.Managed);
-
-    [RelayCommand]
     private async Task AddAudiobooksAsync()
     {
-        if (!CanAddAudiobooks || DefaultLibraryStorageMode is not { } storageMode)
+        if (!CanAddAudiobooks)
         {
             return;
         }
@@ -699,9 +589,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             }
 
             IsLibraryBusy = true;
-            LibraryStatusMessage = storageMode == LibraryStorageMode.Managed
-                ? $"Copying {filePaths.Count} audiobook(s) into the managed library…"
-                : $"Adding {filePaths.Count} audiobook(s) in Player Only Mode…";
+            LibraryStatusMessage =
+                $"Copying {filePaths.Count} audiobook(s) into the library…";
 
             var addedCount = 0;
             var existingCount = 0;
@@ -711,7 +600,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             {
                 try
                 {
-                    var result = await Task.Run(() => _audiobookLibrary.Import(filePath, storageMode));
+                    var result = await Task.Run(() => _audiobookLibrary.Import(filePath));
                     if (result.WasAdded)
                     {
                         addedCount++;
@@ -740,33 +629,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    [RelayCommand]
-    private async Task OpenFileAsync()
-    {
-        try
-        {
-            ErrorMessage = string.Empty;
-            var filePath = await _filePickerService.PickAudiobookFileAsync();
-            if (filePath is null)
-            {
-                return;
-            }
-
-            await LoadFileAsync(filePath);
-        }
-        catch (Exception exception)
-        {
-            ErrorMessage = exception.Message;
-            StatusText = "Could not open audiobook";
-        }
-    }
-
     private async Task<bool> LoadFileAsync(
-        string filePath,
-        LibraryBook? libraryBook = null,
+        LibraryBook libraryBook,
         bool autoPlay = true,
         PlaybackProgress? knownProgress = null)
     {
+        var filePath = libraryBook.FilePath;
+
         try
         {
             ErrorMessage = string.Empty;
@@ -785,27 +654,23 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             await _audioEngine.LoadAsync(filePath);
 
             _currentFilePath = Path.GetFullPath(filePath);
-            var savedProgress = IsTemporarySession
-                ? null
-                : knownProgress ?? _progressStore.Get(_currentFilePath);
+            var savedProgress = knownProgress ?? _progressStore.Get(_currentFilePath);
             _pendingResumePosition = savedProgress?.Position > TimeSpan.Zero
                 ? savedProgress.Position
                 : null;
 
-            BookTitle = libraryBook?.Title ?? Path.GetFileNameWithoutExtension(_currentFilePath);
+            BookTitle = libraryBook.Title;
             FileName = Path.GetFileName(_currentFilePath);
             FileFormatText = $"{Path.GetExtension(_currentFilePath).TrimStart('.').ToUpperInvariant()} • LOCAL";
-            SetCurrentCover(libraryBook?.CoverPath);
+            SetCurrentCover(libraryBook.CoverPath);
             RefreshBookmarks();
-            ProgressText = IsTemporarySession
-                ? "Temporary session — position will not be saved."
-                : _pendingResumePosition is { } resumePosition
-                    ? autoPlay
-                        ? $"Resuming from {FormatTime(resumePosition.TotalSeconds, savedProgress?.Duration.TotalSeconds ?? 0d)}"
-                        : $"Ready at {FormatTime(resumePosition.TotalSeconds, savedProgress?.Duration.TotalSeconds ?? 0d)}"
-                    : autoPlay
-                        ? "Starting from the beginning"
-                        : "Ready at the beginning";
+            ProgressText = _pendingResumePosition is { } resumePosition
+                ? autoPlay
+                    ? $"Resuming from {FormatTime(resumePosition.TotalSeconds, savedProgress?.Duration.TotalSeconds ?? 0d)}"
+                    : $"Ready at {FormatTime(resumePosition.TotalSeconds, savedProgress?.Duration.TotalSeconds ?? 0d)}"
+                : autoPlay
+                    ? "Starting from the beginning"
+                    : "Ready at the beginning";
             IsFileLoaded = true;
             _lastSavedAtUtc = DateTimeOffset.UtcNow;
 
@@ -853,17 +718,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         SelectedSection = AppSection.Player;
-        await LoadFileAsync(book.FilePath, book);
+        await LoadFileAsync(book);
     }
 
     private async Task ChooseCoverAsync(LibraryBook book)
     {
-        if (book.StorageMode != LibraryStorageMode.Managed)
-        {
-            LibraryStatusMessage = "Cover editing is available for ListenShelf-managed copies only.";
-            return;
-        }
-
         try
         {
             var imagePath = await _filePickerService.PickCoverImageAsync();
@@ -905,12 +764,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private async Task EditMetadataAsync(LibraryBook book)
     {
-        if (book.StorageMode != LibraryStorageMode.Managed)
-        {
-            LibraryStatusMessage = "Metadata editing is available for ListenShelf-managed copies only.";
-            return;
-        }
-
         try
         {
             var suggestions = AudiobookMetadataSuggestions.FromBooks(
@@ -1346,7 +1199,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private void RefreshBookmarks()
     {
         ClearBookmarks();
-        if (IsTemporarySession || string.IsNullOrWhiteSpace(_currentFilePath))
+        if (string.IsNullOrWhiteSpace(_currentFilePath))
         {
             return;
         }
@@ -1587,12 +1440,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void SaveProgress(TimeSpan position, TimeSpan duration, bool force)
     {
-        if (IsTemporarySession)
-        {
-            ProgressText = "Temporary session — position will not be saved.";
-            return;
-        }
-
         if (_isLoadingFile || !IsFileLoaded || string.IsNullOrWhiteSpace(_currentFilePath))
         {
             return;
@@ -1617,30 +1464,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         catch (Exception exception)
         {
             ErrorMessage = $"Playback continues, but your place could not be saved: {exception.Message}";
-        }
-    }
-
-    private void SaveLibraryStorageMode(LibraryStorageMode storageMode)
-    {
-        var wasOnboarding = IsOnboardingVisible;
-
-        try
-        {
-            _librarySettingsStore.SaveDefaultStorageMode(storageMode);
-            DefaultLibraryStorageMode = storageMode;
-            LibrarySettingsErrorMessage = string.Empty;
-            LibrarySettingsMessage = $"Saved: {CurrentLibraryModeTitle}.";
-
-            if (wasOnboarding)
-            {
-                SelectedSection = AppSection.Library;
-            }
-        }
-        catch (Exception exception)
-        {
-            LibrarySettingsErrorMessage =
-                $"Library preference could not be saved: {exception.Message}";
-            LibrarySettingsMessage = LibrarySettingsErrorMessage;
         }
     }
 

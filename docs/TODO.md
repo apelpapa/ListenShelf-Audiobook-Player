@@ -14,7 +14,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 ### Data safety and ownership
 
-- [ ] Ensure managed-library operations never modify the user's original source files.
+- [ ] Ensure library operations never modify the user's original source files.
 - [ ] Ensure upgrades and uninstallers never delete a user's library or listening data.
 - [ ] Clearly separate removing a book from the catalog from deleting a ListenShelf-managed copy.
 - [ ] Require strong confirmation before deleting a ListenShelf-managed copy.
@@ -60,8 +60,6 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 - [ ] Relink an audiobook that has moved or is missing from its saved location.
 - [ ] Remove a book from the ListenShelf catalog without deleting the audiobook file.
-- [ ] Complete the permanent switch from Managed Library mode to Player Only Mode.
-- [ ] Complete the permanent switch from Player Only Mode to Managed Library mode.
 - [ ] Improve duplicate detection and duplicate-import messages.
 - [ ] Add clear progress and error reporting for large imports.
 
@@ -141,8 +139,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [ ] Launch successfully on macOS Apple Silicon.
 - [ ] Launch successfully on macOS Intel where supported.
 - [ ] Launch successfully on Linux x64.
-- [ ] Import linked audiobooks on every supported platform.
-- [ ] Import managed audiobooks on every supported platform.
+- [ ] Import audiobooks into the managed library on every supported platform.
 - [ ] Play M4B, M4A, and MP3 files on every supported platform.
 - [ ] Discover embedded chapters before Play.
 - [ ] Seek, pause, resume, and replay completed books.

@@ -31,7 +31,6 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         abridgement,
         edition_notes,
         file_path,
-        storage_mode,
         file_size_bytes,
         added_utc,
         cover_path
@@ -73,6 +72,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             $"""
             SELECT {BookColumnList}
             FROM library_books
+            WHERE storage_mode = 'Managed'
             ORDER BY added_utc DESC, title COLLATE NOCASE;
             """;
 
@@ -86,13 +86,8 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         return books;
     }
 
-    public LibraryImportResult Import(string sourceFilePath, LibraryStorageMode storageMode)
+    public LibraryImportResult Import(string sourceFilePath)
     {
-        if (!Enum.IsDefined(storageMode))
-        {
-            throw new ArgumentOutOfRangeException(nameof(storageMode));
-        }
-
         var normalizedSourcePath = NormalizeAudiobookPath(sourceFilePath);
         var sourceFile = new FileInfo(normalizedSourcePath);
         if (!sourceFile.Exists)
@@ -100,12 +95,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             throw new FileNotFoundException("The selected audiobook could not be found.", normalizedSourcePath);
         }
 
-        return storageMode switch
-        {
-            LibraryStorageMode.Linked => ImportLinked(sourceFile),
-            LibraryStorageMode.Managed => ImportManaged(sourceFile),
-            _ => throw new ArgumentOutOfRangeException(nameof(storageMode)),
-        };
+        return ImportManaged(sourceFile);
     }
 
     public LibraryBook SetCover(Guid bookId, string sourceImagePath)
@@ -151,7 +141,6 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         ArgumentNullException.ThrowIfNull(writeTemporaryFile);
         var book = FindById(bookId)
             ?? throw new KeyNotFoundException("The selected audiobook is no longer in the library.");
-        EnsureMetadataCanBeManaged(book);
 
         Directory.CreateDirectory(_coverCachePath);
 
@@ -199,7 +188,6 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         ArgumentNullException.ThrowIfNull(metadata);
         var book = FindById(bookId)
             ?? throw new KeyNotFoundException("The selected audiobook is no longer in the library.");
-        EnsureMetadataCanBeManaged(book);
         var normalizedMetadata = NormalizeMetadata(metadata);
 
         using var connection = _database.OpenConnection();
@@ -240,20 +228,6 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             ?? throw new KeyNotFoundException("The selected audiobook is no longer in the library.");
     }
 
-    private LibraryImportResult ImportLinked(FileInfo sourceFile)
-    {
-        var sourceKey = CreatePathKey(sourceFile.FullName);
-        var existing = FindByFileKey(sourceKey);
-        if (existing is not null)
-        {
-            return new LibraryImportResult(existing, WasAdded: false);
-        }
-
-        var book = CreateBook(sourceFile, sourceFile.FullName, LibraryStorageMode.Linked);
-        Insert(book, sourceFile.FullName, sourceKey: null);
-        return new LibraryImportResult(book, WasAdded: true);
-    }
-
     private LibraryImportResult ImportManaged(FileInfo sourceFile)
     {
         var sourceKey = CreatePathKey(sourceFile.FullName);
@@ -281,7 +255,6 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
                 bookId,
                 AudiobookMetadata.FromFileName(Path.GetFileNameWithoutExtension(sourceFile.Name)),
                 managedFile.FullName,
-                LibraryStorageMode.Managed,
                 managedFile.Length,
                 DateTimeOffset.UtcNow);
 
@@ -355,9 +328,6 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         }
     }
 
-    private LibraryBook? FindByFileKey(string fileKey) =>
-        Find("file_key", fileKey);
-
     private LibraryBook? FindBySourceKey(string sourceKey) =>
         Find("source_key", sourceKey);
 
@@ -372,7 +342,8 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             $"""
             SELECT {BookColumnList}
             FROM library_books
-            WHERE {columnName} = $value;
+            WHERE {columnName} = $value
+              AND storage_mode = 'Managed';
             """;
         command.Parameters.AddWithValue("$value", value);
 
@@ -451,7 +422,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         command.Parameters.AddWithValue("$title", book.Title);
         command.Parameters.AddWithValue("$file_path", normalizedFilePath);
         command.Parameters.AddWithValue("$file_key", CreatePathKey(normalizedFilePath));
-        command.Parameters.AddWithValue("$storage_mode", book.StorageMode.ToString());
+        command.Parameters.AddWithValue("$storage_mode", "Managed");
         command.Parameters.AddWithValue("$source_path", sourcePath);
         command.Parameters.AddWithValue("$source_key", (object?)sourceKey ?? DBNull.Value);
         command.Parameters.AddWithValue("$file_size_bytes", book.FileSizeBytes);
@@ -482,18 +453,6 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         }
     }
 
-    private static LibraryBook CreateBook(
-        FileInfo sourceFile,
-        string filePath,
-        LibraryStorageMode storageMode) =>
-        new(
-            Guid.NewGuid(),
-            AudiobookMetadata.FromFileName(Path.GetFileNameWithoutExtension(sourceFile.Name)),
-            Path.GetFullPath(filePath),
-            storageMode,
-            sourceFile.Length,
-            DateTimeOffset.UtcNow);
-
     private static LibraryBook ReadBook(Microsoft.Data.Sqlite.SqliteDataReader reader)
     {
         var metadata = new AudiobookMetadata
@@ -523,13 +482,12 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             Guid.Parse(reader.GetString(0)),
             metadata,
             reader.GetString(20),
-            Enum.Parse<LibraryStorageMode>(reader.GetString(21), ignoreCase: true),
-            reader.GetInt64(22),
+            reader.GetInt64(21),
             DateTimeOffset.Parse(
-                reader.GetString(23),
+                reader.GetString(22),
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.RoundtripKind),
-            ReadNullableString(reader, 24));
+            ReadNullableString(reader, 23));
     }
 
     private static void AddMetadataParameters(
@@ -613,15 +571,6 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             EditionName = NormalizeOptionalText(metadata.EditionName),
             EditionNotes = NormalizeOptionalText(metadata.EditionNotes),
         };
-    }
-
-    private static void EnsureMetadataCanBeManaged(LibraryBook book)
-    {
-        if (book.StorageMode != LibraryStorageMode.Managed)
-        {
-            throw new InvalidOperationException(
-                "Player Only Mode entries do not support metadata or cover editing.");
-        }
     }
 
     private static string? NormalizeOptionalText(string? value) =>

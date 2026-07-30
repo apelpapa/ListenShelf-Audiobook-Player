@@ -22,14 +22,23 @@ public sealed class AvaloniaFilePickerService(Window owner) : IFilePickerService
         AppleUniformTypeIdentifiers = ["public.png", "public.jpeg", "org.webmproject.webp"],
     };
 
-    public async Task<string?> PickAudiobookFileAsync()
+    public async Task<IReadOnlyList<string>> PickAudiobookFilesAsync()
     {
-        var files = await PickAudiobookFilesAsync(allowMultiple: false);
-        return files.Count == 1 ? files[0] : null;
-    }
+        if (!owner.StorageProvider.CanOpen)
+        {
+            throw new NotSupportedException("This system does not provide a file picker.");
+        }
 
-    public Task<IReadOnlyList<string>> PickAudiobookFilesAsync() =>
-        PickAudiobookFilesAsync(allowMultiple: true);
+        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Add audiobooks",
+            AllowMultiple = true,
+            FileTypeFilter = [AudiobookFileType],
+            SuggestedFileType = AudiobookFileType,
+        });
+
+        return files.Select(file => file.Path.LocalPath).ToArray();
+    }
 
     public async Task<string?> PickCoverImageAsync()
     {
@@ -49,21 +58,4 @@ public sealed class AvaloniaFilePickerService(Window owner) : IFilePickerService
         return files.Count == 1 ? files[0].Path.LocalPath : null;
     }
 
-    private async Task<IReadOnlyList<string>> PickAudiobookFilesAsync(bool allowMultiple)
-    {
-        if (!owner.StorageProvider.CanOpen)
-        {
-            throw new NotSupportedException("This system does not provide a file picker.");
-        }
-
-        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
-        {
-            Title = allowMultiple ? "Add audiobooks" : "Open an audiobook",
-            AllowMultiple = allowMultiple,
-            FileTypeFilter = [AudiobookFileType],
-            SuggestedFileType = AudiobookFileType,
-        });
-
-        return files.Select(file => file.Path.LocalPath).ToArray();
-    }
 }
