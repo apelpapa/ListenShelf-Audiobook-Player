@@ -31,7 +31,8 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [ ] Test long-duration audiobook playback and seeking.
 - [ ] Test books with chapters and books without chapters.
 - [ ] Test replaying an audiobook after it has completed.
-- [ ] Test Unicode, long, and unusual file paths.
+- [x] Test Unicode audiobook paths.
+- [ ] Test long and unusual file paths.
 - [ ] Test operation without an internet connection.
 - [ ] Improve user-facing playback errors.
 - [ ] Improve user-facing LibVLC loading and native-library errors.
@@ -39,14 +40,18 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 ### Permanent automated tests
 
-- [ ] Create permanent automated test projects.
-- [ ] Test database creation and versioned migrations.
-- [ ] Test library importing.
-- [ ] Test duplicate detection.
-- [ ] Test managed-copy verification and integrity.
-- [ ] Test listening-position persistence.
-- [ ] Test global playback-settings persistence.
-- [ ] Test bookmark creation, editing, ordering, jumping, and deletion.
+- [x] Create a permanent automated test project.
+- [x] Test fresh database creation and current schema.
+- [x] Test compatibility with the pre-managed-only database schema.
+- [ ] Test explicit versioned migrations after migration infrastructure exists.
+- [x] Test library importing.
+- [x] Test duplicate detection.
+- [x] Test managed-copy verification and integrity.
+- [x] Test metadata and cover persistence.
+- [x] Test listening-position persistence.
+- [x] Test global playback-settings persistence.
+- [x] Test bookmark creation, editing, ordering, and deletion.
+- [ ] Test bookmark jumping through the player.
 - [ ] Test missing-file and relinking behavior.
 - [ ] Test M4B playback behavior.
 - [ ] Test M4A playback behavior.

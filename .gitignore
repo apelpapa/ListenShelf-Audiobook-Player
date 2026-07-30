@@ -245,6 +245,14 @@ project.lock.json
 ##################
 BenchmarkDotNet.Artifacts/
 
+#################
+## Test results
+#################
+TestResults/
+*.coverage
+*.coveragexml
+coverage.*
+
 dirs.sln
 
 

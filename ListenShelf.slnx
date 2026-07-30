@@ -6,4 +6,7 @@
     <Project Path="src/ListenShelf.Infrastructure/ListenShelf.Infrastructure.csproj" />
     <Project Path="src/ListenShelf.Playback/ListenShelf.Playback.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ListenShelf.Tests/ListenShelf.Tests.csproj" />
+  </Folder>
 </Solution>

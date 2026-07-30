@@ -39,6 +39,15 @@ Run it from the repository root:
 dotnet run --project src/ListenShelf.Desktop/ListenShelf.Desktop.csproj
 ```
 
+Run the automated tests:
+
+```powershell
+dotnet test ListenShelf.slnx
+```
+
+The persistence and library tests use isolated temporary databases and files;
+they do not read from or write to your actual ListenShelf library.
+
 Create all Windows x64 release assets from the repository root:
 
 ```powershell
