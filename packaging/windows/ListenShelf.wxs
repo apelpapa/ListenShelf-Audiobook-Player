@@ -17,6 +17,12 @@
           SourceFile="src\ListenShelf.Desktop\Assets\Branding\listenshelf.ico" />
     <Property Id="ARPPRODUCTICON" Value="ListenShelfIcon" />
 
+    <!--
+      Keep the MSI limited to application binaries under Program Files.
+      ListenShelf's database, managed audiobooks, covers, settings, bookmarks,
+      and progress live under %LocalAppData%\ListenShelf and must never be
+      authored as installer-owned resources.
+    -->
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="ListenShelf" />
     </StandardDirectory>

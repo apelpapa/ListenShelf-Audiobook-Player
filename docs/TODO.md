@@ -14,10 +14,12 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 ### Data safety and ownership
 
-- [ ] Ensure library operations never modify the user's original source files.
-- [ ] Ensure upgrades and uninstallers never delete a user's library or listening data.
-- [ ] Clearly separate removing a book from the catalog from deleting a ListenShelf-managed copy.
-- [ ] Require strong confirmation before deleting a ListenShelf-managed copy.
+- [x] On import, create and verify a ListenShelf-managed copy while leaving the user's original source file untouched.
+- [x] Keep user data outside installer ownership and fail Windows packaging if an upgrade or uninstaller could claim or delete it.
+- [ ] Treat book removal as one operation that deletes the catalog entry and its ListenShelf-managed copy together.
+- [ ] Require strong confirmation before removing a book and permanently deleting its ListenShelf-managed copy.
+- [ ] Verify that every audiobook file and folder in managed storage is referenced by the catalog, including detection of orphaned and stale import files.
+- [ ] Provide explicit recovery or confirmed cleanup for orphaned managed files; never silently delete a potentially recoverable audiobook.
 - [ ] Export managed audiobooks with their metadata, covers, bookmarks, and listening progress.
 - [ ] Add database backup support.
 - [ ] Add database restore support.
@@ -64,7 +66,8 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 ### Library management
 
 - [ ] Relink an audiobook that has moved or is missing from its saved location.
-- [ ] Remove a book from the ListenShelf catalog without deleting the audiobook file.
+- [ ] Remove a book by deleting its catalog entry, managed audiobook copy, cached cover, metadata, bookmarks, and listening progress as one confirmed operation.
+- [ ] Add a managed-storage integrity check for missing, corrupt, and unreferenced audiobook files.
 - [ ] Improve duplicate detection and duplicate-import messages.
 - [ ] Add clear progress and error reporting for large imports.
 
@@ -90,7 +93,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [ ] Add a local, privacy-respecting application log.
 - [ ] Add an option to export a diagnostic report.
 - [ ] Document where ListenShelf stores its database, managed books, covers, logs, and settings.
-- [ ] Document backup, restore, export, relink, removal, and deletion behavior.
+- [ ] Document backup, restore, export, relink, confirmed removal, and orphan-recovery behavior.
 - [ ] Add a clear GitHub issue and feedback path.
 - [ ] Add issue templates for bug reports and feature requests.
 

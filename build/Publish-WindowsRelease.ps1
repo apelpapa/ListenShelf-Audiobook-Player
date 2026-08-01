@@ -11,6 +11,7 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $repoRoot 'src\ListenShelf.Desktop\ListenShelf.Desktop.csproj'
 $wixSourcePath = Join-Path $repoRoot 'packaging\windows\ListenShelf.wxs'
+$installerSafetyCheckPath = Join-Path $repoRoot 'build\Test-WindowsInstallerDataSafety.ps1'
 $releaseBasePath = Join-Path $repoRoot 'artifacts\release'
 $releaseRoot = Join-Path $releaseBasePath "v$Version"
 $workRoot = Join-Path $releaseRoot 'work'
@@ -32,6 +33,9 @@ if (-not $normalizedReleaseRoot.StartsWith(
 {
     throw 'The computed release path is outside the repository artifacts directory.'
 }
+
+Write-Host 'Checking that upgrades and uninstallation cannot remove user data...'
+& $installerSafetyCheckPath -WixSourcePath $wixSourcePath
 
 if (Test-Path -LiteralPath $releaseRoot)
 {

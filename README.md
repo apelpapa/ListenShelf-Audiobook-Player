@@ -33,6 +33,15 @@ Managed-book editing includes an optional [Open Library](https://openlibrary.org
 
 The player supports local `.m4b`, `.m4a`, and `.mp3` audiobooks and provides play/pause, seeking, 15-second rewind, 30-second forward, playback-speed selection, volume, elapsed/remaining time, a sleep timer, and automatic per-file position persistence in a local SQLite database. Per-audiobook bookmarks can save the current timestamp with an optional name and note, retain the chapter context, and later be jumped to, edited, or deleted without modifying the audiobook file. Playback speed and volume are remembered globally between launches. On startup, ListenShelf restores those player settings, loads the most recently played available audiobook at its saved position, and opens the Player without starting playback. Space or K toggles playback, Left Arrow or J rewinds, and Right Arrow or L moves forward. On Windows, keyboard, headset, and other media buttons continue to control the loaded book while ListenShelf is minimized. When a file contains embedded chapters, ListenShelf discovers them during loading so the chapter selector and previous/next controls are ready before Play, tracks the current chapter, and provides direct chapter navigation.
 
+### Data preservation
+
+ListenShelf stores its database, managed audiobook copies, covers, settings,
+bookmarks, and listening progress under `%LocalAppData%\ListenShelf` on Windows.
+The installer owns only the application files under `Program Files`, so upgrading
+or uninstalling ListenShelf leaves the library and listening data in place. The
+release build performs a packaging safety check and stops if the Windows
+installer is changed to claim or delete those user-data directories.
+
 Run it from the repository root:
 
 ```powershell
