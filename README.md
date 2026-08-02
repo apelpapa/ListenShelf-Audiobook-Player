@@ -32,6 +32,12 @@ requires confirmation and permanently deletes its ListenShelf-managed audio,
 cached cover, metadata, bookmarks, and listening progress together; the original
 source file is never a deletion target.
 
+On startup, ListenShelf performs a read-only managed-storage integrity check.
+The same check can be run again from Settings to find catalog entries with
+missing files, unreferenced files or folders, unsafe catalog paths, and
+unfinished `.importing` files that have been inactive for at least 24 hours.
+The report never moves, recovers, or deletes files automatically.
+
 Managed-book editing includes an optional [Open Library](https://openlibrary.org/) lookup. Searches are sent directly from the desktop app with no ListenShelf account or central server; only the text entered in the search box is transmitted. The user chooses a result, reviews the populated fields, and decides whether an available cover should be saved into ListenShelf's local cover cache. Manual metadata remains editable and audiobook-specific fields are not replaced by print-book search results.
 
 The player supports local `.m4b`, `.m4a`, and `.mp3` audiobooks and provides play/pause, seeking, 15-second rewind, 30-second forward, playback-speed selection, volume, elapsed/remaining time, a sleep timer, and automatic per-file position persistence in a local SQLite database. Per-audiobook bookmarks can save the current timestamp with an optional name and note, retain the chapter context, and later be jumped to, edited, or deleted without modifying the audiobook file. Playback speed and volume are remembered globally between launches. On startup, ListenShelf restores those player settings, loads the most recently played available audiobook at its saved position, and opens the Player without starting playback. Space or K toggles playback, Left Arrow or J rewinds, and Right Arrow or L moves forward. On Windows, keyboard, headset, and other media buttons continue to control the loaded book while ListenShelf is minimized. When a file contains embedded chapters, ListenShelf discovers them during loading so the chapter selector and previous/next controls are ready before Play, tracks the current chapter, and provides direct chapter navigation.

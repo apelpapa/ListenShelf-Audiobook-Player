@@ -15,6 +15,7 @@ namespace ListenShelf.Desktop.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
     private static readonly TimeSpan AutomaticSaveInterval = TimeSpan.FromSeconds(10);
+    private const int MaximumDisplayedStorageIssues = 50;
     private const double DefaultLibraryTileWidth = 220d;
     private const double MinimumLibraryTileWidth = 180d;
     private const double MaximumLibraryTileWidth = 320d;
@@ -43,6 +44,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IBookMetadataEditorService _bookMetadataEditorService;
     private readonly IBookmarkEditorService _bookmarkEditorService;
     private readonly IBookRemovalConfirmationService _bookRemovalConfirmationService;
+    private readonly IManagedLibraryIntegrityChecker _managedLibraryIntegrityChecker;
     private readonly DispatcherTimer _sleepTimer;
     private bool _isUpdatingPositionFromEngine;
     private bool _isUpdatingChapterFromEngine;
@@ -67,7 +69,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IAudiobookLibrary audiobookLibrary,
         IBookMetadataEditorService bookMetadataEditorService,
         IBookmarkEditorService bookmarkEditorService,
-        IBookRemovalConfirmationService bookRemovalConfirmationService)
+        IBookRemovalConfirmationService bookRemovalConfirmationService,
+        IManagedLibraryIntegrityChecker managedLibraryIntegrityChecker)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
@@ -79,6 +82,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _bookMetadataEditorService = bookMetadataEditorService;
         _bookmarkEditorService = bookmarkEditorService;
         _bookRemovalConfirmationService = bookRemovalConfirmationService;
+        _managedLibraryIntegrityChecker = managedLibraryIntegrityChecker;
         _sleepTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1),
@@ -234,6 +238,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<PlaybackBookmarkItemViewModel> Bookmarks { get; } = [];
 
+    public ObservableCollection<ManagedStorageIssueItemViewModel> ManagedStorageIssues { get; } = [];
+
     public ObservableCollection<LibraryGroupViewModel> LibraryGroups { get; } = [];
 
     public IReadOnlyList<LibraryGroupOptionViewModel> LibraryGroupOptions => GroupOptions;
@@ -309,7 +315,29 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanAddAudiobooks))]
+    [NotifyCanExecuteChangedFor(nameof(CheckManagedStorageCommand))]
     private bool _isLibraryBusy;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanCheckManagedStorage))]
+    [NotifyCanExecuteChangedFor(nameof(CheckManagedStorageCommand))]
+    private bool _isManagedStorageCheckRunning;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsManagedStorageHealthy))]
+    private bool _hasManagedStorageBeenChecked;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasManagedStorageIssues))]
+    [NotifyPropertyChangedFor(nameof(IsManagedStorageHealthy))]
+    private int _managedStorageIssueCount;
+
+    [ObservableProperty]
+    private string _managedStorageStatusText =
+        "ListenShelf will check that every managed audiobook file and folder is accounted for.";
+
+    [ObservableProperty]
+    private string _managedStorageLastCheckedText = "Not checked yet.";
 
     [ObservableProperty]
     private string _libraryStatusMessage = "Add M4B, M4A, or MP3 audiobooks to begin building your shelf.";
@@ -479,6 +507,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool CanAddAudiobooks => !IsLibraryBusy;
 
+    public bool CanCheckManagedStorage => !IsLibraryBusy && !IsManagedStorageCheckRunning;
+
+    public bool HasManagedStorageIssues => ManagedStorageIssueCount > 0;
+
+    public bool IsManagedStorageHealthy =>
+        HasManagedStorageBeenChecked && !HasManagedStorageIssues;
+
     public string LibraryBookCountText => LibraryBooks.Count == 1
         ? "1 audiobook"
         : $"{LibraryBooks.Count} audiobooks";
@@ -525,6 +560,61 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [RelayCommand]
     private void ShowSettings() => SelectedSection = AppSection.Settings;
+
+    [RelayCommand(CanExecute = nameof(CanCheckManagedStorage))]
+    public async Task CheckManagedStorageAsync()
+    {
+        if (!CanCheckManagedStorage)
+        {
+            return;
+        }
+
+        IsManagedStorageCheckRunning = true;
+        ManagedStorageStatusText = "Checking managed library storage…";
+
+        try
+        {
+            var report = await Task.Run(_managedLibraryIntegrityChecker.Check);
+            ManagedStorageIssues.Clear();
+            foreach (var issue in report.Issues.Take(MaximumDisplayedStorageIssues))
+            {
+                ManagedStorageIssues.Add(new ManagedStorageIssueItemViewModel(issue));
+            }
+
+            ManagedStorageIssueCount = report.Issues.Count;
+            HasManagedStorageBeenChecked = true;
+            ManagedStorageLastCheckedText =
+                $"Last checked {report.CheckedAtUtc.ToLocalTime():g}.";
+
+            if (report.IsHealthy)
+            {
+                ManagedStorageStatusText = report.CatalogBookCount == 1
+                    ? "All managed storage is accounted for across 1 cataloged audiobook. No files were changed."
+                    : $"All managed storage is accounted for across {report.CatalogBookCount} cataloged audiobooks. No files were changed.";
+            }
+            else
+            {
+                var displayNote = report.Issues.Count > MaximumDisplayedStorageIssues
+                    ? $" Showing the first {MaximumDisplayedStorageIssues}."
+                    : string.Empty;
+                ManagedStorageStatusText =
+                    $"Found {report.Issues.Count} managed-storage issue{(report.Issues.Count == 1 ? string.Empty : "s")}.{displayNote} No files were changed.";
+            }
+        }
+        catch (Exception exception)
+        {
+            ManagedStorageIssues.Clear();
+            ManagedStorageIssueCount = 0;
+            HasManagedStorageBeenChecked = false;
+            ManagedStorageLastCheckedText = "The most recent check did not finish.";
+            ManagedStorageStatusText =
+                $"ListenShelf could not check managed storage: {exception.Message}";
+        }
+        finally
+        {
+            IsManagedStorageCheckRunning = false;
+        }
+    }
 
     [RelayCommand]
     private void UseDarkTheme() => SaveTheme(AppTheme.Dark);
