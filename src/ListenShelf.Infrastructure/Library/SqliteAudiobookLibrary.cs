@@ -3,11 +3,14 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using ListenShelf.Application.Library;
 using ListenShelf.Infrastructure.Storage;
+using Microsoft.Data.Sqlite;
 
 namespace ListenShelf.Infrastructure.Library;
 
 public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
 {
+    private const string RemovalStagingDirectoryName = ".removing";
+
     private const string BookColumnList =
         """
         book_id,
@@ -60,6 +63,8 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         ManagedLibraryPath = Path.GetFullPath(
             managedLibraryPath ?? Path.Combine(databaseDirectory, "Library"));
         _coverCachePath = Path.GetFullPath(Path.Combine(databaseDirectory, "Covers"));
+
+        TryRecoverPendingRemovals();
     }
 
     public string ManagedLibraryPath { get; }
@@ -71,8 +76,12 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         command.CommandText =
             $"""
             SELECT {BookColumnList}
-            FROM library_books
+            FROM library_books AS books
             WHERE storage_mode = 'Managed'
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM pending_library_removals AS removals
+                  WHERE removals.book_id = books.book_id)
             ORDER BY added_utc DESC, title COLLATE NOCASE;
             """;
 
@@ -96,6 +105,26 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         }
 
         return ImportManaged(sourceFile);
+    }
+
+    public LibraryRemovalResult Remove(Guid bookId)
+    {
+        if (bookId == Guid.Empty)
+        {
+            throw new ArgumentException("A valid audiobook identifier is required.", nameof(bookId));
+        }
+
+        var book = FindById(bookId)
+            ?? throw new KeyNotFoundException("The selected audiobook is no longer in the library.");
+        var pendingRemoval = new PendingLibraryRemoval(
+            book.Id,
+            book.Title,
+            Path.GetFullPath(book.FilePath),
+            string.IsNullOrWhiteSpace(book.CoverPath) ? null : Path.GetFullPath(book.CoverPath));
+
+        _ = CreateRemovalPaths(pendingRemoval);
+        AddPendingRemoval(pendingRemoval);
+        return CompletePendingRemoval(pendingRemoval, requireCatalogEntry: true);
     }
 
     public LibraryBook SetCover(Guid bookId, string sourceImagePath)
@@ -284,6 +313,382 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         }
     }
 
+    private LibraryRemovalResult CompletePendingRemoval(
+        PendingLibraryRemoval pendingRemoval,
+        bool requireCatalogEntry)
+    {
+        var paths = CreateRemovalPaths(pendingRemoval);
+
+        try
+        {
+            StageRemovalArtifacts(paths);
+        }
+        catch
+        {
+            if (TryRestoreRemovalArtifacts(paths))
+            {
+                TryDeletePendingRemoval(pendingRemoval.BookId);
+            }
+
+            throw;
+        }
+
+        try
+        {
+            DeleteCatalogData(pendingRemoval, requireCatalogEntry);
+        }
+        catch
+        {
+            if (CatalogContainsBook(pendingRemoval.BookId))
+            {
+                if (TryRestoreRemovalArtifacts(paths))
+                {
+                    TryDeletePendingRemoval(pendingRemoval.BookId);
+                }
+
+                throw;
+            }
+        }
+
+        var cleanupPending = !TryFinalizeRemoval(pendingRemoval.BookId, paths);
+        return new LibraryRemovalResult(pendingRemoval.Title, cleanupPending);
+    }
+
+    private void AddPendingRemoval(PendingLibraryRemoval pendingRemoval)
+    {
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            INSERT INTO pending_library_removals (
+                book_id,
+                title,
+                file_path,
+                cover_path,
+                requested_utc)
+            VALUES (
+                $book_id,
+                $title,
+                $file_path,
+                $cover_path,
+                $requested_utc);
+            """;
+        command.Parameters.AddWithValue("$book_id", pendingRemoval.BookId.ToString("D"));
+        command.Parameters.AddWithValue("$title", pendingRemoval.Title);
+        command.Parameters.AddWithValue("$file_path", pendingRemoval.FilePath);
+        command.Parameters.AddWithValue(
+            "$cover_path",
+            (object?)pendingRemoval.CoverPath ?? DBNull.Value);
+        command.Parameters.AddWithValue(
+            "$requested_utc",
+            DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture));
+        command.ExecuteNonQuery();
+    }
+
+    private void DeleteCatalogData(
+        PendingLibraryRemoval pendingRemoval,
+        bool requireCatalogEntry)
+    {
+        var fileKey = CreatePathKey(pendingRemoval.FilePath);
+        using var connection = _database.OpenConnection();
+        using var transaction = connection.BeginTransaction();
+
+        ExecuteDelete(
+            connection,
+            transaction,
+            "DELETE FROM playback_bookmarks WHERE file_key = $file_key;",
+            "$file_key",
+            fileKey);
+        ExecuteDelete(
+            connection,
+            transaction,
+            "DELETE FROM playback_progress WHERE file_key = $file_key;",
+            "$file_key",
+            fileKey);
+
+        using var bookCommand = connection.CreateCommand();
+        bookCommand.Transaction = transaction;
+        bookCommand.CommandText =
+            """
+            DELETE FROM library_books
+            WHERE book_id = $book_id
+              AND storage_mode = 'Managed';
+            """;
+        bookCommand.Parameters.AddWithValue("$book_id", pendingRemoval.BookId.ToString("D"));
+        var removedBookCount = bookCommand.ExecuteNonQuery();
+        if (requireCatalogEntry && removedBookCount != 1)
+        {
+            throw new KeyNotFoundException("The selected audiobook is no longer in the library.");
+        }
+
+        transaction.Commit();
+    }
+
+    private static void ExecuteDelete(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        string commandText,
+        string parameterName,
+        string parameterValue)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = commandText;
+        command.Parameters.AddWithValue(parameterName, parameterValue);
+        command.ExecuteNonQuery();
+    }
+
+    private RemovalPaths CreateRemovalPaths(PendingLibraryRemoval pendingRemoval)
+    {
+        var expectedBookDirectory = Path.GetFullPath(
+            Path.Combine(ManagedLibraryPath, pendingRemoval.BookId.ToString("N")));
+        var actualBookDirectory = Path.GetDirectoryName(pendingRemoval.FilePath)
+            ?? throw new InvalidOperationException("The managed audiobook path has no parent directory.");
+
+        if (!PathsEqual(expectedBookDirectory, actualBookDirectory))
+        {
+            throw new InvalidOperationException(
+                "ListenShelf refused to delete an audiobook outside its managed book directory.");
+        }
+
+        var stagedBookDirectory = Path.Combine(
+            ManagedLibraryPath,
+            RemovalStagingDirectoryName,
+            pendingRemoval.BookId.ToString("N"));
+        var ownedCoverPath = GetOwnedCoverPath(pendingRemoval);
+        var stagedCoverPath = ownedCoverPath is null
+            ? null
+            : Path.Combine(
+                _coverCachePath,
+                RemovalStagingDirectoryName,
+                $"{pendingRemoval.BookId:N}{Path.GetExtension(ownedCoverPath)}");
+
+        return new RemovalPaths(
+            expectedBookDirectory,
+            Path.GetFullPath(stagedBookDirectory),
+            ownedCoverPath,
+            stagedCoverPath is null ? null : Path.GetFullPath(stagedCoverPath));
+    }
+
+    private string? GetOwnedCoverPath(PendingLibraryRemoval pendingRemoval)
+    {
+        if (string.IsNullOrWhiteSpace(pendingRemoval.CoverPath))
+        {
+            return null;
+        }
+
+        var normalizedCoverPath = Path.GetFullPath(pendingRemoval.CoverPath);
+        var normalizedCoverDirectory = Path.TrimEndingDirectorySeparator(_coverCachePath)
+            + Path.DirectorySeparatorChar;
+        var comparison = OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+        return normalizedCoverPath.StartsWith(normalizedCoverDirectory, comparison)
+            && string.Equals(
+                Path.GetFileNameWithoutExtension(normalizedCoverPath),
+                pendingRemoval.BookId.ToString("N"),
+                comparison)
+                ? normalizedCoverPath
+                : null;
+    }
+
+    private static void StageRemovalArtifacts(RemovalPaths paths)
+    {
+        if (Directory.Exists(paths.BookDirectory) && Directory.Exists(paths.StagedBookDirectory))
+        {
+            throw new IOException("Both the active and staged managed-book directories exist.");
+        }
+
+        if (Directory.Exists(paths.BookDirectory))
+        {
+            Directory.CreateDirectory(
+                Path.GetDirectoryName(paths.StagedBookDirectory)
+                ?? throw new InvalidOperationException("The removal staging path has no parent directory."));
+            Directory.Move(paths.BookDirectory, paths.StagedBookDirectory);
+        }
+
+        if (paths.CoverPath is null || paths.StagedCoverPath is null)
+        {
+            return;
+        }
+
+        if (File.Exists(paths.CoverPath) && File.Exists(paths.StagedCoverPath))
+        {
+            throw new IOException("Both the active and staged managed-cover files exist.");
+        }
+
+        if (File.Exists(paths.CoverPath))
+        {
+            Directory.CreateDirectory(
+                Path.GetDirectoryName(paths.StagedCoverPath)
+                ?? throw new InvalidOperationException("The cover removal staging path has no parent directory."));
+            File.Move(paths.CoverPath, paths.StagedCoverPath);
+        }
+    }
+
+    private static bool TryRestoreRemovalArtifacts(RemovalPaths paths)
+    {
+        try
+        {
+            if (paths.CoverPath is not null
+                && paths.StagedCoverPath is not null
+                && File.Exists(paths.StagedCoverPath)
+                && !File.Exists(paths.CoverPath))
+            {
+                Directory.CreateDirectory(
+                    Path.GetDirectoryName(paths.CoverPath)
+                    ?? throw new InvalidOperationException("The cover path has no parent directory."));
+                File.Move(paths.StagedCoverPath, paths.CoverPath);
+            }
+
+            if (Directory.Exists(paths.StagedBookDirectory)
+                && !Directory.Exists(paths.BookDirectory))
+            {
+                Directory.Move(paths.StagedBookDirectory, paths.BookDirectory);
+            }
+
+            TryDeleteEmptyParent(paths.StagedCoverPath);
+            TryDeleteEmptyParent(paths.StagedBookDirectory);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private bool TryFinalizeRemoval(Guid bookId, RemovalPaths paths)
+    {
+        try
+        {
+            if (Directory.Exists(paths.StagedBookDirectory))
+            {
+                Directory.Delete(paths.StagedBookDirectory, recursive: true);
+            }
+
+            if (paths.StagedCoverPath is not null && File.Exists(paths.StagedCoverPath))
+            {
+                File.Delete(paths.StagedCoverPath);
+            }
+
+            TryDeleteEmptyParent(paths.StagedCoverPath);
+            TryDeleteEmptyParent(paths.StagedBookDirectory);
+            DeletePendingRemoval(bookId);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void TryDeleteEmptyParent(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        var parentDirectory = Path.GetDirectoryName(path);
+        if (!string.IsNullOrWhiteSpace(parentDirectory)
+            && Directory.Exists(parentDirectory)
+            && !Directory.EnumerateFileSystemEntries(parentDirectory).Any())
+        {
+            Directory.Delete(parentDirectory);
+        }
+    }
+
+    private bool CatalogContainsBook(Guid bookId)
+    {
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT COUNT(*)
+            FROM library_books
+            WHERE book_id = $book_id
+              AND storage_mode = 'Managed';
+            """;
+        command.Parameters.AddWithValue("$book_id", bookId.ToString("D"));
+        return (long)command.ExecuteScalar()! > 0L;
+    }
+
+    private void DeletePendingRemoval(Guid bookId)
+    {
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            DELETE FROM pending_library_removals
+            WHERE book_id = $book_id;
+            """;
+        command.Parameters.AddWithValue("$book_id", bookId.ToString("D"));
+        command.ExecuteNonQuery();
+    }
+
+    private void TryDeletePendingRemoval(Guid bookId)
+    {
+        try
+        {
+            DeletePendingRemoval(bookId);
+        }
+        catch
+        {
+            // A retained journal entry makes the confirmed removal recoverable next launch.
+        }
+    }
+
+    private void TryRecoverPendingRemovals()
+    {
+        IReadOnlyList<PendingLibraryRemoval> pendingRemovals;
+        try
+        {
+            pendingRemovals = GetPendingRemovals();
+        }
+        catch
+        {
+            return;
+        }
+
+        foreach (var pendingRemoval in pendingRemovals)
+        {
+            try
+            {
+                _ = CompletePendingRemoval(pendingRemoval, requireCatalogEntry: false);
+            }
+            catch
+            {
+                // Keep the journal entry so a later launch can retry without guessing intent.
+            }
+        }
+    }
+
+    private IReadOnlyList<PendingLibraryRemoval> GetPendingRemovals()
+    {
+        using var connection = _database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT book_id, title, file_path, cover_path
+            FROM pending_library_removals
+            ORDER BY requested_utc;
+            """;
+
+        using var reader = command.ExecuteReader();
+        var pendingRemovals = new List<PendingLibraryRemoval>();
+        while (reader.Read())
+        {
+            pendingRemovals.Add(new PendingLibraryRemoval(
+                Guid.Parse(reader.GetString(0)),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.IsDBNull(3) ? null : reader.GetString(3)));
+        }
+
+        return pendingRemovals;
+    }
+
     private static void CopyAndVerify(FileInfo sourceFile, string temporaryPath)
     {
         byte[] sourceHash;
@@ -343,7 +748,11 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             SELECT {BookColumnList}
             FROM library_books
             WHERE {columnName} = $value
-              AND storage_mode = 'Managed';
+              AND storage_mode = 'Managed'
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM pending_library_removals AS removals
+                  WHERE removals.book_id = library_books.book_id);
             """;
         command.Parameters.AddWithValue("$value", value);
 
@@ -720,4 +1129,16 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         OperatingSystem.IsWindows()
             ? normalizedPath.ToUpperInvariant()
             : normalizedPath;
+
+    private sealed record PendingLibraryRemoval(
+        Guid BookId,
+        string Title,
+        string FilePath,
+        string? CoverPath);
+
+    private sealed record RemovalPaths(
+        string BookDirectory,
+        string StagedBookDirectory,
+        string? CoverPath,
+        string? StagedCoverPath);
 }

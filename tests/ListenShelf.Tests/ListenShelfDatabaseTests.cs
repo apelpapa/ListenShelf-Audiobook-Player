@@ -30,7 +30,13 @@ public sealed class ListenShelfDatabaseTests
         }
 
         Assert.Equal(
-            ["app_settings", "library_books", "playback_bookmarks", "playback_progress"],
+            [
+                "app_settings",
+                "library_books",
+                "pending_library_removals",
+                "playback_bookmarks",
+                "playback_progress",
+            ],
             tableNames);
     }
 

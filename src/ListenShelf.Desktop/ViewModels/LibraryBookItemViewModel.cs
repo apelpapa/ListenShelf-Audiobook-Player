@@ -10,6 +10,7 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
     private readonly Func<LibraryBook, Task> _playBookAsync;
     private readonly Func<LibraryBook, Task> _chooseCoverAsync;
     private readonly Func<LibraryBook, Task> _editMetadataAsync;
+    private readonly Func<LibraryBook, Task> _removeBookAsync;
 
     public LibraryBookItemViewModel(
         LibraryBook book,
@@ -17,13 +18,15 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
         double tileWidth,
         Func<LibraryBook, Task> playBookAsync,
         Func<LibraryBook, Task> chooseCoverAsync,
-        Func<LibraryBook, Task> editMetadataAsync)
+        Func<LibraryBook, Task> editMetadataAsync,
+        Func<LibraryBook, Task> removeBookAsync)
     {
         Book = book;
         ProgressSummary = progressSummary;
         _playBookAsync = playBookAsync;
         _chooseCoverAsync = chooseCoverAsync;
         _editMetadataAsync = editMetadataAsync;
+        _removeBookAsync = removeBookAsync;
         CoverImage = TryLoadCover(book.CoverPath);
         SetTileWidth(tileWidth);
     }
@@ -116,12 +119,15 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
     [RelayCommand]
     private Task EditMetadataAsync() => _editMetadataAsync(Book);
 
+    [RelayCommand]
+    private Task RemoveBookAsync() => _removeBookAsync(Book);
+
     public void SetTileWidth(double tileWidth)
     {
         TileWidth = tileWidth;
         TileArtworkWidth = Math.Max(140d, tileWidth - 40d);
         TileArtworkHeight = TileArtworkWidth * 1.5d;
-        TileHeight = TileArtworkHeight + 266d;
+        TileHeight = TileArtworkHeight + 313d;
         GroupStackArtworkWidth = Math.Max(120d, tileWidth - 60d);
         GroupStackArtworkHeight = GroupStackArtworkWidth * 1.5d;
         GroupStackHeight = GroupStackArtworkHeight + 14d;

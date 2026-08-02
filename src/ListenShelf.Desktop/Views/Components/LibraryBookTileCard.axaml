@@ -11,7 +11,7 @@
             Background="{DynamicResource SurfaceBrush}"
             BorderBrush="{DynamicResource BorderBrush}"
             BorderThickness="1">
-        <Grid RowDefinitions="Auto,40,34,22,16,38,38" RowSpacing="9">
+        <Grid RowDefinitions="Auto,40,34,22,16,38,38,38" RowSpacing="9">
             <Border Grid.Row="0"
                     Width="{Binding TileArtworkWidth}"
                     Height="{Binding TileArtworkHeight}"
@@ -100,6 +100,14 @@
                         Command="{Binding ChooseCoverCommand}"
                         Content="{Binding CoverButtonText}" />
             </Grid>
+
+            <Button Grid.Row="7"
+                    Padding="12,8"
+                    Background="{DynamicResource SurfaceRaisedBrush}"
+                    Foreground="{DynamicResource DangerTextBrush}"
+                    FontSize="10"
+                    Command="{Binding RemoveBookCommand}"
+                    Content="Remove from ListenShelf" />
         </Grid>
     </Border>
 </UserControl>

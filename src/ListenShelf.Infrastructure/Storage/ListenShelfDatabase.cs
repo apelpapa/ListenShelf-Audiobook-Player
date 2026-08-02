@@ -105,6 +105,14 @@ public sealed class ListenShelfDatabase
             CREATE UNIQUE INDEX IF NOT EXISTS ux_library_books_managed_source
             ON library_books(source_key)
             WHERE source_key IS NOT NULL;
+
+            CREATE TABLE IF NOT EXISTS pending_library_removals (
+                book_id TEXT NOT NULL PRIMARY KEY,
+                title TEXT NOT NULL,
+                file_path TEXT NOT NULL,
+                cover_path TEXT NULL,
+                requested_utc TEXT NOT NULL
+            );
             """;
         command.ExecuteNonQuery();
 

@@ -99,6 +99,23 @@ public sealed class LibVlcAudioEngine : IAudioEngine
         await PreloadCurrentMediaAsync(cancellationToken);
     }
 
+    public void Unload()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        _mediaPlayer.Stop();
+        _mediaPlayer.Media = null;
+        _currentMedia?.Dispose();
+        _currentMedia = null;
+        CurrentFilePath = null;
+        _knownDuration = TimeSpan.Zero;
+        _restartPosition = null;
+        _hasReachedEnd = false;
+        SetChapters([], -1);
+        RaiseProgress(TimeSpan.Zero, TimeSpan.Zero);
+        RaiseState(PlaybackState.Stopped);
+    }
+
     public bool Play()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);

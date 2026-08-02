@@ -27,7 +27,10 @@ ListenShelf maintains one application-managed library: adding an audiobook
 creates a SHA-256-verified copy in ListenShelf's library while leaving the
 original source file untouched. Library entries support editable book details
 and locally cached PNG, JPEG, or WebP covers, and repeat imports from the same
-source location are detected instead of creating another copy.
+source location are detected instead of creating another copy. Removing a book
+requires confirmation and permanently deletes its ListenShelf-managed audio,
+cached cover, metadata, bookmarks, and listening progress together; the original
+source file is never a deletion target.
 
 Managed-book editing includes an optional [Open Library](https://openlibrary.org/) lookup. Searches are sent directly from the desktop app with no ListenShelf account or central server; only the text entered in the search box is transmitted. The user chooses a result, reviews the populated fields, and decides whether an available cover should be saved into ListenShelf's local cover cache. Manual metadata remains editable and audiobook-specific fields are not replaced by print-book search results.
 

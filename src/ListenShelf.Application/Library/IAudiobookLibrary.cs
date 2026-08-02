@@ -8,6 +8,8 @@ public interface IAudiobookLibrary
 
     LibraryImportResult Import(string sourceFilePath);
 
+    LibraryRemovalResult Remove(Guid bookId);
+
     LibraryBook SetCover(Guid bookId, string sourceImagePath);
 
     LibraryBook SetCover(Guid bookId, ReadOnlyMemory<byte> imageData, string fileExtension);

@@ -3,7 +3,7 @@
              xmlns:vm="using:ListenShelf.Desktop.ViewModels"
              x:Class="ListenShelf.Desktop.Views.Components.LibraryBookListCard"
              x:DataType="vm:LibraryBookItemViewModel">
-    <Border Height="160"
+    <Border Height="198"
             Margin="0,0,0,10"
             Padding="16"
             CornerRadius="15"
@@ -95,6 +95,12 @@
                         FontSize="11"
                         Command="{Binding ChooseCoverCommand}"
                         Content="{Binding CoverButtonText}" />
+                <Button Padding="12,7"
+                        Background="{DynamicResource SurfaceRaisedBrush}"
+                        Foreground="{DynamicResource DangerTextBrush}"
+                        FontSize="11"
+                        Command="{Binding RemoveBookCommand}"
+                        Content="Remove" />
             </StackPanel>
         </Grid>
     </Border>

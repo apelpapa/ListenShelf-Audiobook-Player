@@ -16,8 +16,8 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 - [x] On import, create and verify a ListenShelf-managed copy while leaving the user's original source file untouched.
 - [x] Keep user data outside installer ownership and fail Windows packaging if an upgrade or uninstaller could claim or delete it.
-- [ ] Treat book removal as one operation that deletes the catalog entry and its ListenShelf-managed copy together.
-- [ ] Require strong confirmation before removing a book and permanently deleting its ListenShelf-managed copy.
+- [x] Treat book removal as one operation that deletes the catalog entry and its ListenShelf-managed copy together.
+- [x] Require strong confirmation before removing a book and permanently deleting its ListenShelf-managed copy.
 - [ ] Verify that every audiobook file and folder in managed storage is referenced by the catalog, including detection of orphaned and stale import files.
 - [ ] Provide explicit recovery or confirmed cleanup for orphaned managed files; never silently delete a potentially recoverable audiobook.
 - [ ] Export managed audiobooks with their metadata, covers, bookmarks, and listening progress.
@@ -53,6 +53,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Test listening-position persistence.
 - [x] Test global playback-settings persistence.
 - [x] Test bookmark creation, editing, ordering, and deletion.
+- [x] Test managed-book removal, related-data cleanup, path safety, and interrupted-removal recovery.
 - [ ] Test bookmark jumping through the player.
 - [ ] Test missing-file and relinking behavior.
 - [ ] Test M4B playback behavior.
@@ -66,7 +67,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 ### Library management
 
 - [ ] Relink an audiobook that has moved or is missing from its saved location.
-- [ ] Remove a book by deleting its catalog entry, managed audiobook copy, cached cover, metadata, bookmarks, and listening progress as one confirmed operation.
+- [x] Remove a book by deleting its catalog entry, managed audiobook copy, cached cover, metadata, bookmarks, and listening progress as one confirmed operation.
 - [ ] Add a managed-storage integrity check for missing, corrupt, and unreferenced audiobook files.
 - [ ] Improve duplicate detection and duplicate-import messages.
 - [ ] Add clear progress and error reporting for large imports.

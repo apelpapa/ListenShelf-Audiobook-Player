@@ -38,7 +38,8 @@ namespace ListenShelf.Desktop
                     themeService,
                     new SqliteAudiobookLibrary(database),
                     new AvaloniaBookMetadataEditorService(mainWindow, metadataProvider),
-                    new AvaloniaBookmarkEditorService(mainWindow));
+                    new AvaloniaBookmarkEditorService(mainWindow),
+                    new AvaloniaBookRemovalConfirmationService(mainWindow));
 
                 mainWindow.DataContext = viewModel;
                 mainWindow.Opened += async (_, _) => await viewModel.InitializeAsync();

@@ -42,6 +42,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IAudiobookLibrary _audiobookLibrary;
     private readonly IBookMetadataEditorService _bookMetadataEditorService;
     private readonly IBookmarkEditorService _bookmarkEditorService;
+    private readonly IBookRemovalConfirmationService _bookRemovalConfirmationService;
     private readonly DispatcherTimer _sleepTimer;
     private bool _isUpdatingPositionFromEngine;
     private bool _isUpdatingChapterFromEngine;
@@ -65,7 +66,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IThemeService themeService,
         IAudiobookLibrary audiobookLibrary,
         IBookMetadataEditorService bookMetadataEditorService,
-        IBookmarkEditorService bookmarkEditorService)
+        IBookmarkEditorService bookmarkEditorService,
+        IBookRemovalConfirmationService bookRemovalConfirmationService)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
@@ -76,6 +78,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _audiobookLibrary = audiobookLibrary;
         _bookMetadataEditorService = bookMetadataEditorService;
         _bookmarkEditorService = bookmarkEditorService;
+        _bookRemovalConfirmationService = bookRemovalConfirmationService;
         _sleepTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1),
@@ -483,18 +486,18 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public string ManagedLibraryPath => _audiobookLibrary.ManagedLibraryPath;
 
     public string PageTitle => SelectedSection switch
-        {
-            AppSection.Player => "Player",
-            AppSection.Settings => "Settings",
-            _ => "Library",
-        };
+    {
+        AppSection.Player => "Player",
+        AppSection.Settings => "Settings",
+        _ => "Library",
+    };
 
     public string PageSubtitle => SelectedSection switch
-        {
-            AppSection.Player => "Listen locally with automatic progress saving.",
-            AppSection.Settings => "Personalize ListenShelf and review library storage.",
-            _ => "Your audiobooks, series, and collections will live here.",
-        };
+    {
+        AppSection.Player => "Listen locally with automatic progress saving.",
+        AppSection.Settings => "Personalize ListenShelf and review library storage.",
+        _ => "Your audiobooks, series, and collections will live here.",
+    };
 
     public string LibraryEmptyDescription =>
         "Choose M4B, M4A, or MP3 files. ListenShelf will make verified copies and leave the originals untouched.";
@@ -810,6 +813,44 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         catch (Exception exception)
         {
             LibraryStatusMessage = $"The audiobook details could not be saved: {exception.Message}";
+        }
+        finally
+        {
+            IsLibraryBusy = false;
+        }
+    }
+
+    private async Task RemoveBookAsync(LibraryBook book)
+    {
+        if (IsLibraryBusy)
+        {
+            return;
+        }
+
+        IsLibraryBusy = true;
+        try
+        {
+            if (!await _bookRemovalConfirmationService.ConfirmRemovalAsync(book))
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_currentFilePath)
+                && PathsEqual(_currentFilePath, book.FilePath))
+            {
+                UnloadCurrentBookForRemoval();
+            }
+
+            var result = await Task.Run(() => _audiobookLibrary.Remove(book.Id));
+            RefreshLibrary();
+            LibraryStatusMessage = result.CleanupPending
+                ? $"{result.Title} was removed. ListenShelf will retry leftover file cleanup next launch."
+                : $"{result.Title} and its ListenShelf-managed data were permanently removed.";
+        }
+        catch (Exception exception)
+        {
+            RefreshLibrary();
+            LibraryStatusMessage = $"The audiobook could not be removed: {exception.Message}";
         }
         finally
         {
@@ -1515,7 +1556,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                     LibraryTileWidth,
                     PlayLibraryBookAsync,
                     ChooseCoverAsync,
-                    EditMetadataAsync));
+                    EditMetadataAsync,
+                    RemoveBookAsync));
             }
 
             RebuildLibraryGroups();
@@ -1527,6 +1569,38 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         catch (Exception exception)
         {
             LibraryStatusMessage = $"The library could not be loaded: {exception.Message}";
+        }
+    }
+
+    private void UnloadCurrentBookForRemoval()
+    {
+        SaveCurrentProgress(force: true);
+        _isLoadingFile = true;
+
+        try
+        {
+            IsFileLoaded = false;
+            _audioEngine.Unload();
+            _currentFilePath = null;
+            _pendingResumePosition = null;
+            _hasPlaybackEnded = false;
+            IsPlaying = false;
+            PositionSeconds = 0d;
+            DurationSeconds = 0d;
+            BookTitle = "No audiobook selected";
+            FileName = "Choose an audiobook from your library to begin listening.";
+            FileFormatText = "AUDIO • LOCAL";
+            StatusText = "Ready";
+            ProgressText = "Your place will be saved automatically.";
+            ErrorMessage = string.Empty;
+            StopSleepTimer();
+            ClearChapters();
+            ClearBookmarks();
+            SetCurrentCover(null);
+        }
+        finally
+        {
+            _isLoadingFile = false;
         }
     }
 

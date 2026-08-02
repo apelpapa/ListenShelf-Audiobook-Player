@@ -24,6 +24,8 @@ public interface IAudioEngine : IDisposable
 
     Task LoadAsync(string filePath, CancellationToken cancellationToken = default);
 
+    void Unload();
+
     bool Play();
 
     void Pause();
