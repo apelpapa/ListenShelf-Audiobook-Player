@@ -19,7 +19,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Treat book removal as one operation that deletes the catalog entry and its ListenShelf-managed copy together.
 - [x] Require strong confirmation before removing a book and permanently deleting its ListenShelf-managed copy.
 - [x] Verify that every audiobook file and folder in managed storage is referenced by the catalog, including detection of orphaned and stale import files.
-- [ ] Provide explicit recovery or confirmed cleanup for orphaned managed files; never silently delete a potentially recoverable audiobook.
+- [x] Provide explicit recovery or confirmed cleanup for orphaned managed files; never silently delete a potentially recoverable audiobook.
 - [ ] Export managed audiobooks with their metadata, covers, bookmarks, and listening progress.
 - [ ] Add database backup support.
 - [ ] Add database restore support.
@@ -55,6 +55,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Test bookmark creation, editing, ordering, and deletion.
 - [x] Test managed-book removal, related-data cleanup, path safety, and interrupted-removal recovery.
 - [x] Test managed-storage checks for missing files, orphaned paths, stale imports, unsafe catalog paths, and journaled removals.
+- [x] Test orphaned audiobook recovery, stale-import cleanup, confirmed folder cleanup, and refusal to delete cataloged audiobooks.
 - [ ] Test bookmark jumping through the player.
 - [ ] Test missing-file and relinking behavior.
 - [ ] Test M4B playback behavior.
@@ -70,6 +71,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [ ] Relink an audiobook that has moved or is missing from its saved location.
 - [x] Remove a book by deleting its catalog entry, managed audiobook copy, cached cover, metadata, bookmarks, and listening progress as one confirmed operation.
 - [x] Add a read-only managed-storage integrity check for missing, unreferenced, unsafe, and stale import paths.
+- [x] Add a non-blocking Storage Care area with an attention indicator, orphan recovery, and inline-confirmed cleanup.
 - [ ] Persist managed-file checksums and add audiobook corruption detection.
 - [ ] Improve duplicate detection and duplicate-import messages.
 - [ ] Add clear progress and error reporting for large imports.

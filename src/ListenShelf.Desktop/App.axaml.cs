@@ -33,6 +33,9 @@ namespace ListenShelf.Desktop
                 var integrityChecker = new SqliteManagedLibraryIntegrityChecker(
                     database,
                     audiobookLibrary.ManagedLibraryPath);
+                var libraryMaintenance = new SqliteManagedLibraryMaintenance(
+                    database,
+                    integrityChecker);
                 var viewModel = new MainWindowViewModel(
                     new LibVlcAudioEngine(),
                     new AvaloniaFilePickerService(mainWindow),
@@ -44,7 +47,8 @@ namespace ListenShelf.Desktop
                     new AvaloniaBookMetadataEditorService(mainWindow, metadataProvider),
                     new AvaloniaBookmarkEditorService(mainWindow),
                     new AvaloniaBookRemovalConfirmationService(mainWindow),
-                    integrityChecker);
+                    integrityChecker,
+                    libraryMaintenance);
 
                 mainWindow.DataContext = viewModel;
                 mainWindow.Opened += async (_, _) =>

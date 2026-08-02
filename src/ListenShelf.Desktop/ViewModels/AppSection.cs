@@ -4,5 +4,6 @@ public enum AppSection
 {
     Library,
     Player,
+    StorageCare,
     Settings,
 }

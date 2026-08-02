@@ -83,6 +83,32 @@
                                        Text="Player" />
                         </Grid>
                     </Button>
+                    <Button Classes="nav" Command="{Binding ShowStorageCareCommand}">
+                        <Grid ColumnDefinitions="4,*,Auto" ColumnSpacing="12">
+                            <Border Grid.Column="0"
+                                    CornerRadius="2"
+                                    Background="{DynamicResource AccentBrush}"
+                                    IsVisible="{Binding IsStorageCareSection}" />
+                            <TextBlock Grid.Column="1"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Text="Storage care" />
+                            <Border Grid.Column="2"
+                                    Width="22"
+                                    Height="22"
+                                    CornerRadius="11"
+                                    Background="{DynamicResource WarmAccentBrush}"
+                                    IsVisible="{Binding HasManagedStorageIssues}"
+                                    ToolTip.Tip="Managed storage needs attention">
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontSize="13"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource OnAccentBrush}"
+                                           Text="!" />
+                            </Border>
+                        </Grid>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
@@ -147,6 +173,7 @@
             <Grid Grid.Row="1" Margin="26">
                 <sections:LibraryView IsVisible="{Binding IsLibrarySection}" />
                 <sections:PlayerView IsVisible="{Binding IsPlayerSection}" />
+                <sections:StorageCareView IsVisible="{Binding IsStorageCareSection}" />
                 <sections:SettingsView IsVisible="{Binding IsSettingsSection}" />
             </Grid>
 

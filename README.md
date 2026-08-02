@@ -22,7 +22,7 @@ tests/                         Test projects, added alongside behavior
 
 ## Current preview
 
-The preliminary Windows app has Library, Player, and Settings sections.
+The preliminary Windows app has Library, Player, Storage Care, and Settings sections.
 ListenShelf maintains one application-managed library: adding an audiobook
 creates a SHA-256-verified copy in ListenShelf's library while leaving the
 original source file untouched. Library entries support editable book details
@@ -33,10 +33,18 @@ cached cover, metadata, bookmarks, and listening progress together; the original
 source file is never a deletion target.
 
 On startup, ListenShelf performs a read-only managed-storage integrity check.
-The same check can be run again from Settings to find catalog entries with
+The same check can be run again from Storage Care to find catalog entries with
 missing files, unreferenced files or folders, unsafe catalog paths, and
 unfinished `.importing` files that have been inactive for at least 24 hours.
-The report never moves, recovers, or deletes files automatically.
+The report never moves, recovers, or deletes files automatically. It quietly
+shows an exclamation mark beside Storage Care when something needs attention;
+there is no startup warning dialog. Supported orphaned audiobooks can be
+recovered into the catalog, while unneeded orphan files, folders, and stale
+imports can be permanently cleaned up only after an inline confirmation.
+Recovery reuses an unreferenced ListenShelf book folder when possible;
+otherwise it verifies a new managed copy before removing the oddly placed
+orphan. ListenShelf refuses cleanup requests outside managed storage, against
+a cataloged audiobook, or through a filesystem link or junction.
 
 Managed-book editing includes an optional [Open Library](https://openlibrary.org/) lookup. Searches are sent directly from the desktop app with no ListenShelf account or central server; only the text entered in the search box is transmitted. The user chooses a result, reviews the populated fields, and decides whether an available cover should be saved into ListenShelf's local cover cache. Manual metadata remains editable and audiobook-specific fields are not replaced by print-book search results.
 

@@ -302,6 +302,11 @@ public sealed class SqliteManagedLibraryIntegrityChecker : IManagedLibraryIntegr
                     Path.GetFullPath(entry),
                     "This nested directory is not referenced by the ListenShelf catalog or removal journal.",
                     bookId));
+
+                if (!IsReparsePoint(entry))
+                {
+                    AuditUnreferencedDirectoryContents(entry, checkedAtUtc, issues, bookId);
+                }
             }
         }
     }
@@ -415,6 +420,18 @@ public sealed class SqliteManagedLibraryIntegrityChecker : IManagedLibraryIntegr
             or UnauthorizedAccessException
             or ArgumentException
             or NotSupportedException;
+
+    private static bool IsReparsePoint(string path)
+    {
+        try
+        {
+            return (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+        }
+        catch (Exception exception) when (IsFilesystemInspectionException(exception))
+        {
+            return true;
+        }
+    }
 
     private sealed record CatalogBookReference(Guid BookId, string FilePath);
 

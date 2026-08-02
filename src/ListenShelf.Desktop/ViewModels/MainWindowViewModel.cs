@@ -45,6 +45,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IBookmarkEditorService _bookmarkEditorService;
     private readonly IBookRemovalConfirmationService _bookRemovalConfirmationService;
     private readonly IManagedLibraryIntegrityChecker _managedLibraryIntegrityChecker;
+    private readonly IManagedLibraryMaintenance _managedLibraryMaintenance;
     private readonly DispatcherTimer _sleepTimer;
     private bool _isUpdatingPositionFromEngine;
     private bool _isUpdatingChapterFromEngine;
@@ -70,7 +71,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IBookMetadataEditorService bookMetadataEditorService,
         IBookmarkEditorService bookmarkEditorService,
         IBookRemovalConfirmationService bookRemovalConfirmationService,
-        IManagedLibraryIntegrityChecker managedLibraryIntegrityChecker)
+        IManagedLibraryIntegrityChecker managedLibraryIntegrityChecker,
+        IManagedLibraryMaintenance managedLibraryMaintenance)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
@@ -83,6 +85,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _bookmarkEditorService = bookmarkEditorService;
         _bookRemovalConfirmationService = bookRemovalConfirmationService;
         _managedLibraryIntegrityChecker = managedLibraryIntegrityChecker;
+        _managedLibraryMaintenance = managedLibraryMaintenance;
         _sleepTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1),
@@ -276,6 +279,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLibrarySection))]
     [NotifyPropertyChangedFor(nameof(IsPlayerSection))]
+    [NotifyPropertyChangedFor(nameof(IsStorageCareSection))]
     [NotifyPropertyChangedFor(nameof(IsSettingsSection))]
     [NotifyPropertyChangedFor(nameof(PageTitle))]
     [NotifyPropertyChangedFor(nameof(PageSubtitle))]
@@ -330,6 +334,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasManagedStorageIssues))]
     [NotifyPropertyChangedFor(nameof(IsManagedStorageHealthy))]
+    [NotifyPropertyChangedFor(nameof(ManagedStorageAttentionText))]
     private int _managedStorageIssueCount;
 
     [ObservableProperty]
@@ -491,6 +496,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool IsPlayerSection => SelectedSection == AppSection.Player;
 
+    public bool IsStorageCareSection => SelectedSection == AppSection.StorageCare;
+
     public bool IsSettingsSection => SelectedSection == AppSection.Settings;
 
     public bool IsDarkThemeSelected => SelectedTheme == AppTheme.Dark;
@@ -514,6 +521,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public bool IsManagedStorageHealthy =>
         HasManagedStorageBeenChecked && !HasManagedStorageIssues;
 
+    public string ManagedStorageAttentionText => ManagedStorageIssueCount == 1
+        ? "1 storage item needs attention"
+        : $"{ManagedStorageIssueCount} storage items need attention";
+
     public string LibraryBookCountText => LibraryBooks.Count == 1
         ? "1 audiobook"
         : $"{LibraryBooks.Count} audiobooks";
@@ -523,6 +534,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public string PageTitle => SelectedSection switch
     {
         AppSection.Player => "Player",
+        AppSection.StorageCare => "Storage care",
         AppSection.Settings => "Settings",
         _ => "Library",
     };
@@ -530,7 +542,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public string PageSubtitle => SelectedSection switch
     {
         AppSection.Player => "Listen locally with automatic progress saving.",
-        AppSection.Settings => "Personalize ListenShelf and review library storage.",
+        AppSection.StorageCare => "Recover useful orphaned audiobooks or clean up unneeded storage.",
+        AppSection.Settings => "Personalize ListenShelf.",
         _ => "Your audiobooks, series, and collections will live here.",
     };
 
@@ -559,6 +572,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private void ShowPlayer() => SelectedSection = AppSection.Player;
 
     [RelayCommand]
+    private void ShowStorageCare() => SelectedSection = AppSection.StorageCare;
+
+    [RelayCommand]
     private void ShowSettings() => SelectedSection = AppSection.Settings;
 
     [RelayCommand(CanExecute = nameof(CanCheckManagedStorage))]
@@ -578,7 +594,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             ManagedStorageIssues.Clear();
             foreach (var issue in report.Issues.Take(MaximumDisplayedStorageIssues))
             {
-                ManagedStorageIssues.Add(new ManagedStorageIssueItemViewModel(issue));
+                ManagedStorageIssues.Add(new ManagedStorageIssueItemViewModel(
+                    issue,
+                    RecoverManagedStorageIssueAsync,
+                    CleanUpManagedStorageIssueAsync));
             }
 
             ManagedStorageIssueCount = report.Issues.Count;
@@ -614,6 +633,71 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         {
             IsManagedStorageCheckRunning = false;
         }
+    }
+
+    private async Task RecoverManagedStorageIssueAsync(ManagedStorageIssueItemViewModel item)
+    {
+        if (IsLibraryBusy || IsManagedStorageCheckRunning)
+        {
+            return;
+        }
+
+        IsLibraryBusy = true;
+        ManagedStorageStatusText = $"Recovering {item.Name} into the library…";
+        string outcome;
+
+        try
+        {
+            var result = await Task.Run(() =>
+                _managedLibraryMaintenance.RecoverAudiobook(item.Path));
+            RefreshLibrary();
+            outcome = result.OrphanCleanupPending
+                ? $"{result.Book.Title} was recovered. Its old orphaned copy could not be removed and still needs attention."
+                : $"{result.Book.Title} was recovered and is back in your library.";
+        }
+        catch (Exception exception)
+        {
+            outcome = $"The audiobook could not be recovered: {exception.Message}";
+        }
+        finally
+        {
+            IsLibraryBusy = false;
+        }
+
+        await CheckManagedStorageAsync();
+        ManagedStorageStatusText = $"{outcome} {ManagedStorageStatusText}";
+    }
+
+    private async Task CleanUpManagedStorageIssueAsync(ManagedStorageIssueItemViewModel item)
+    {
+        if (IsLibraryBusy || IsManagedStorageCheckRunning)
+        {
+            return;
+        }
+
+        IsLibraryBusy = true;
+        ManagedStorageStatusText = $"Cleaning up {item.Name}…";
+        string outcome;
+
+        try
+        {
+            var result = await Task.Run(() =>
+                _managedLibraryMaintenance.CleanUp(item.Path));
+            outcome = result.WasDirectory
+                ? $"The confirmed orphaned folder {item.Name} was permanently deleted."
+                : $"The confirmed orphaned file {item.Name} was permanently deleted.";
+        }
+        catch (Exception exception)
+        {
+            outcome = $"The orphaned item could not be cleaned up: {exception.Message}";
+        }
+        finally
+        {
+            IsLibraryBusy = false;
+        }
+
+        await CheckManagedStorageAsync();
+        ManagedStorageStatusText = $"{outcome} {ManagedStorageStatusText}";
     }
 
     [RelayCommand]

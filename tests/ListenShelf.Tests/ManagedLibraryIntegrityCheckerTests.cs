@@ -50,6 +50,10 @@ public sealed class ManagedLibraryIntegrityCheckerTests
         Directory.CreateDirectory(orphanDirectory);
         var orphanAudiobook = Path.Combine(orphanDirectory, "orphaned.m4b");
         File.WriteAllBytes(orphanAudiobook, [10, 11, 12]);
+        var nestedOrphanDirectory = Path.Combine(orphanDirectory, "nested");
+        Directory.CreateDirectory(nestedOrphanDirectory);
+        var nestedOrphanAudiobook = Path.Combine(nestedOrphanDirectory, "nested.mp3");
+        File.WriteAllBytes(nestedOrphanAudiobook, [15, 16, 17]);
         var orphanRootFile = Path.Combine(workspace.ManagedLibraryPath, "loose.mp3");
         File.WriteAllBytes(orphanRootFile, [13, 14]);
 
@@ -79,6 +83,14 @@ public sealed class ManagedLibraryIntegrityCheckerTests
             report.Issues,
             issue => issue.Kind == ManagedLibraryIntegrityIssueKind.UnreferencedFile
                      && PathsEqual(issue.Path, orphanAudiobook));
+        Assert.Contains(
+            report.Issues,
+            issue => issue.Kind == ManagedLibraryIntegrityIssueKind.UnreferencedDirectory
+                     && PathsEqual(issue.Path, nestedOrphanDirectory));
+        Assert.Contains(
+            report.Issues,
+            issue => issue.Kind == ManagedLibraryIntegrityIssueKind.UnreferencedFile
+                     && PathsEqual(issue.Path, nestedOrphanAudiobook));
         Assert.Contains(
             report.Issues,
             issue => issue.Kind == ManagedLibraryIntegrityIssueKind.UnreferencedFile
