@@ -22,6 +22,14 @@ public sealed class AvaloniaFilePickerService(Window owner) : IFilePickerService
         AppleUniformTypeIdentifiers = ["public.png", "public.jpeg", "org.webmproject.webp"],
     };
 
+    private static readonly FilePickerFileType ListenShelfBackupFileType =
+        new("ListenShelf backups")
+        {
+            Patterns = ["*.listenshelf-backup"],
+            MimeTypes = ["application/zip"],
+            AppleUniformTypeIdentifiers = ["public.zip-archive"],
+        };
+
     public async Task<IReadOnlyList<string>> PickAudiobookFilesAsync()
     {
         if (!owner.StorageProvider.CanOpen)
@@ -53,6 +61,43 @@ public sealed class AvaloniaFilePickerService(Window owner) : IFilePickerService
             AllowMultiple = false,
             FileTypeFilter = [CoverImageFileType],
             SuggestedFileType = CoverImageFileType,
+        });
+
+        return files.Count == 1 ? files[0].Path.LocalPath : null;
+    }
+
+    public async Task<string?> PickBackupExportPathAsync(string suggestedFileName)
+    {
+        if (!owner.StorageProvider.CanSave)
+        {
+            throw new NotSupportedException("This system does not provide a save-file picker.");
+        }
+
+        var file = await owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Export ListenShelf backup",
+            SuggestedFileName = suggestedFileName,
+            DefaultExtension = "listenshelf-backup",
+            FileTypeChoices = [ListenShelfBackupFileType],
+            SuggestedFileType = ListenShelfBackupFileType,
+        });
+
+        return file?.Path.LocalPath;
+    }
+
+    public async Task<string?> PickBackupImportPathAsync()
+    {
+        if (!owner.StorageProvider.CanOpen)
+        {
+            throw new NotSupportedException("This system does not provide a file picker.");
+        }
+
+        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Choose a ListenShelf backup to restore",
+            AllowMultiple = false,
+            FileTypeFilter = [ListenShelfBackupFileType],
+            SuggestedFileType = ListenShelfBackupFileType,
         });
 
         return files.Count == 1 ? files[0].Path.LocalPath : null;

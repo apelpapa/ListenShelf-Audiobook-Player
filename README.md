@@ -50,6 +50,17 @@ Managed-book editing includes an optional [Open Library](https://openlibrary.org
 
 The player supports local `.m4b`, `.m4a`, and `.mp3` audiobooks and provides play/pause, seeking, 15-second rewind, 30-second forward, playback-speed selection, volume, elapsed/remaining time, a sleep timer, and automatic per-file position persistence in a local SQLite database. Per-audiobook bookmarks can save the current timestamp with an optional name and note, retain the chapter context, and later be jumped to, edited, or deleted without modifying the audiobook file. Playback speed and volume are remembered globally between launches. On startup, ListenShelf restores those player settings, loads the most recently played available audiobook at its saved position, and opens the Player without starting playback. Space or K toggles playback, Left Arrow or J rewinds, and Right Arrow or L moves forward. On Windows, keyboard, headset, and other media buttons continue to control the loaded book while ListenShelf is minimized. When a file contains embedded chapters, ListenShelf discovers them during loading so the chapter selector and previous/next controls are ready before Play, tracks the current chapter, and provides direct chapter navigation.
 
+Settings can export the entire local library as one versioned
+`.listenshelf-backup` file. It contains a consistent database snapshot,
+managed audiobooks, covers, settings, bookmarks, progress, and recoverable
+orphaned storage. Every entry is size-checked and SHA-256 verified before a
+restore. Restoring is an explicit full replacement rather than an ambiguous
+merge; ListenShelf first creates a separate backup of the current library,
+stages and validates the selected backup, rebases its managed paths, and rolls
+back the live directory if replacement fails. Backups remain local and are not
+uploaded. The format is documented in
+[`docs/BACKUP_FORMAT.md`](docs/BACKUP_FORMAT.md).
+
 ### Data preservation
 
 ListenShelf stores its database, managed audiobook copies, covers, settings,

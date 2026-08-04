@@ -20,9 +20,9 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Require strong confirmation before removing a book and permanently deleting its ListenShelf-managed copy.
 - [x] Verify that every audiobook file and folder in managed storage is referenced by the catalog, including detection of orphaned and stale import files.
 - [x] Provide explicit recovery or confirmed cleanup for orphaned managed files; never silently delete a potentially recoverable audiobook.
-- [ ] Export managed audiobooks with their metadata, covers, bookmarks, and listening progress.
-- [ ] Add database backup support.
-- [ ] Add database restore support.
+- [x] Export managed audiobooks with their metadata, covers, bookmarks, and listening progress.
+- [x] Add database backup support.
+- [x] Add database restore support.
 - [ ] Introduce explicit, versioned database migrations.
 - [ ] Add a recovery path for a damaged or unreadable database.
 - [ ] Require no known data-loss defects before beta.
@@ -56,6 +56,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Test managed-book removal, related-data cleanup, path safety, and interrupted-removal recovery.
 - [x] Test managed-storage checks for missing files, orphaned paths, stale imports, unsafe catalog paths, and journaled removals.
 - [x] Test orphaned audiobook recovery, stale-import cleanup, confirmed folder cleanup, and refusal to delete cataloged audiobooks.
+- [x] Test versioned local backup creation, full integrity validation, path-rebased restore, pre-restore safety backups, and tamper rejection.
 - [ ] Test bookmark jumping through the player.
 - [ ] Test missing-file and relinking behavior.
 - [ ] Test M4B playback behavior.

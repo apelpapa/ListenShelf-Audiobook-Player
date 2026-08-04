@@ -4,6 +4,7 @@ using Avalonia.Markup.Xaml;
 using ListenShelf.Desktop.Services;
 using ListenShelf.Desktop.ViewModels;
 using ListenShelf.Desktop.Views;
+using ListenShelf.Infrastructure.Backup;
 using ListenShelf.Infrastructure.Bookmarks;
 using ListenShelf.Infrastructure.Library;
 using ListenShelf.Infrastructure.Metadata;
@@ -36,6 +37,9 @@ namespace ListenShelf.Desktop
                 var libraryMaintenance = new SqliteManagedLibraryMaintenance(
                     database,
                     integrityChecker);
+                var backupService = new ZipLibraryBackupService(
+                    database,
+                    integrityChecker);
                 var viewModel = new MainWindowViewModel(
                     new LibVlcAudioEngine(),
                     new AvaloniaFilePickerService(mainWindow),
@@ -48,7 +52,8 @@ namespace ListenShelf.Desktop
                     new AvaloniaBookmarkEditorService(mainWindow),
                     new AvaloniaBookRemovalConfirmationService(mainWindow),
                     integrityChecker,
-                    libraryMaintenance);
+                    libraryMaintenance,
+                    backupService);
 
                 mainWindow.DataContext = viewModel;
                 mainWindow.Opened += async (_, _) =>

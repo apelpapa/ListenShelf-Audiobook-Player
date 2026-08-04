@@ -3,6 +3,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ListenShelf.Application.Backup;
 using ListenShelf.Application.Bookmarks;
 using ListenShelf.Application.Library;
 using ListenShelf.Application.Playback;
@@ -46,6 +47,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IBookRemovalConfirmationService _bookRemovalConfirmationService;
     private readonly IManagedLibraryIntegrityChecker _managedLibraryIntegrityChecker;
     private readonly IManagedLibraryMaintenance _managedLibraryMaintenance;
+    private readonly ILibraryBackupService _libraryBackupService;
     private readonly DispatcherTimer _sleepTimer;
     private bool _isUpdatingPositionFromEngine;
     private bool _isUpdatingChapterFromEngine;
@@ -72,7 +74,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IBookmarkEditorService bookmarkEditorService,
         IBookRemovalConfirmationService bookRemovalConfirmationService,
         IManagedLibraryIntegrityChecker managedLibraryIntegrityChecker,
-        IManagedLibraryMaintenance managedLibraryMaintenance)
+        IManagedLibraryMaintenance managedLibraryMaintenance,
+        ILibraryBackupService libraryBackupService)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
@@ -86,6 +89,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _bookRemovalConfirmationService = bookRemovalConfirmationService;
         _managedLibraryIntegrityChecker = managedLibraryIntegrityChecker;
         _managedLibraryMaintenance = managedLibraryMaintenance;
+        _libraryBackupService = libraryBackupService;
         _sleepTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1),
@@ -319,8 +323,45 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanAddAudiobooks))]
+    [NotifyPropertyChangedFor(nameof(CanRunBackupOperation))]
     [NotifyCanExecuteChangedFor(nameof(CheckManagedStorageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ExportBackupCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ChooseBackupToRestoreCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RestoreSelectedBackupCommand))]
     private bool _isLibraryBusy;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRunBackupOperation))]
+    [NotifyCanExecuteChangedFor(nameof(ExportBackupCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ChooseBackupToRestoreCommand))]
+    [NotifyCanExecuteChangedFor(nameof(RestoreSelectedBackupCommand))]
+    private bool _isBackupBusy;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRestoreSelectedBackup))]
+    [NotifyCanExecuteChangedFor(nameof(RestoreSelectedBackupCommand))]
+    private bool _isRestoreConfirmationVisible;
+
+    [ObservableProperty]
+    private bool _isBackupProgressVisible;
+
+    [ObservableProperty]
+    private double _backupProgressPercentage;
+
+    [ObservableProperty]
+    private string _backupProgressText = string.Empty;
+
+    [ObservableProperty]
+    private string _backupStatusText =
+        "Export one portable backup containing your catalog, managed audiobooks, covers, settings, bookmarks, and listening progress.";
+
+    [ObservableProperty]
+    private string _pendingRestoreSummaryText = string.Empty;
+
+    [ObservableProperty]
+    private string _pendingRestorePath = string.Empty;
+
+    private string? _selectedBackupToRestorePath;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanCheckManagedStorage))]
@@ -514,6 +555,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool CanAddAudiobooks => !IsLibraryBusy;
 
+    public bool CanRunBackupOperation => !IsLibraryBusy && !IsBackupBusy;
+
+    public bool CanRestoreSelectedBackup =>
+        CanRunBackupOperation
+        && IsRestoreConfirmationVisible
+        && !string.IsNullOrWhiteSpace(_selectedBackupToRestorePath);
+
     public bool CanCheckManagedStorage => !IsLibraryBusy && !IsManagedStorageCheckRunning;
 
     public bool HasManagedStorageIssues => ManagedStorageIssueCount > 0;
@@ -698,6 +746,193 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         await CheckManagedStorageAsync();
         ManagedStorageStatusText = $"{outcome} {ManagedStorageStatusText}";
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRunBackupOperation))]
+    private async Task ExportBackupAsync()
+    {
+        if (!CanRunBackupOperation)
+        {
+            return;
+        }
+
+        IsBackupBusy = true;
+        try
+        {
+            var suggestedFileName =
+                $"ListenShelf backup {DateTimeOffset.Now:yyyy-MM-dd HH-mm}.listenshelf-backup";
+            var destinationPath = await _filePickerService
+                .PickBackupExportPathAsync(suggestedFileName);
+            if (destinationPath is null)
+            {
+                return;
+            }
+
+            IsLibraryBusy = true;
+            SaveCurrentProgress(force: true);
+            BeginBackupProgress("Preparing local backup…");
+            var progress = CreateBackupProgressReporter();
+            var summary = await Task.Run(() =>
+                _libraryBackupService.Export(destinationPath, progress));
+            BackupStatusText =
+                $"Backup saved: {summary.BookCount} audiobook{(summary.BookCount == 1 ? string.Empty : "s")}, {FormatFileSize(summary.ArchiveSizeBytes)}. {summary.BackupPath}";
+        }
+        catch (Exception exception)
+        {
+            BackupStatusText = $"The backup could not be created: {exception.Message}";
+        }
+        finally
+        {
+            IsLibraryBusy = false;
+            IsBackupBusy = false;
+            IsBackupProgressVisible = false;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRunBackupOperation))]
+    private async Task ChooseBackupToRestoreAsync()
+    {
+        if (!CanRunBackupOperation)
+        {
+            return;
+        }
+
+        IsBackupBusy = true;
+        IsRestoreConfirmationVisible = false;
+        _selectedBackupToRestorePath = null;
+        try
+        {
+            var backupPath = await _filePickerService.PickBackupImportPathAsync();
+            if (backupPath is null)
+            {
+                return;
+            }
+
+            BeginBackupProgress("Validating selected backup…");
+            var progress = CreateBackupProgressReporter();
+            var summary = await Task.Run(() =>
+                _libraryBackupService.Inspect(backupPath, progress));
+            _selectedBackupToRestorePath = summary.BackupPath;
+            PendingRestorePath = summary.BackupPath;
+            PendingRestoreSummaryText =
+                $"Created {summary.CreatedAtUtc.ToLocalTime():g} • {summary.BookCount} audiobook{(summary.BookCount == 1 ? string.Empty : "s")} • {FormatFileSize(summary.ArchiveSizeBytes)}"
+                + (summary.IsComplete
+                    ? string.Empty
+                    : " • Recovery snapshot with known missing catalog files");
+            BackupStatusText =
+                "The selected backup passed its manifest, size, SHA-256, and SQLite integrity checks.";
+            IsRestoreConfirmationVisible = true;
+        }
+        catch (Exception exception)
+        {
+            BackupStatusText = $"The selected backup is not usable: {exception.Message}";
+        }
+        finally
+        {
+            IsBackupBusy = false;
+            IsBackupProgressVisible = false;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRestoreSelectedBackup))]
+    private async Task RestoreSelectedBackupAsync()
+    {
+        if (!CanRestoreSelectedBackup || _selectedBackupToRestorePath is null)
+        {
+            return;
+        }
+
+        var backupPath = _selectedBackupToRestorePath;
+        IsBackupBusy = true;
+        IsLibraryBusy = true;
+        IsRestoreConfirmationVisible = false;
+        BeginBackupProgress("Preparing restore…");
+        var restoreApplied = false;
+        try
+        {
+            SaveCurrentProgress(force: true);
+            UnloadCurrentBook();
+            var progress = CreateBackupProgressReporter();
+            var result = await Task.Run(() =>
+                _libraryBackupService.Restore(backupPath, progress));
+            restoreApplied = true;
+
+            ReloadPreferencesAfterRestore();
+            RefreshLibrary();
+            SelectedSection = AppSection.Library;
+            _selectedBackupToRestorePath = null;
+            PendingRestorePath = string.Empty;
+            PendingRestoreSummaryText = string.Empty;
+            BackupStatusText = result.RollbackCleanupPending
+                ? $"Backup restored. Your previous library was preserved at {result.SafetyBackupPath}. A temporary rollback folder could not be removed and may still use disk space."
+                : $"Backup restored. Your previous library was preserved at {result.SafetyBackupPath}.";
+        }
+        catch (Exception exception)
+        {
+            BackupStatusText = restoreApplied
+                ? $"The backup was restored, but ListenShelf could not fully refresh the window: {exception.Message}. Restart ListenShelf to load the restored state."
+                : $"The backup could not be restored. Your current library was kept: {exception.Message}";
+        }
+        finally
+        {
+            IsLibraryBusy = false;
+            IsBackupBusy = false;
+            IsBackupProgressVisible = false;
+        }
+
+        await CheckManagedStorageAsync();
+    }
+
+    [RelayCommand]
+    private void CancelSelectedBackupRestore()
+    {
+        _selectedBackupToRestorePath = null;
+        PendingRestorePath = string.Empty;
+        PendingRestoreSummaryText = string.Empty;
+        IsRestoreConfirmationVisible = false;
+        BackupStatusText = "Restore cancelled. No library data was changed.";
+    }
+
+    private IProgress<LibraryBackupProgress> CreateBackupProgressReporter() =>
+        new Progress<LibraryBackupProgress>(progress =>
+        {
+            BackupProgressPercentage = progress.Percentage;
+            BackupProgressText = progress.TotalFiles > 0
+                ? $"{progress.Stage} • {progress.CompletedFiles} of {progress.TotalFiles} files • {progress.Percentage:0}%"
+                : progress.Stage;
+        });
+
+    private void BeginBackupProgress(string message)
+    {
+        BackupProgressPercentage = 0d;
+        BackupProgressText = message;
+        IsBackupProgressVisible = true;
+        BackupStatusText = message;
+    }
+
+    private void ReloadPreferencesAfterRestore()
+    {
+        SelectedTheme = _appSettingsStore.GetTheme();
+        _themeService.ApplyTheme(SelectedTheme);
+        AppearanceSettingsMessage = $"{SelectedTheme} appearance is active.";
+
+        SelectedLibraryView = _appSettingsStore.GetLibraryViewMode();
+        var restoredGroupMode = _appSettingsStore.GetLibraryGroupMode();
+        SelectedLibraryGroupOption = GroupOptions.FirstOrDefault(option =>
+            option.Mode == restoredGroupMode) ?? GroupOptions[0];
+        LibraryTileWidth = Math.Clamp(
+            _appSettingsStore.GetLibraryTileWidth(),
+            MinimumLibraryTileWidth,
+            MaximumLibraryTileWidth);
+        Volume = Math.Clamp(
+            _appSettingsStore.GetPlaybackVolume(),
+            MinimumPlaybackVolume,
+            MaximumPlaybackVolume);
+
+        var restoredPlaybackRate = _appSettingsStore.GetPlaybackRate();
+        SelectedPlaybackRate = PlaybackRates.Contains(restoredPlaybackRate)
+            ? restoredPlaybackRate
+            : DefaultPlaybackRate;
     }
 
     [RelayCommand]
@@ -1012,7 +1247,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             if (!string.IsNullOrWhiteSpace(_currentFilePath)
                 && PathsEqual(_currentFilePath, book.FilePath))
             {
-                UnloadCurrentBookForRemoval();
+                UnloadCurrentBook();
             }
 
             var result = await Task.Run(() => _audiobookLibrary.Remove(book.Id));
@@ -1746,7 +1981,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private void UnloadCurrentBookForRemoval()
+    private void UnloadCurrentBook()
     {
         SaveCurrentProgress(force: true);
         _isLoadingFile = true;
@@ -2017,6 +2252,27 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         return totalSeconds >= 3600d
             ? $"{(int)time.TotalHours}:{time.Minutes:00}:{time.Seconds:00}"
             : $"{time.Minutes}:{time.Seconds:00}";
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        var value = Math.Max(0L, bytes);
+        if (value >= 1024L * 1024L * 1024L)
+        {
+            return $"{value / (1024d * 1024d * 1024d):0.##} GB";
+        }
+
+        if (value >= 1024L * 1024L)
+        {
+            return $"{value / (1024d * 1024d):0.##} MB";
+        }
+
+        if (value >= 1024L)
+        {
+            return $"{value / 1024d:0.##} KB";
+        }
+
+        return $"{value} B";
     }
 
     private static string FormatSleepTimerRemaining(TimeSpan remaining)

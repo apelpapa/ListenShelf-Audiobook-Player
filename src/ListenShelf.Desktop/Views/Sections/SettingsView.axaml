@@ -165,6 +165,126 @@
                     </Grid>
                 </Border>
             </StackPanel>
+
+            <StackPanel Spacing="10">
+                <StackPanel Spacing="5">
+                    <TextBlock FontSize="19"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
+                               Text="Local backup and restore" />
+                    <TextBlock FontSize="13"
+                               Foreground="{DynamicResource MutedTextBrush}"
+                               Text="Keep your complete ListenShelf library in one portable backup file. Cloud storage can use the same format later."
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Border Padding="18"
+                        CornerRadius="15"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="14">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"
+                                           Text="ListenShelf backup file" />
+                                <TextBlock FontSize="11"
+                                           Foreground="{DynamicResource SubtleTextBrush}"
+                                           Text="Includes the catalog database, managed audiobooks, covers, settings, bookmarks, listening progress, and any recoverable orphaned storage. Audio is stored without wasteful recompression."
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Orientation="Horizontal"
+                                        Spacing="9">
+                                <Button MinWidth="124"
+                                        Padding="14,9"
+                                        Background="{DynamicResource AccentBrush}"
+                                        Foreground="{DynamicResource OnAccentBrush}"
+                                        FontWeight="SemiBold"
+                                        Command="{Binding ExportBackupCommand}"
+                                        Content="Export backup" />
+                                <Button MinWidth="148"
+                                        Padding="14,9"
+                                        Background="{DynamicResource SurfaceRaisedBrush}"
+                                        Foreground="{DynamicResource SecondaryTextBrush}"
+                                        Command="{Binding ChooseBackupToRestoreCommand}"
+                                        Content="Restore from backup" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Border Height="1" Background="{DynamicResource SeparatorBrush}" />
+
+                        <TextBlock FontSize="11"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Text="{Binding BackupStatusText}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock FontSize="10"
+                                   Foreground="{DynamicResource SubtleTextBrush}"
+                                   Text="Backup files are not encrypted. Store them somewhere you trust. ListenShelf does not upload them."
+                                   TextWrapping="Wrap" />
+
+                        <StackPanel Spacing="5" IsVisible="{Binding IsBackupProgressVisible}">
+                            <ProgressBar Height="7"
+                                         Minimum="0"
+                                         Maximum="100"
+                                         Value="{Binding BackupProgressPercentage}" />
+                            <TextBlock FontSize="10"
+                                       Foreground="{DynamicResource SubtleTextBrush}"
+                                       Text="{Binding BackupProgressText}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Border Padding="14"
+                                CornerRadius="10"
+                                Background="{DynamicResource SurfaceRaisedBrush}"
+                                BorderBrush="{DynamicResource CoralAccentBrush}"
+                                BorderThickness="1"
+                                IsVisible="{Binding IsRestoreConfirmationVisible}">
+                            <StackPanel Spacing="10">
+                                <TextBlock FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource DangerTextBrush}"
+                                           Text="CONFIRM FULL LIBRARY RESTORE" />
+                                <TextBlock FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"
+                                           Text="{Binding PendingRestoreSummaryText}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock FontSize="10"
+                                           Foreground="{DynamicResource SubtleTextBrush}"
+                                           Text="{Binding PendingRestorePath}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip.Tip="{Binding PendingRestorePath}" />
+                                <TextBlock FontSize="11"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           Text="This replaces the current catalog, managed books, covers, settings, bookmarks, and progress. Before replacement, ListenShelf will automatically save the current library as another backup beside the selected file."
+                                           TextWrapping="Wrap" />
+                                <StackPanel HorizontalAlignment="Right"
+                                            Orientation="Horizontal"
+                                            Spacing="9">
+                                    <Button MinWidth="90"
+                                            Padding="13,8"
+                                            Background="{DynamicResource SurfaceBrush}"
+                                            Foreground="{DynamicResource SecondaryTextBrush}"
+                                            Command="{Binding CancelSelectedBackupRestoreCommand}"
+                                            Content="Cancel" />
+                                    <Button MinWidth="146"
+                                            Padding="13,8"
+                                            Background="{DynamicResource CoralAccentBrush}"
+                                            Foreground="{DynamicResource OnAccentBrush}"
+                                            FontWeight="SemiBold"
+                                            Command="{Binding RestoreSelectedBackupCommand}"
+                                            Content="Restore library" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
