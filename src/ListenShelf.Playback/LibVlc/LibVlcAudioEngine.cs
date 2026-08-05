@@ -23,10 +23,30 @@ public sealed class LibVlcAudioEngine : IAudioEngine
 
     public LibVlcAudioEngine()
     {
-        Core.Initialize();
-
-        _libVlc = new LibVLC("--no-video", "--no-video-title-show");
-        _mediaPlayer = new MediaPlayer(_libVlc);
+        try
+        {
+            LibVlcRuntimeLocator.Initialize();
+            _libVlc = new LibVLC("--no-video", "--no-video-title-show");
+            _mediaPlayer = new MediaPlayer(_libVlc);
+        }
+        catch (LibVlcInitializationException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is VLCException
+                                           or DllNotFoundException
+                                           or EntryPointNotFoundException
+                                           or BadImageFormatException
+                                           or FileLoadException
+                                           or FileNotFoundException
+                                           or TypeInitializationException)
+        {
+            throw new LibVlcInitializationException(
+                "ListenShelf found LibVLC, but the playback engine could not start.",
+                LibVlcRuntimeLocator.GetPlatformHelp(),
+                LibVlcRuntimeLocator.RuntimeDescription,
+                exception);
+        }
 
         _mediaPlayer.Opening += OnOpening;
         _mediaPlayer.Playing += OnPlaying;

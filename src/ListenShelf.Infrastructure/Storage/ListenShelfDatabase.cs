@@ -68,18 +68,7 @@ public sealed class ListenShelfDatabase
     }
 
     public static string GetDefaultDatabasePath()
-    {
-        var localDataDirectory = Environment.GetFolderPath(
-            Environment.SpecialFolder.LocalApplicationData,
-            Environment.SpecialFolderOption.Create);
-
-        if (string.IsNullOrWhiteSpace(localDataDirectory))
-        {
-            throw new InvalidOperationException("The local application-data directory is unavailable.");
-        }
-
-        return Path.Combine(localDataDirectory, "ListenShelf", "listenshelf.db");
-    }
+        => ListenShelfPaths.CreateDefault().DatabasePath;
 
     private void Initialize(bool createMigrationSafetyCopy)
     {

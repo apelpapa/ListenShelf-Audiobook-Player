@@ -75,7 +75,10 @@ database policy and recovery behavior are documented in
 ### Data preservation
 
 ListenShelf stores its database, managed audiobook copies, covers, settings,
-bookmarks, and listening progress under `%LocalAppData%\ListenShelf` on Windows.
+bookmarks, listening progress, and local diagnostic logs outside the installed
+application. The data root is `%LocalAppData%\ListenShelf` on Windows,
+`~/Library/Application Support/ListenShelf` on macOS, and
+`$XDG_DATA_HOME/ListenShelf` (or `~/.local/share/ListenShelf`) on Linux.
 The installer owns only the application files under `Program Files`, so upgrading
 or uninstalling ListenShelf leaves the library and listening data in place. The
 release build performs a packaging safety check and stops if the Windows
@@ -101,6 +104,12 @@ Create all Windows x64 release assets from the repository root:
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build\Publish-WindowsRelease.ps1
 ```
+
+Early macOS and Linux work is kept separate from releases. The repository now
+has native-runner test-build packaging, a manual GitHub Actions workflow, and a
+synthetic M4B/M4A/MP3 smoke-media generator. The current limitations, native VLC
+requirements, commands, data locations, and real-machine pass criteria are in
+[`docs/CROSS_PLATFORM_TEST_BUILDS.md`](docs/CROSS_PLATFORM_TEST_BUILDS.md).
 
 ## Free software and optional skins
 

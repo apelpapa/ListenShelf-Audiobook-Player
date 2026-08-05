@@ -9,7 +9,8 @@ namespace ListenShelf.Desktop.Views
 {
     public partial class MainWindow : Window
     {
-        private readonly WindowsMediaKeyService _mediaKeyService = new();
+        private readonly IGlobalMediaKeyService _mediaKeyService =
+            GlobalMediaKeyServiceFactory.Create();
         private MainWindowViewModel? _viewModel;
 
         public MainWindow()

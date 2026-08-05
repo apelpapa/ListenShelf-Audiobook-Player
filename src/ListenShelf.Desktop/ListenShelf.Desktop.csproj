@@ -3,9 +3,14 @@
     <OutputType>WinExe</OutputType>
     <AssemblyName>ListenShelf</AssemblyName>
     <AssemblyTitle>ListenShelf — Audiobook Player</AssemblyTitle>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>Assets\Branding\listenshelf.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ListenShelfTargetWindows Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">true</ListenShelfTargetWindows>
+    <ListenShelfTargetWindows Condition="$([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win-'))">true</ListenShelfTargetWindows>
+    <ApplicationManifest Condition="'$(ListenShelfTargetWindows)' == 'true'">app.manifest</ApplicationManifest>
+    <ApplicationIcon Condition="'$(ListenShelfTargetWindows)' == 'true'">Assets\Branding\listenshelf.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,7 +39,8 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" />
-    <PackageReference Include="VideoLAN.LibVLC.Windows" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows"
+                      Condition="'$(ListenShelfTargetWindows)' == 'true'" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using ListenShelf.Desktop.Diagnostics;
 using ListenShelf.Desktop.Services;
 using ListenShelf.Desktop.ViewModels;
 using ListenShelf.Desktop.Views;
@@ -18,6 +19,9 @@ namespace ListenShelf.Desktop
 {
     public partial class App : Avalonia.Application
     {
+        private readonly AppDiagnosticLog _diagnosticLog =
+            AppDiagnosticLog.CreateDefault();
+
         public override void Initialize()
         {
             AvaloniaXamlLoader.Load(this);
@@ -27,6 +31,7 @@ namespace ListenShelf.Desktop
         {
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
+                _diagnosticLog.WriteSessionStart();
                 desktop.MainWindow = TryCreateMainWindow(
                     desktop,
                     windowToReplace: null);
@@ -37,33 +42,44 @@ namespace ListenShelf.Desktop
 
         private Window TryCreateMainWindow(
             IClassicDesktopStyleApplicationLifetime desktop,
-            DatabaseRecoveryWindow? windowToReplace)
+            Window? windowToReplace)
         {
             try
             {
                 var mainWindow = CreateMainWindow();
-                if (windowToReplace is not null)
-                {
-                    desktop.MainWindow = mainWindow;
-                    mainWindow.Show();
-                    windowToReplace.Close();
-                }
-
-                return mainWindow;
+                return ReplaceWindowIfNeeded(desktop, mainWindow, windowToReplace);
             }
             catch (ListenShelfDatabaseException failure)
             {
-                if (windowToReplace?.DataContext is DatabaseRecoveryViewModel existingViewModel)
+                _diagnosticLog.WriteError("Database startup failed.", failure);
+                if (windowToReplace?.DataContext is DatabaseRecoveryViewModel databaseViewModel)
                 {
-                    existingViewModel.ApplyFailure(failure);
+                    databaseViewModel.ApplyFailure(failure);
                     return windowToReplace;
                 }
 
-                return CreateRecoveryWindow(desktop, failure);
+                return ReplaceWindowIfNeeded(
+                    desktop,
+                    CreateRecoveryWindow(desktop, failure),
+                    windowToReplace);
+            }
+            catch (Exception failure)
+            {
+                _diagnosticLog.WriteError("Application startup failed.", failure);
+                if (windowToReplace?.DataContext is AppStartupErrorViewModel startupViewModel)
+                {
+                    startupViewModel.ApplyFailure(failure);
+                    return windowToReplace;
+                }
+
+                return ReplaceWindowIfNeeded(
+                    desktop,
+                    CreateStartupErrorWindow(desktop, failure),
+                    windowToReplace);
             }
         }
 
-        private static MainWindow CreateMainWindow()
+        private MainWindow CreateMainWindow()
         {
             var mainWindow = new MainWindow();
             var database = new ListenShelfDatabase();
@@ -79,8 +95,11 @@ namespace ListenShelf.Desktop
             var backupService = new ZipLibraryBackupService(
                 database,
                 integrityChecker);
+            var audioEngine = new LibVlcAudioEngine();
+            _diagnosticLog.WriteInfo(
+                $"Database initialized at {database.DatabasePath}; playback runtime initialized for {LibVlcRuntimeLocator.RuntimeDescription}.");
             var viewModel = new MainWindowViewModel(
-                new LibVlcAudioEngine(),
+                audioEngine,
                 new AvaloniaFilePickerService(mainWindow),
                 new SqlitePlaybackProgressStore(database),
                 new SqlitePlaybackBookmarkStore(database),
@@ -104,6 +123,21 @@ namespace ListenShelf.Desktop
             return mainWindow;
         }
 
+        private static Window ReplaceWindowIfNeeded(
+            IClassicDesktopStyleApplicationLifetime desktop,
+            Window nextWindow,
+            Window? windowToReplace)
+        {
+            if (windowToReplace is not null)
+            {
+                desktop.MainWindow = nextWindow;
+                nextWindow.Show();
+                windowToReplace.Close();
+            }
+
+            return nextWindow;
+        }
+
         private DatabaseRecoveryWindow CreateRecoveryWindow(
             IClassicDesktopStyleApplicationLifetime desktop,
             ListenShelfDatabaseException failure)
@@ -119,6 +153,20 @@ namespace ListenShelf.Desktop
                 _ = TryCreateMainWindow(desktop, recoveryWindow);
             };
             return recoveryWindow;
+        }
+
+        private AppStartupErrorWindow CreateStartupErrorWindow(
+            IClassicDesktopStyleApplicationLifetime desktop,
+            Exception failure)
+        {
+            var errorWindow = new AppStartupErrorWindow();
+            var viewModel = new AppStartupErrorViewModel(failure, _diagnosticLog);
+            errorWindow.DataContext = viewModel;
+            viewModel.RetryRequested += (_, _) =>
+            {
+                _ = TryCreateMainWindow(desktop, errorWindow);
+            };
+            return errorWindow;
         }
     }
 }

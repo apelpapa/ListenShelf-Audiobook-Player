@@ -1,0 +1,100 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+        x:Class="ListenShelf.Desktop.Views.AppStartupErrorWindow"
+        x:DataType="vm:AppStartupErrorViewModel"
+        Width="680"
+        Height="540"
+        MinWidth="560"
+        MinHeight="460"
+        Background="{DynamicResource AppBackgroundBrush}"
+        Icon="/Assets/Branding/listenshelf.ico"
+        Title="ListenShelf — Startup problem"
+        WindowStartupLocation="CenterScreen">
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0"
+                Padding="26,21"
+                Background="{DynamicResource HeaderBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel Spacing="5">
+                <TextBlock FontSize="11"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource CoralAccentBrush}"
+                           Text="STARTUP DIAGNOSTICS" />
+                <TextBlock FontSize="23"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           Text="{Binding Heading}"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Margin="26,22" Spacing="15">
+                <TextBlock FontSize="14"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           Text="{Binding Explanation}"
+                           TextWrapping="Wrap" />
+
+                <Border Padding="14"
+                        CornerRadius="9"
+                        Background="{DynamicResource AccentSoftBrush}">
+                    <TextBlock FontSize="13"
+                               Foreground="{DynamicResource AccentSoftTextBrush}"
+                               Text="{Binding HelpText}"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <Border Padding="14,11"
+                        CornerRadius="9"
+                        Background="{DynamicResource SurfaceRaisedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="6">
+                        <TextBlock FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource MutedTextBrush}"
+                                   Text="TECHNICAL DETAILS" />
+                        <TextBlock FontSize="12"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Text="{Binding TechnicalDetails}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock FontSize="11"
+                                   Foreground="{DynamicResource SubtleTextBrush}"
+                                   Text="{Binding DiagnosticLocationText}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock FontSize="12"
+                           Foreground="{DynamicResource AccentTextBrush}"
+                           Text="{Binding StatusText}"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2"
+                Padding="19"
+                Background="{DynamicResource FooterBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto,Auto">
+                <Button Grid.Column="0"
+                        HorizontalAlignment="Left"
+                        Padding="14,8"
+                        Command="{Binding OpenDiagnosticFolderCommand}"
+                        Content="Open diagnostics folder" />
+                <Button Grid.Column="1"
+                        Margin="0,0,10,0"
+                        Padding="16,9"
+                        Command="{Binding RetryCommand}"
+                        Content="Retry" />
+                <Button Grid.Column="2"
+                        Padding="16,9"
+                        Click="Exit_OnClick"
+                        Content="Exit ListenShelf" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

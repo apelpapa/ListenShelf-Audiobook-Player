@@ -4,7 +4,7 @@ using ListenShelf.Application.Playback;
 
 namespace ListenShelf.Desktop.Services;
 
-public sealed class WindowsMediaKeyService : IDisposable
+public sealed class WindowsMediaKeyService : IGlobalMediaKeyService
 {
     private const uint WmHotKey = 0x0312;
     private const uint WmAppCommand = 0x0319;

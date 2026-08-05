@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=ListenShelf
+GenericName=Audiobook Player
+Comment=Local audiobook library and player
+Exec=ListenShelf
+Icon=listenshelf
+Terminal=false
+Categories=AudioVideo;Audio;Player;
+MimeType=audio/mp4;audio/mpeg;

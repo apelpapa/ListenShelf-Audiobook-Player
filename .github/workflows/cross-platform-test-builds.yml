@@ -1,0 +1,80 @@
+name: Cross-platform test builds
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Test build version
+        required: true
+        default: 0.1.0-alpha.2
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: ${{ matrix.rid }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: macos-15
+            rid: osx-arm64
+          - os: macos-15-intel
+            rid: osx-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore ListenShelf.slnx
+
+      - name: Test
+        run: dotnet test ListenShelf.slnx --configuration Release --no-restore
+
+      - name: Package native test build
+        shell: pwsh
+        run: ./build/Publish-CrossPlatformTestBuild.ps1 -RuntimeIdentifier '${{ matrix.rid }}' -Version '${{ inputs.version }}'
+
+      - name: Upload test build
+        uses: actions/upload-artifact@v4
+        with:
+          name: ListenShelf-${{ inputs.version }}-${{ matrix.rid }}-test-build
+          path: artifacts/test-builds/v${{ inputs.version }}/${{ matrix.rid }}/assets/*
+          if-no-files-found: error
+          retention-days: 14
+
+  smoke-media:
+    name: Synthetic smoke media
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Ensure ffmpeg is available
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install --yes ffmpeg
+          fi
+
+      - name: Generate synthetic media
+        shell: pwsh
+        run: ./build/Generate-SmokeTestMedia.ps1
+
+      - name: Upload smoke media
+        uses: actions/upload-artifact@v4
+        with:
+          name: ListenShelf-synthetic-smoke-media
+          path: artifacts/test-media/*
+          if-no-files-found: error
+          retention-days: 14

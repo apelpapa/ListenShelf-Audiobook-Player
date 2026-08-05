@@ -37,7 +37,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [ ] Test long and unusual file paths.
 - [ ] Test operation without an internet connection.
 - [ ] Improve user-facing playback errors.
-- [ ] Improve user-facing LibVLC loading and native-library errors.
+- [x] Improve user-facing LibVLC loading and native-library errors.
 - [x] Improve user-facing database errors with distinct recovery guidance for damage, access failures, failed migrations, and newer database versions.
 - [ ] Improve user-facing filesystem errors.
 
@@ -65,7 +65,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [ ] Test M4A playback behavior.
 - [ ] Test MP3 playback behavior.
 - [ ] Test embedded chapter discovery before Play.
-- [ ] Add deterministic sample media for integration tests where licensing permits.
+- [x] Add a deterministic, synthetic sample-media generator with M4B, M4A, MP3, chapter, and Unicode-name cases.
 
 ## P1 — Essential
 
@@ -98,9 +98,10 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 ### Diagnostics and support
 
-- [ ] Add a local, privacy-respecting application log.
+- [x] Add a local, privacy-respecting startup and native-runtime log with bounded rotation.
+- [ ] Expand local logging to capture playback, import, backup, and recovery failures.
 - [ ] Add an option to export a diagnostic report.
-- [ ] Document where ListenShelf stores its database, managed books, covers, logs, and settings.
+- [x] Document where ListenShelf stores its database, managed books, covers, logs, and settings on each desktop platform.
 - [ ] Document backup, restore, export, relink, confirmed removal, and orphan-recovery behavior.
 - [ ] Add a clear GitHub issue and feedback path.
 - [ ] Add issue templates for bug reports and feature requests.
@@ -118,11 +119,11 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 ### Continuous integration
 
-- [ ] Add GitHub Actions builds and tests for Windows.
-- [ ] Expand the GitHub Actions matrix to macOS and Linux when platform work begins.
-- [ ] Generate checksums for every published artifact.
+- [x] Add GitHub Actions builds and tests for Windows, macOS, and Linux.
+- [x] Add a manual GitHub Actions matrix that compiles, tests, and packages macOS and Linux test builds on native runners.
+- [x] Generate checksums for every packaged artifact.
 - [ ] Keep published source tags synchronized with downloadable builds.
-- [ ] Add reproducible build instructions.
+- [x] Add reproducible native test-build and synthetic-media instructions.
 
 ## P2 — Important
 
@@ -136,17 +137,17 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 ### Cross-platform architecture
 
-- [ ] Move Windows-specific behavior behind platform interfaces.
-- [ ] Move Windows media-key registration behind a platform media-control interface.
+- [x] Move the current Windows-specific desktop behavior behind platform interfaces.
+- [x] Move Windows media-key registration behind a platform media-control interface.
 - [ ] Add macOS media-control integration.
 - [ ] Add Linux media-control integration.
-- [ ] Make native LibVLC dependencies conditional by operating system and processor architecture.
-- [ ] Replace Windows-only icon and manifest assumptions with platform-specific packaging assets.
-- [ ] Keep storage locations behind cross-platform path services where necessary.
+- [x] Make the Windows native LibVLC dependency conditional so it is excluded from macOS and Linux builds.
+- [x] Replace Windows-only icon and manifest assumptions with platform-specific packaging assets.
+- [x] Keep storage locations behind cross-platform path services.
 - [ ] Verify case-sensitive and case-insensitive path handling.
 - [ ] Verify filesystem permissions and managed-copy behavior on each platform.
-- [ ] Decide how native LibVLC will be supplied on macOS.
-- [ ] Decide whether Linux packages will bundle LibVLC or declare it as a system dependency.
+- [ ] Decide how native LibVLC will be supplied in supported macOS releases; test builds temporarily use an installed VLC app or an explicit runtime path.
+- [ ] Decide whether supported Linux packages will bundle LibVLC or declare it as a system dependency; test builds temporarily use system packages.
 - [ ] Ensure normal users can install and run ListenShelf without troubleshooting native libraries in a terminal.
 
 ### Cross-platform acceptance
@@ -175,14 +176,14 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [ ] Maintain the Windows portable single-file executable.
 - [ ] Maintain the Windows portable ZIP package.
 - [ ] Maintain the Windows installer.
-- [ ] Create an unsigned macOS Apple Silicon application bundle.
-- [ ] Create an unsigned macOS Intel application bundle where supported.
+- [x] Add native-runner packaging for unsigned macOS Apple Silicon test bundles.
+- [x] Add native-runner packaging for unsigned macOS Intel test bundles.
 - [ ] Package the unsigned macOS alpha in a DMG.
-- [ ] Provide a macOS ZIP as an optional fallback.
-- [ ] Document the one-time macOS Gatekeeper **Open Anyway** process.
-- [ ] Never instruct users to disable Gatekeeper globally.
+- [x] Provide ZIP packaging for unsigned macOS test bundles.
+- [x] Document the one-time macOS Gatekeeper **Open Anyway** process.
+- [x] Never instruct users to disable Gatekeeper globally.
 - [ ] Consider a universal macOS application bundle after separate builds are reliable.
-- [ ] Create a Linux portable ZIP package.
+- [x] Add native-runner packaging for a Linux x64 portable test ZIP.
 - [ ] Create a Debian/Ubuntu `.deb` package.
 - [ ] Consider an RPM package after Debian-family packaging is reliable.
 - [ ] Revisit AppImage when the packaging path is sufficiently mature.
