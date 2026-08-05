@@ -36,8 +36,22 @@ public sealed class ListenShelfDatabaseTests
                 "pending_library_removals",
                 "playback_bookmarks",
                 "playback_progress",
+                "schema_migrations",
             ],
             tableNames);
+
+        Assert.Equal(ListenShelfDatabase.CurrentSchemaVersion, database.SchemaVersion);
+        using var versionCommand = connection.CreateCommand();
+        versionCommand.CommandText = "PRAGMA user_version;";
+        Assert.Equal(
+            ListenShelfDatabase.CurrentSchemaVersion,
+            Convert.ToInt32(versionCommand.ExecuteScalar()));
+
+        using var migrationCommand = connection.CreateCommand();
+        migrationCommand.CommandText = "SELECT COUNT(*) FROM schema_migrations;";
+        Assert.Equal(
+            ListenShelfDatabase.CurrentSchemaVersion,
+            Convert.ToInt32(migrationCommand.ExecuteScalar()));
     }
 
     [Fact]
@@ -65,6 +79,110 @@ public sealed class ListenShelfDatabaseTests
         using var bookCommand = connection.CreateCommand();
         bookCommand.CommandText = "SELECT COUNT(*) FROM library_books;";
         Assert.Equal(2L, (long)bookCommand.ExecuteScalar()!);
+
+        Assert.NotNull(database.MigrationSafetyCopyPath);
+        Assert.True(File.Exists(database.MigrationSafetyCopyPath));
+    }
+
+    [Fact]
+    public void ReopeningCurrentDatabase_DoesNotCreateAnotherMigrationSafetyCopy()
+    {
+        using var workspace = new TestWorkspace();
+        _ = new ListenShelfDatabase(workspace.DatabasePath);
+        var recoveryRoot = Path.Combine(
+            Path.GetDirectoryName(workspace.DatabasePath)!,
+            "Database Recovery");
+        var safetyCopyCount = Directory.Exists(recoveryRoot)
+            ? Directory.EnumerateFiles(recoveryRoot, "listenshelf.db", SearchOption.AllDirectories).Count()
+            : 0;
+
+        var reopened = new ListenShelfDatabase(workspace.DatabasePath);
+
+        Assert.Null(reopened.MigrationSafetyCopyPath);
+        Assert.Equal(
+            safetyCopyCount,
+            Directory.Exists(recoveryRoot)
+                ? Directory.EnumerateFiles(recoveryRoot, "listenshelf.db", SearchOption.AllDirectories).Count()
+                : 0);
+    }
+
+    [Fact]
+    public void OpeningDatabaseFromNewerVersion_IsRefusedWithoutChangingVersion()
+    {
+        using var workspace = new TestWorkspace();
+        var database = new ListenShelfDatabase(workspace.DatabasePath);
+        using (var connection = database.OpenConnection())
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText =
+                $"PRAGMA user_version = {ListenShelfDatabase.CurrentSchemaVersion + 1};";
+            command.ExecuteNonQuery();
+        }
+
+        var exception = Assert.Throws<ListenShelfDatabaseException>(() =>
+            new ListenShelfDatabase(workspace.DatabasePath));
+
+        Assert.Equal(ListenShelfDatabaseFailureKind.NewerVersion, exception.Kind);
+        using var verifyConnection = database.OpenConnection();
+        using var verifyCommand = verifyConnection.CreateCommand();
+        verifyCommand.CommandText = "PRAGMA user_version;";
+        Assert.Equal(
+            ListenShelfDatabase.CurrentSchemaVersion + 1,
+            Convert.ToInt32(verifyCommand.ExecuteScalar()));
+    }
+
+    [Fact]
+    public void OpeningCorruptDatabase_ReportsDamageAndLeavesFileUntouched()
+    {
+        using var workspace = new TestWorkspace();
+        Directory.CreateDirectory(Path.GetDirectoryName(workspace.DatabasePath)!);
+        byte[] corruptContents = [0x4C, 0x69, 0x73, 0x74, 0x65, 0x6E, 0x53, 0x68, 0x65, 0x6C, 0x66];
+        File.WriteAllBytes(workspace.DatabasePath, corruptContents);
+
+        var exception = Assert.Throws<ListenShelfDatabaseException>(() =>
+            new ListenShelfDatabase(workspace.DatabasePath));
+
+        Assert.Equal(ListenShelfDatabaseFailureKind.Damaged, exception.Kind);
+        Assert.Equal(corruptContents, File.ReadAllBytes(workspace.DatabasePath));
+    }
+
+    [Fact]
+    public void OpeningDatabaseWithCurrentVersionButMissingSchema_IsReportedAsDamaged()
+    {
+        using var workspace = new TestWorkspace();
+        var database = new ListenShelfDatabase(workspace.DatabasePath);
+        using (var connection = database.OpenConnection())
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "DROP TABLE playback_bookmarks;";
+            command.ExecuteNonQuery();
+        }
+
+        var exception = Assert.Throws<ListenShelfDatabaseException>(() =>
+            new ListenShelfDatabase(workspace.DatabasePath));
+
+        Assert.Equal(ListenShelfDatabaseFailureKind.Damaged, exception.Kind);
+        Assert.Contains("playback_bookmarks", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void FailedMigration_IsRolledBackAndSafetyCopyIsPreserved()
+    {
+        using var workspace = new TestWorkspace();
+        CreateMigrationFailureDatabase(workspace.DatabasePath);
+
+        var exception = Assert.Throws<ListenShelfDatabaseException>(() =>
+            new ListenShelfDatabase(workspace.DatabasePath));
+
+        Assert.Equal(ListenShelfDatabaseFailureKind.MigrationFailed, exception.Kind);
+        using var connection = OpenRawDatabase(workspace.DatabasePath);
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM schema_migrations;";
+        Assert.Equal(0L, (long)command.ExecuteScalar()!);
+        Assert.True(Directory.EnumerateFiles(
+            Path.Combine(Path.GetDirectoryName(workspace.DatabasePath)!, "Database Recovery"),
+            "listenshelf.db",
+            SearchOption.AllDirectories).Any());
     }
 
     private static void CreateLegacyDatabase(string databasePath)
@@ -136,5 +254,30 @@ public sealed class ListenShelfDatabaseTests
                 '2025-01-02T00:00:00.0000000+00:00');
             """;
         command.ExecuteNonQuery();
+    }
+
+    private static void CreateMigrationFailureDatabase(string databasePath)
+    {
+        using var connection = OpenRawDatabase(databasePath);
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            CREATE VIEW library_books AS SELECT 1 AS invalid_column;
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    private static SqliteConnection OpenRawDatabase(string databasePath)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(databasePath)!);
+        var connection = new SqliteConnection(
+            new SqliteConnectionStringBuilder
+            {
+                DataSource = databasePath,
+                Mode = SqliteOpenMode.ReadWriteCreate,
+                Pooling = false,
+            }.ToString());
+        connection.Open();
+        return connection;
     }
 }

@@ -26,12 +26,22 @@ compression.
 A restore is an exact replacement, not a merge. ListenShelf validates and
 stages the entire selected backup before changing live data, rewrites managed
 paths for the current installation, and checks the staged SQLite database.
+The staged database is upgraded through the same versioned migrations used at
+normal startup before it can replace the live data.
 Immediately before replacement it exports the current library to a separate
 pre-restore `.listenshelf-backup` file beside the selected backup. If
 replacement or final validation fails, the live directory is rolled back.
 
 Restore confirmation is shown inline in Settings. ListenShelf does not restore
 automatically and does not silently merge or discard the current library.
+
+If the live database cannot be opened, the startup recovery screen uses a
+separate restore path. The selected backup is still fully validated and staged
+first, but ListenShelf cannot create a normal database-backed safety archive
+from unreadable data. Instead, it moves the entire existing data directory to
+a timestamped `ListenShelf Recovered Data` directory beside the live data
+directory. That preserved directory is retained after a successful restore and
+is moved back automatically if replacement or final validation fails.
 
 ## Privacy and future cloud support
 

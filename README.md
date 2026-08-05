@@ -61,6 +61,17 @@ back the live directory if replacement fails. Backups remain local and are not
 uploaded. The format is documented in
 [`docs/BACKUP_FORMAT.md`](docs/BACKUP_FORMAT.md).
 
+The SQLite catalog now has explicit numbered migrations. ListenShelf checks
+database integrity and compatibility before opening the normal interface,
+creates a database safety copy before an upgrade, and applies each migration
+as a transaction. A damaged, inaccessible, failed-to-migrate, or newer-version
+database opens a dedicated recovery screen instead of being silently replaced.
+From there, a user can retry, inspect the data folder, restore a validated
+backup, or—when actual damage is detected—preserve the damaged database and
+rebuild a basic catalog from recognizable managed audiobook folders. The
+database policy and recovery behavior are documented in
+[`docs/DATABASE_SAFETY.md`](docs/DATABASE_SAFETY.md).
+
 ### Data preservation
 
 ListenShelf stores its database, managed audiobook copies, covers, settings,

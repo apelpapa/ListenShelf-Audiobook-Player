@@ -23,8 +23,8 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Export managed audiobooks with their metadata, covers, bookmarks, and listening progress.
 - [x] Add database backup support.
 - [x] Add database restore support.
-- [ ] Introduce explicit, versioned database migrations.
-- [ ] Add a recovery path for a damaged or unreadable database.
+- [x] Introduce explicit, versioned database migrations.
+- [x] Add a recovery path for a damaged or unreadable database.
 - [ ] Require no known data-loss defects before beta.
 
 ### Core reliability
@@ -38,14 +38,16 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [ ] Test operation without an internet connection.
 - [ ] Improve user-facing playback errors.
 - [ ] Improve user-facing LibVLC loading and native-library errors.
-- [ ] Improve user-facing database and filesystem errors.
+- [x] Improve user-facing database errors with distinct recovery guidance for damage, access failures, failed migrations, and newer database versions.
+- [ ] Improve user-facing filesystem errors.
 
 ### Permanent automated tests
 
 - [x] Create a permanent automated test project.
 - [x] Test fresh database creation and current schema.
 - [x] Test compatibility with the pre-managed-only database schema.
-- [ ] Test explicit versioned migrations after migration infrastructure exists.
+- [x] Test fresh, legacy, repeat, failed, damaged, structurally incomplete, and newer-version database startup paths.
+- [x] Test damaged-database preservation, managed-catalog rebuilding, and recovery-mode backup restore.
 - [x] Test library importing.
 - [x] Test duplicate detection.
 - [x] Test managed-copy verification and integrity.
@@ -110,7 +112,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [ ] Keep third-party notices current.
 - [ ] Add a privacy statement covering local data and Open Library searches.
 - [ ] Establish a versioning policy.
-- [ ] Establish a database-compatibility and migration policy.
+- [x] Establish a database-compatibility, migration, and recovery policy.
 - [ ] Define supported operating-system versions and processor architectures.
 - [ ] Publish known limitations.
 

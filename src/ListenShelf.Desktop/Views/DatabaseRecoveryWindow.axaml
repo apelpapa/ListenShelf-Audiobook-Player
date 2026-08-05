@@ -1,0 +1,190 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+        x:Class="ListenShelf.Desktop.Views.DatabaseRecoveryWindow"
+        x:DataType="vm:DatabaseRecoveryViewModel"
+        Width="760"
+        Height="720"
+        MinWidth="620"
+        MinHeight="620"
+        Background="{DynamicResource AppBackgroundBrush}"
+        Icon="/Assets/Branding/listenshelf.ico"
+        Title="ListenShelf — Database recovery"
+        WindowStartupLocation="CenterScreen">
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0"
+                Padding="28,22"
+                Background="{DynamicResource HeaderBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,0,0,1">
+            <StackPanel Spacing="5">
+                <TextBlock FontSize="11"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource CoralAccentBrush}"
+                           Text="DATABASE RECOVERY" />
+                <TextBlock FontSize="24"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           Text="{Binding Heading}"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Margin="28,24"
+                        Spacing="16">
+                <TextBlock FontSize="14"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           Text="{Binding Explanation}"
+                           TextWrapping="Wrap" />
+
+                <Border Padding="14,11"
+                        CornerRadius="9"
+                        Background="{DynamicResource SurfaceRaisedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="5">
+                        <TextBlock FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource MutedTextBrush}"
+                                   Text="TECHNICAL DETAILS" />
+                        <TextBlock FontSize="12"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Text="{Binding TechnicalDetails}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Border Padding="16"
+                        CornerRadius="10"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="10">
+                        <TextBlock FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                   Text="Restore a ListenShelf backup" />
+                        <TextBlock FontSize="12"
+                                   Foreground="{DynamicResource MutedTextBrush}"
+                                   Text="The complete selected backup is validated before anything changes. The current data directory is moved aside and preserved."
+                                   TextWrapping="Wrap" />
+                        <Button HorizontalAlignment="Left"
+                                Padding="16,9"
+                                IsEnabled="{Binding CanRunRecoveryOperation}"
+                                Command="{Binding ChooseBackupCommand}"
+                                Content="Choose backup…" />
+
+                        <Border Padding="13"
+                                IsVisible="{Binding IsRestoreConfirmationVisible}"
+                                CornerRadius="8"
+                                Background="{DynamicResource AccentSoftBrush}">
+                            <StackPanel Spacing="9">
+                                <TextBlock FontWeight="SemiBold"
+                                           Foreground="{DynamicResource AccentSoftTextBrush}"
+                                           Text="Ready to replace the damaged library data" />
+                                <TextBlock FontSize="12"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           Text="{Binding PendingRestoreSummary}"
+                                           TextWrapping="Wrap" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Padding="14,8"
+                                            Command="{Binding RestoreBackupCommand}"
+                                            Content="Restore this backup" />
+                                    <Button Padding="14,8"
+                                            Command="{Binding CancelRestoreCommand}"
+                                            Content="Cancel" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border Padding="16"
+                        IsVisible="{Binding CanRebuildCatalog}"
+                        CornerRadius="10"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="10">
+                        <TextBlock FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                   Text="Rebuild from managed audiobooks" />
+                        <TextBlock FontSize="12"
+                                   Foreground="{DynamicResource MutedTextBrush}"
+                                   Text="This preserves the damaged database, creates a fresh catalog, and re-registers books in standard ListenShelf folders. Metadata, bookmarks, and progress that only existed in the damaged database may be unavailable."
+                                   TextWrapping="Wrap" />
+                        <Button HorizontalAlignment="Left"
+                                Padding="16,9"
+                                IsEnabled="{Binding CanRunRecoveryOperation}"
+                                Command="{Binding ShowRebuildConfirmationCommand}"
+                                Content="Rebuild basic catalog" />
+
+                        <Border Padding="13"
+                                IsVisible="{Binding IsRebuildConfirmationVisible}"
+                                CornerRadius="8"
+                                Background="{DynamicResource SurfaceRaisedBrush}">
+                            <StackPanel Spacing="9">
+                                <TextBlock FontWeight="SemiBold"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"
+                                           Text="Use this only when no usable backup is available." />
+                                <TextBlock FontSize="12"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           Text="The damaged database will be moved into Database Recovery. Audiobook files and recognizable cached covers stay in place."
+                                           TextWrapping="Wrap" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Padding="14,8"
+                                            Command="{Binding RebuildCatalogCommand}"
+                                            Content="Preserve database and rebuild" />
+                                    <Button Padding="14,8"
+                                            Command="{Binding CancelRebuildCommand}"
+                                            Content="Cancel" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel IsVisible="{Binding IsProgressVisible}" Spacing="7">
+                    <ProgressBar Minimum="0"
+                                 Maximum="100"
+                                 Value="{Binding ProgressPercentage}" />
+                    <TextBlock FontSize="11"
+                               Foreground="{DynamicResource MutedTextBrush}"
+                               Text="{Binding ProgressText}" />
+                </StackPanel>
+
+                <TextBlock FontSize="12"
+                           Foreground="{DynamicResource AccentTextBrush}"
+                           Text="{Binding StatusText}"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2"
+                Padding="20"
+                Background="{DynamicResource FooterBackgroundBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto,Auto">
+                <Button Grid.Column="0"
+                        HorizontalAlignment="Left"
+                        Padding="14,8"
+                        IsEnabled="{Binding CanInteract}"
+                        Command="{Binding OpenDataDirectoryCommand}"
+                        Content="Open data folder" />
+                <Button Grid.Column="1"
+                        Margin="0,0,10,0"
+                        Padding="16,9"
+                        IsEnabled="{Binding CanInteract}"
+                        Command="{Binding RetryCommand}"
+                        Content="{Binding RetryButtonText}" />
+                <Button Grid.Column="2"
+                        Padding="16,9"
+                        Click="Exit_OnClick"
+                        Content="Exit ListenShelf" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

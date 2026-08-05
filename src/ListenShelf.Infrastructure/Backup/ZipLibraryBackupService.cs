@@ -27,8 +27,7 @@ public sealed class ZipLibraryBackupService : ILibraryBackupService
         WriteIndented = true,
     };
 
-    private readonly ListenShelfDatabase _database;
-    private readonly IManagedLibraryIntegrityChecker _integrityChecker;
+    private readonly ListenShelfDatabase? _database;
     private readonly string _managedLibraryPath;
     private readonly string _coverCachePath;
     private readonly StringComparison _pathComparison = OperatingSystem.IsWindows()
@@ -40,26 +39,43 @@ public sealed class ZipLibraryBackupService : ILibraryBackupService
         IManagedLibraryIntegrityChecker integrityChecker)
     {
         _database = database ?? throw new ArgumentNullException(nameof(database));
-        _integrityChecker = integrityChecker
-            ?? throw new ArgumentNullException(nameof(integrityChecker));
+        ArgumentNullException.ThrowIfNull(integrityChecker);
 
         DataRootPath = Path.GetDirectoryName(_database.DatabasePath)
             ?? throw new InvalidOperationException(
                 "The ListenShelf database needs a parent directory.");
         DataRootPath = Path.GetFullPath(DataRootPath);
-        _managedLibraryPath = Path.GetFullPath(_integrityChecker.ManagedLibraryPath);
+        _managedLibraryPath = Path.GetFullPath(integrityChecker.ManagedLibraryPath);
         _coverCachePath = Path.GetFullPath(Path.Combine(DataRootPath, "Covers"));
 
         EnsurePathIsInsideDataRoot(_managedLibraryPath, "managed library");
         EnsurePathIsInsideDataRoot(_coverCachePath, "cover cache");
     }
 
+    private ZipLibraryBackupService(string databasePath)
+    {
+        var normalizedDatabasePath = Path.GetFullPath(databasePath);
+        DataRootPath = Path.GetDirectoryName(normalizedDatabasePath)
+            ?? throw new InvalidOperationException(
+                "The ListenShelf database needs a parent directory.");
+        DataRootPath = Path.GetFullPath(DataRootPath);
+        _managedLibraryPath = Path.GetFullPath(Path.Combine(DataRootPath, "Library"));
+        _coverCachePath = Path.GetFullPath(Path.Combine(DataRootPath, "Covers"));
+    }
+
+    public static ZipLibraryBackupService CreateForDatabaseRecovery(
+        string databasePath) =>
+        new(databasePath);
+
     public string DataRootPath { get; }
 
     public LibraryBackupSummary Export(
         string destinationPath,
-        IProgress<LibraryBackupProgress>? progress = null) =>
-        CreateBackup(destinationPath, allowIncompleteCatalog: false, progress);
+        IProgress<LibraryBackupProgress>? progress = null)
+    {
+        EnsureNormalLibraryIsAvailable();
+        return CreateBackup(destinationPath, allowIncompleteCatalog: false, progress);
+    }
 
     public LibraryBackupSummary Inspect(
         string backupPath,
@@ -75,6 +91,7 @@ public sealed class ZipLibraryBackupService : ILibraryBackupService
         using var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: false);
         var manifest = ReadAndValidateManifest(archive);
         ValidateArchiveContents(archive, manifest, progress, extractRoot: null);
+        ValidateDatabaseEntry(archive, manifest);
         return CreateSummary(normalizedPath, manifest, stream.Length);
     }
 
@@ -82,6 +99,7 @@ public sealed class ZipLibraryBackupService : ILibraryBackupService
         string backupPath,
         IProgress<LibraryBackupProgress>? progress = null)
     {
+        EnsureNormalLibraryIsAvailable();
         var normalizedBackupPath = NormalizeExistingBackupPath(backupPath);
         EnsurePathIsOutsideDataRoot(normalizedBackupPath, "The selected backup");
 
@@ -117,6 +135,9 @@ public sealed class ZipLibraryBackupService : ILibraryBackupService
 
             var stagedDatabasePath = Path.Combine(stagedDataRoot, "listenshelf.db");
             ValidateAndRebaseDatabase(stagedDatabasePath, stagedDataRoot, manifest);
+            _ = new ListenShelfDatabase(
+                stagedDatabasePath,
+                createMigrationSafetyCopy: false);
 
             progress?.Report(new LibraryBackupProgress(
                 "Creating a safety backup of the current library",
@@ -193,6 +214,110 @@ public sealed class ZipLibraryBackupService : ILibraryBackupService
                 catch (Exception exception) when (IsFilesystemException(exception))
                 {
                     // The live library is never stored in this staging directory.
+                }
+            }
+        }
+    }
+
+    public DatabaseRecoveryRestoreResult RestoreForDatabaseRecovery(
+        string backupPath,
+        IProgress<LibraryBackupProgress>? progress = null)
+    {
+        var normalizedBackupPath = NormalizeExistingBackupPath(backupPath);
+        EnsurePathIsOutsideDataRoot(normalizedBackupPath, "The selected backup");
+
+        var dataRootParent = Path.GetDirectoryName(DataRootPath)
+            ?? throw new InvalidOperationException(
+                "The ListenShelf data directory needs a parent directory.");
+        var operationId = Guid.NewGuid().ToString("N");
+        var stagingRoot = Path.Combine(dataRootParent, $".ListenShelf.recovery.{operationId}");
+        var stagedDataRoot = Path.Combine(stagingRoot, "data");
+        var preservedDataRoot = CreatePreservedDataPath(dataRootParent);
+        LibraryBackupSummary restoredSummary;
+
+        Directory.CreateDirectory(stagingRoot);
+        try
+        {
+            BackupManifest manifest;
+            using (var stream = new FileStream(
+                       normalizedBackupPath,
+                       FileMode.Open,
+                       FileAccess.Read,
+                       FileShare.Read))
+            using (var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: false))
+            {
+                manifest = ReadAndValidateManifest(archive);
+                ValidateArchiveContents(archive, manifest, progress, stagingRoot);
+                restoredSummary = CreateSummary(
+                    normalizedBackupPath,
+                    manifest,
+                    stream.Length);
+            }
+
+            var stagedDatabasePath = Path.Combine(stagedDataRoot, "listenshelf.db");
+            ValidateAndRebaseDatabase(stagedDatabasePath, stagedDataRoot, manifest);
+            _ = new ListenShelfDatabase(
+                stagedDatabasePath,
+                createMigrationSafetyCopy: false);
+
+            progress?.Report(new LibraryBackupProgress(
+                "Preserving the current data directory",
+                0,
+                0,
+                0,
+                0));
+
+            SqliteConnection.ClearAllPools();
+            var movedCurrentData = false;
+            try
+            {
+                if (Directory.Exists(DataRootPath))
+                {
+                    Directory.Move(DataRootPath, preservedDataRoot);
+                    movedCurrentData = true;
+                }
+
+                Directory.Move(stagedDataRoot, DataRootPath);
+                ValidateLiveDatabase();
+            }
+            catch
+            {
+                SqliteConnection.ClearAllPools();
+                if (Directory.Exists(DataRootPath))
+                {
+                    Directory.Delete(DataRootPath, recursive: true);
+                }
+
+                if (movedCurrentData && Directory.Exists(preservedDataRoot))
+                {
+                    Directory.Move(preservedDataRoot, DataRootPath);
+                }
+
+                throw;
+            }
+
+            progress?.Report(new LibraryBackupProgress(
+                "Recovery restore complete",
+                restoredSummary.FileCount,
+                restoredSummary.FileCount,
+                restoredSummary.UncompressedSizeBytes,
+                restoredSummary.UncompressedSizeBytes));
+
+            return new DatabaseRecoveryRestoreResult(
+                restoredSummary,
+                movedCurrentData ? preservedDataRoot : null);
+        }
+        finally
+        {
+            if (Directory.Exists(stagingRoot))
+            {
+                try
+                {
+                    Directory.Delete(stagingRoot, recursive: true);
+                }
+                catch (Exception exception) when (IsFilesystemException(exception))
+                {
+                    // The live or preserved library is never kept in staging.
                 }
             }
         }
@@ -385,7 +510,7 @@ public sealed class ZipLibraryBackupService : ILibraryBackupService
 
     private void CreateDatabaseSnapshot(string destinationPath)
     {
-        using var source = _database.OpenConnection();
+        using var source = GetDatabase().OpenConnection();
         using var destination = new SqliteConnection(
             new SqliteConnectionStringBuilder
             {
@@ -916,6 +1041,57 @@ public sealed class ZipLibraryBackupService : ILibraryBackupService
         EnsureDatabaseIntegrity(connection);
     }
 
+    private static void ValidateDatabaseEntry(
+        ZipArchive archive,
+        BackupManifest manifest)
+    {
+        var temporaryRoot = Path.Combine(
+            Path.GetTempPath(),
+            "ListenShelf.Backup",
+            $"inspect-{Guid.NewGuid():N}");
+        var temporaryDatabasePath = Path.Combine(temporaryRoot, "listenshelf.db");
+        Directory.CreateDirectory(temporaryRoot);
+        try
+        {
+            var databaseEntry = archive.Entries.SingleOrDefault(entry =>
+                ArchivePathComparer.Equals(
+                    entry.FullName,
+                    manifest.DatabaseArchivePath))
+                ?? throw new InvalidDataException(
+                    "The backup database entry is missing.");
+            using (var source = databaseEntry.Open())
+            using (var destination = new FileStream(
+                       temporaryDatabasePath,
+                       FileMode.CreateNew,
+                       FileAccess.Write,
+                       FileShare.None))
+            {
+                source.CopyTo(destination);
+                destination.Flush(flushToDisk: true);
+            }
+
+            using (var connection = OpenDatabase(
+                       temporaryDatabasePath,
+                       SqliteOpenMode.ReadWrite))
+            {
+                EnsureDatabaseIntegrity(connection);
+                EnsureRequiredSchema(connection);
+            }
+
+            _ = new ListenShelfDatabase(
+                temporaryDatabasePath,
+                createMigrationSafetyCopy: false);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(temporaryRoot))
+            {
+                Directory.Delete(temporaryRoot, recursive: true);
+            }
+        }
+    }
+
     private static void ExecutePathUpdate(
         SqliteConnection connection,
         SqliteTransaction transaction,
@@ -1009,10 +1185,19 @@ public sealed class ZipLibraryBackupService : ILibraryBackupService
 
     private void ValidateLiveDatabase()
     {
-        using var connection = _database.OpenConnection();
+        var liveDatabase = new ListenShelfDatabase(
+            Path.Combine(DataRootPath, "listenshelf.db"),
+            createMigrationSafetyCopy: false);
+        using var connection = liveDatabase.OpenConnection();
         EnsureDatabaseIntegrity(connection);
         EnsureRequiredSchema(connection);
     }
+
+    private ListenShelfDatabase GetDatabase() =>
+        _database ?? throw new InvalidOperationException(
+            "A healthy live database is required for this backup operation.");
+
+    private void EnsureNormalLibraryIsAvailable() => _ = GetDatabase();
 
     private static void EnsureDatabaseIntegrity(SqliteConnection connection)
     {
@@ -1301,6 +1486,23 @@ public sealed class ZipLibraryBackupService : ILibraryBackupService
         return Path.Combine(
             directory,
             $"ListenShelf before restore {timestamp} {Guid.NewGuid():N}{BackupFileExtension}");
+    }
+
+    private static string CreatePreservedDataPath(string dataRootParent)
+    {
+        var timestamp = DateTimeOffset.Now.ToString(
+            "yyyy-MM-dd HH-mm-ss",
+            CultureInfo.InvariantCulture);
+        var preferredPath = Path.Combine(
+            dataRootParent,
+            $"ListenShelf Recovered Data {timestamp}");
+        var path = preferredPath;
+        while (Directory.Exists(path) || File.Exists(path))
+        {
+            path = $"{preferredPath} {Guid.NewGuid():N}";
+        }
+
+        return path;
     }
 
     private bool PathsEqual(string firstPath, string secondPath) =>
