@@ -87,7 +87,10 @@ $manifestLines = Get-ChildItem -LiteralPath $normalizedOutput -File |
         $hash = Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256
         "$($hash.Hash.ToLowerInvariant())  $($_.Name)"
     }
-$manifestLines | Set-Content -LiteralPath (Join-Path $normalizedOutput 'SHA256SUMS.txt') -Encoding ascii
+[IO.File]::WriteAllLines(
+    (Join-Path $normalizedOutput 'SHA256SUMS.txt'),
+    $manifestLines,
+    [Text.UTF8Encoding]::new($false))
 
 Write-Host "Synthetic smoke-test media created in $normalizedOutput"
 Get-ChildItem -LiteralPath $normalizedOutput -File | Select-Object Name, Length
