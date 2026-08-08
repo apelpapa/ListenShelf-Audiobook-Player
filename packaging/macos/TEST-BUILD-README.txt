@@ -7,10 +7,8 @@ Requirements
 ------------
 - macOS 14 or newer (the current .NET 10 support floor)
 - The architecture named in the ZIP file
-- VLC 3 installed as /Applications/VLC.app
-
-If VLC is installed elsewhere, set LISTENSHELF_LIBVLC_PATH to the directory
-containing its compatible LibVLC native libraries before launching ListenShelf.
+- No .NET or VLC installation is required. ListenShelf.app contains its own
+  architecture-matched .NET and LibVLC runtimes.
 
 First launch
 ------------

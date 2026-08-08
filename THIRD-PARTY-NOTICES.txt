@@ -17,11 +17,16 @@ License: GNU Lesser General Public License v2.1 or later
 Source: https://code.videolan.org/videolan/LibVLCSharp
 License text: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
 
-LibVLC 3.0.23.1 for Windows and its included modules
+LibVLC 3.x native runtimes and their included modules
 License: GNU Lesser General Public License v2.1 or later; individual bundled
 modules and dependencies may carry additional compatible licenses.
 Source: https://code.videolan.org/videolan/vlc
 License text: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+The exact native runtime version and architecture are recorded in the
+BUNDLED-RUNTIME.txt file shipped with each platform package. Windows currently
+uses VideoLAN.LibVLC.Windows 3.0.23.1. macOS test packages use the official
+VideoLAN VLC.app runtime, and Linux test packages use the Ubuntu-packaged
+LibVLC runtime and playback modules named in that platform manifest.
 
 Microsoft.Data.Sqlite.Core 10.0.10 and the self-contained .NET runtime
 License: MIT

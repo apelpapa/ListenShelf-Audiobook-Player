@@ -6,16 +6,19 @@ risks and gather real-machine results; they are not yet supported releases.
 ## Current runtime strategy
 
 - The Avalonia desktop application and LibVLCSharp managed binding are shared.
-- Windows packages continue to carry the Windows LibVLC native runtime.
-- Linux test builds use the distribution's VLC 3 / LibVLC packages.
-- macOS test builds look for VLC 3 at `/Applications/VLC.app`, then honor a
-  custom `LISTENSHELF_LIBVLC_PATH` directory.
+- Every package carries its own architecture-matched .NET and LibVLC runtimes.
+- Windows continues to use the official VideoLAN Windows native package.
+- Linux packaging copies LibVLC, its playback plugins, and non-system dynamic
+  dependencies into a private directory reached through the included launcher.
+- macOS packaging copies the official VideoLAN runtime into
+  `ListenShelf.app/Contents/Frameworks/libvlc`.
+- Packaging runs a native-runtime probe and fails instead of producing an
+  artifact when LibVLC cannot initialize from the completed package.
 - ListenShelf shows a diagnostic startup screen when the native runtime cannot
   be loaded. It does not replace or delete the library after this failure.
 
-This is a test-build strategy, not the final distribution decision. In
-particular, requiring users to install VLC separately may not meet the standard
-for a supported release.
+Users must not install VLC, LibVLC, or .NET before testing. A launch that works
+only after installing VLC is a failed package, even if playback then succeeds.
 
 ## Data and logs
 
@@ -38,34 +41,110 @@ Run the packaging script on the target operating system:
 ./build/Publish-CrossPlatformTestBuild.ps1 -RuntimeIdentifier osx-x64
 ```
 
-It produces a self-contained .NET portable ZIP and SHA-256 checksum beneath
-`artifacts/test-builds`. Linux packaging uses `zip` so executable permissions
-survive extraction. macOS packaging creates a normal `.app` bundle and uses
-`ditto` on macOS so its metadata and executable bit survive the ZIP.
+It produces a self-contained .NET and LibVLC portable ZIP plus SHA-256 checksum
+beneath `artifacts/test-builds`. Linux packaging uses `zip` so executable
+permissions survive extraction. macOS packaging creates a normal `.app` bundle
+and uses `ditto` so its metadata, symbolic links, and executable bit survive.
 
 The GitHub Actions workflow is manual-only. It compiles, tests, and packages on
 native macOS and Linux runners, then stores workflow artifacts. It does not
 publish a GitHub Release.
 
-## Real-machine pass criteria
+## Exact real-machine pass gate
 
-A target remains experimental until all of these pass on a clean machine:
+Test each operating-system and processor package separately. A platform passes
+only when every **required** check below passes on a machine where VLC is not
+installed. One required failure means that platform build remains experimental.
 
-- The package launches without a .NET SDK installed.
-- A missing or incompatible LibVLC runtime produces actionable instructions.
-- M4B, M4A, MP3, chaptered, chapterless, and Unicode-path fixtures import and play.
-- Play, pause, seek, completion replay, chapters, speed, volume, bookmarks, and
-  the sleep timer behave correctly.
-- The previous book and position restore without autoplay after restart.
-- Managed imports leave source files untouched and verified copies survive restart.
-- Backup, restore, removal, and Storage Care work on the platform filesystem.
-- Database, library, cover, and log paths follow the table above.
-- Light/dark layouts remain usable at common scaling levels.
-- Closing and reopening repeatedly does not lose progress or leave the database locked.
+Record this header before testing:
 
-Use `build/Generate-SmokeTestMedia.ps1` to create the deterministic media set.
-Record the OS version, processor architecture, VLC version, package checksum,
-and each failed criterion when reporting results.
+```text
+Operating system and version:
+Processor: Intel x64 / Apple Silicon:
+ListenShelf package filename:
+Package SHA-256 matches: yes / no
+VLC is not installed: yes / no
+.NET is not installed: yes / no / unknown
+```
+
+### 1. Package and startup — required
+
+- Verify the supplied SHA-256 before extraction.
+- Confirm VLC/VLC.app is absent, then extract the package and launch ListenShelf.
+- **Pass:** the normal Library or Player opens without the startup-diagnostics
+  window, a terminal command, an environment variable, or any additional install.
+- Close and reopen ListenShelf three times.
+- **Pass:** all three launches succeed and no database-lock or native-runtime
+  error appears.
+
+### 2. Format and path coverage — required
+
+Import every file from the supplied smoke-media package:
+
+- `short-no-chapters.m4b`
+- `short-with-chapters.m4b`
+- `short-no-chapters.m4a`
+- `short-no-chapters.mp3`
+- `Café — 第1章.m4b`
+
+For each file, start playback, listen for sound, seek forward, seek backward,
+pause, resume, and let it reach the end.
+
+- **Pass:** every file imports and produces audible output; controls respond;
+  no filename becomes corrupted; and no playback error is shown.
+- Rewind the completed file and press Play again.
+- **Pass:** playback restarts without returning to the Library first.
+
+### 3. Chapters and player state — required
+
+- Open `short-with-chapters.m4b` before pressing Play.
+- **Pass:** chapters are already visible, selecting a chapter seeks to it, and
+  Previous/Next chapter work.
+- Set a non-default speed and volume, play partway, close ListenShelf, and reopen it.
+- **Pass:** the same book is loaded at approximately the saved position without
+  autoplay, and the chosen speed and volume are restored.
+
+### 4. Library safety — required
+
+- Before import, record the source smoke-file hashes and locations.
+- Import, edit metadata, add a cover, add a bookmark, and restart ListenShelf.
+- **Pass:** the source files and hashes are unchanged, while the managed copies,
+  metadata, cover, bookmark, and listening position survive restart.
+- Remove one imported test book using the confirmation flow.
+- **Pass:** its catalog entry and ListenShelf-managed copy are gone together,
+  while the original source file remains unchanged.
+- Run Storage Care.
+- **Pass:** it does not report valid managed books as orphaned or missing.
+
+### 5. Backup and recovery — required
+
+- Export a backup containing the test library.
+- Remove or alter at least one test entry, then restore the backup.
+- **Pass:** books, managed audio, metadata, covers, bookmarks, settings, and
+  listening positions return, and playback still works after another restart.
+
+### 6. Desktop behavior — required
+
+- Test light and dark modes, list and tile views, grouping, tile-size adjustment,
+  and library search.
+- **Pass:** controls remain visible and usable with no overlapping or clipped
+  content at 100% display scaling.
+- Test Space/K, J/Left, and L/Right while focus is outside a text box; then type
+  those characters into Library search.
+- **Pass:** shortcuts control playback normally and never intercept search text.
+- Set a one-minute sleep timer and let it expire.
+- **Pass:** playback pauses when the timer expires.
+
+### 7. Platform integration — provisional, report separately
+
+- Test keyboard media keys and any available headset Play/Pause, Previous, and
+  Next controls while ListenShelf is focused and minimized.
+- A failure here does not invalidate the bundled playback runtime, but it blocks
+  claiming full media-control support on that platform.
+
+Use `build/Generate-SmokeTestMedia.ps1` to regenerate the deterministic media
+set when needed. For any failure, include the failed step, whether sound was
+heard, a screenshot, and `listenshelf.log` from the platform data directory.
 
 ## macOS first launch
 

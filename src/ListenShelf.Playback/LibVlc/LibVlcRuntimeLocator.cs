@@ -8,6 +8,8 @@ public static class LibVlcRuntimeLocator
     public const string CustomRuntimePathEnvironmentVariable =
         "LISTENSHELF_LIBVLC_PATH";
 
+    private const string VlcPluginPathEnvironmentVariable = "VLC_PLUGIN_PATH";
+
     public static string RuntimeDescription =>
         $"{GetPlatformName()} {RuntimeInformation.ProcessArchitecture} • .NET {Environment.Version}";
 
@@ -35,6 +37,7 @@ public static class LibVlcRuntimeLocator
             RuntimeInformation.ProcessArchitecture);
         if (bundledPath is not null)
         {
+            ConfigureBundledPluginPath(bundledPath);
             InitializeFromPath(bundledPath);
             return;
         }
@@ -64,16 +67,27 @@ public static class LibVlcRuntimeLocator
     public static string GetPlatformHelp() => OperatingSystem.IsWindows()
         ? "The Windows build should contain its own LibVLC runtime. Reinstall or extract the complete ListenShelf package."
         : OperatingSystem.IsMacOS()
-            ? "This test build currently needs VLC.app in /Applications, or a compatible LibVLC directory supplied through LISTENSHELF_LIBVLC_PATH."
+            ? "The macOS build should contain its own LibVLC runtime. Reinstall or extract the complete ListenShelf package."
             : OperatingSystem.IsLinux()
-                ? "Install your distribution's VLC and LibVLC packages, or supply a compatible LibVLC directory through LISTENSHELF_LIBVLC_PATH."
+                ? "The Linux build should contain its own LibVLC runtime. Reinstall or extract the complete ListenShelf package."
                 : "Install a compatible LibVLC 3 runtime or provide its directory through LISTENSHELF_LIBVLC_PATH.";
 
     private static void InitializeFromPath(string runtimePath)
     {
         try
         {
-            Core.Initialize(runtimePath);
+            // LibVLCSharp does not support an explicit directory on Linux. The
+            // packaged launcher places this directory on LD_LIBRARY_PATH before
+            // the process starts; the path is still validated above so broken
+            // packages fail with a useful ListenShelf diagnostic.
+            if (OperatingSystem.IsLinux())
+            {
+                Core.Initialize();
+            }
+            else
+            {
+                Core.Initialize(runtimePath);
+            }
         }
         catch (Exception exception) when (IsNativeRuntimeException(exception))
         {
@@ -117,6 +131,12 @@ public static class LibVlcRuntimeLocator
                 baseDirectory,
                 "..",
                 "Frameworks",
+                "libvlc",
+                "lib")));
+            candidates.Add(Path.GetFullPath(Path.Combine(
+                baseDirectory,
+                "..",
+                "Frameworks",
                 "libvlc")));
         }
 
@@ -153,6 +173,20 @@ public static class LibVlcRuntimeLocator
         catch (UnauthorizedAccessException)
         {
             return false;
+        }
+    }
+
+    private static void ConfigureBundledPluginPath(string runtimePath)
+    {
+        var pluginPath = OperatingSystem.IsMacOS()
+            ? Path.GetFullPath(Path.Combine(runtimePath, "..", "plugins"))
+            : Path.Combine(runtimePath, "plugins");
+
+        if (Directory.Exists(pluginPath))
+        {
+            Environment.SetEnvironmentVariable(
+                VlcPluginPathEnvironmentVariable,
+                pluginPath);
         }
     }
 

@@ -112,8 +112,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build\Publish-WindowsRelea
 
 Early macOS and Linux work is kept separate from releases. The repository now
 has native-runner test-build packaging, a manual GitHub Actions workflow, and a
-synthetic M4B/M4A/MP3 smoke-media generator. The current limitations, native VLC
-requirements, commands, data locations, and real-machine pass criteria are in
+synthetic M4B/M4A/MP3 smoke-media generator. The macOS and Linux test packages
+carry private architecture-matched LibVLC runtimes; testers do not install VLC
+or .NET separately. The current limitations, commands, data locations, and
+real-machine pass criteria are in
 [`docs/CROSS_PLATFORM_TEST_BUILDS.md`](docs/CROSS_PLATFORM_TEST_BUILDS.md).
 
 ## Free software and optional skins

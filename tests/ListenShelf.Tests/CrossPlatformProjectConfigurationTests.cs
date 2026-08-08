@@ -55,6 +55,31 @@ public sealed class CrossPlatformProjectConfigurationTests
         Assert.Contains("io.github.apelpapa.ListenShelf", values);
     }
 
+    [Fact]
+    public void NativeTestWorkflowProvisionsPackagingSourcesForPrivateRuntimes()
+    {
+        var workflow = File.ReadAllText(FindRepositoryFile(
+            ".github",
+            "workflows",
+            "cross-platform-test-builds.yml"));
+
+        Assert.Contains("libvlc-dev vlc-plugin-base", workflow, StringComparison.Ordinal);
+        Assert.Contains("brew install --cask vlc", workflow, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CrossPlatformPackagerRequiresPrivateRuntimeProbe()
+    {
+        var script = File.ReadAllText(FindRepositoryFile(
+            "build",
+            "Publish-CrossPlatformTestBuild.ps1"));
+
+        Assert.Contains("Bundle-LinuxLibVlc.sh", script, StringComparison.Ordinal);
+        Assert.Contains("bundledVlcRoot", script, StringComparison.Ordinal);
+        Assert.Contains("bundledVlcPlugins", script, StringComparison.Ordinal);
+        Assert.Contains("--verify-native-runtime", script, StringComparison.Ordinal);
+    }
+
     private static string FindRepositoryFile(params string[] relativePathParts)
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);

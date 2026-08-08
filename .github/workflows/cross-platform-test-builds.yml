@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             rid: linux-x64
           - os: macos-15
             rid: osx-arm64
@@ -34,6 +34,19 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+
+      - name: Install Linux LibVLC packaging source
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libvlc-dev vlc-plugin-base
+
+      - name: Install macOS LibVLC packaging source
+        if: runner.os == 'macOS'
+        run: |
+          if [[ ! -d /Applications/VLC.app ]]; then
+            brew install --cask vlc
+          fi
 
       - name: Restore
         run: dotnet restore ListenShelf.slnx

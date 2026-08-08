@@ -6,22 +6,17 @@ This is an early portable test build, not yet a supported release.
 Requirements
 ------------
 - 64-bit x86 Linux
-- VLC 3 and the matching LibVLC runtime supplied by the distribution
-
-Examples:
-  Debian/Ubuntu: sudo apt install vlc libvlc-dev
-  Fedora:        sudo dnf install vlc-devel
-
-Package names vary by distribution. If LibVLC is installed in a non-standard
-location, set LISTENSHELF_LIBVLC_PATH to the directory containing its native
-libraries before launching ListenShelf.
+- No .NET, VLC, or LibVLC installation is required. This package contains its
+  own architecture-matched .NET and LibVLC runtimes.
 
 Launch
 ------
 1. Extract the ZIP while preserving its directory structure.
 2. In a terminal, enter the extracted directory.
-3. If needed, run: chmod +x ListenShelf
-4. Run: ./ListenShelf
+3. Run: ./ListenShelf
+
+If the ZIP program discarded Linux executable permissions, repair the package
+once with: chmod +x ListenShelf ListenShelf.bin
 
 The included listenshelf.desktop file is an integration template for users who
 place ListenShelf on PATH. The portable build itself does not modify your system.

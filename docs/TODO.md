@@ -146,9 +146,9 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Keep storage locations behind cross-platform path services.
 - [ ] Verify case-sensitive and case-insensitive path handling.
 - [ ] Verify filesystem permissions and managed-copy behavior on each platform.
-- [ ] Decide how native LibVLC will be supplied in supported macOS releases; test builds temporarily use an installed VLC app or an explicit runtime path.
-- [ ] Decide whether supported Linux packages will bundle LibVLC or declare it as a system dependency; test builds temporarily use system packages.
-- [ ] Ensure normal users can install and run ListenShelf without troubleshooting native libraries in a terminal.
+- [ ] Validate the private bundled LibVLC runtime on clean macOS Apple Silicon and Intel machines with no VLC installation.
+- [ ] Validate the private bundled LibVLC runtime on clean Ubuntu and Linux Mint machines with no VLC installation.
+- [ ] Ensure normal users can install and run ListenShelf without troubleshooting native libraries in a terminal; the ZIP test packages are not the final installer experience.
 
 ### Cross-platform acceptance
 
