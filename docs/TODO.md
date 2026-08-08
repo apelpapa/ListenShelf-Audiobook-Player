@@ -81,11 +81,11 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 ### Library search, sorting, and filters
 
-- [ ] Search by title.
-- [ ] Search by author.
-- [ ] Search by series.
-- [ ] Search by narrator.
-- [ ] Search by filename.
+- [x] Search by title.
+- [x] Search by author.
+- [x] Search by series.
+- [x] Search by narrator.
+- [x] Search by filename.
 - [ ] Sort by title.
 - [ ] Sort by author.
 - [ ] Sort by series order.

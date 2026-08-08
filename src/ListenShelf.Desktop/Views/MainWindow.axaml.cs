@@ -121,6 +121,11 @@ namespace ListenShelf.Desktop.Views
             }
 
             var focusedControl = FocusManager?.GetFocusedElement();
+            if (focusedControl is TextBox)
+            {
+                return null;
+            }
+
             return e.Key switch
             {
                 Key.Space when focusedControl is not Button and not ComboBox =>

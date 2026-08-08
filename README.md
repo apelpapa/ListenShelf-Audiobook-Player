@@ -32,6 +32,11 @@ requires confirmation and permanently deletes its ListenShelf-managed audio,
 cached cover, metadata, bookmarks, and listening progress together; the original
 source file is never a deletion target.
 
+The library includes instant local search across titles, subtitles, authors,
+series, narrators, genres, publishers, identifiers, publication details, and
+filenames. Multiple words can match different fields, and the filtered results
+flow through list, tile, and grouped views without sending library data anywhere.
+
 On startup, ListenShelf performs a read-only managed-storage integrity check.
 The same check can be run again from Storage Care to find catalog entries with
 missing files, unreferenced files or folders, unsafe catalog paths, and

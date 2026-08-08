@@ -62,11 +62,65 @@ public sealed class ApplicationLibraryTests
         Assert.Equal(["English", "French"], suggestions.Languages);
     }
 
-    private static LibraryBook CreateBook(AudiobookMetadata metadata) =>
+    [Theory]
+    [InlineData("dungeon")]
+    [InlineData("MATT DINNIMAN")]
+    [InlineData("crawler 3")]
+    [InlineData("jeff fantasy")]
+    [InlineData("audiobook-file")]
+    [InlineData("2020")]
+    public void LibrarySearch_MatchesPartialTermsAcrossBookFields(string query)
+    {
+        var book = CreateBook(
+            new AudiobookMetadata
+            {
+                Title = "The Dungeon Anarchist's Cookbook",
+                Authors = ["Matt Dinniman"],
+                SeriesName = "Dungeon Crawler Carl",
+                SeriesPosition = "3",
+                OriginalPublicationYear = 2020,
+                Genres = ["Fantasy"],
+                Narrators = ["Jeff Hays"],
+            },
+            "03-audiobook-file.m4b");
+
+        Assert.True(LibraryBookSearch.Matches(book, query));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void LibrarySearch_BlankQueryMatchesEveryBook(string? query)
+    {
+        var book = CreateBook(AudiobookMetadata.FromFileName("Any book"));
+
+        Assert.True(LibraryBookSearch.Matches(book, query));
+    }
+
+    [Fact]
+    public void LibrarySearch_RequiresEverySearchTermToMatch()
+    {
+        var book = CreateBook(new AudiobookMetadata
+        {
+            Title = "Project Hail Mary",
+            Authors = ["Andy Weir"],
+            Narrators = ["Ray Porter"],
+        });
+
+        Assert.True(LibraryBookSearch.Matches(book, "andy porter"));
+        Assert.False(LibraryBookSearch.Matches(book, "andy dungeon"));
+    }
+
+    private static LibraryBook CreateBook(
+        AudiobookMetadata metadata,
+        string? fileName = null) =>
         new(
             Guid.NewGuid(),
             metadata,
-            Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.m4b"),
+            Path.Combine(
+                Path.GetTempPath(),
+                fileName ?? $"{Guid.NewGuid():N}.m4b"),
             1,
             DateTimeOffset.UtcNow);
 }

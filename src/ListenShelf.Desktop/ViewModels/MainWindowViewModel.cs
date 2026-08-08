@@ -241,6 +241,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<LibraryBookItemViewModel> LibraryBooks { get; } = [];
 
+    public ObservableCollection<LibraryBookItemViewModel> FilteredLibraryBooks { get; } = [];
+
     public ObservableCollection<PlaybackChapterItemViewModel> Chapters { get; } = [];
 
     public ObservableCollection<PlaybackBookmarkItemViewModel> Bookmarks { get; } = [];
@@ -275,6 +277,16 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public IReadOnlyList<LibraryBookItemViewModel> ActiveLibraryGroupBooks =>
         ActiveLibraryGroup?.Books ?? [];
 
+    public bool HasLibrarySearchText => !string.IsNullOrWhiteSpace(LibrarySearchText);
+
+    public bool HasVisibleLibraryBooks => FilteredLibraryBooks.Count > 0;
+
+    public bool IsLibrarySearchEmpty =>
+        HasLibraryBooks && HasLibrarySearchText && !HasVisibleLibraryBooks;
+
+    public string LibrarySearchEmptyTitle =>
+        $"No audiobooks match “{LibrarySearchText.Trim()}”";
+
     public string WindowTitle => "ListenShelf — Audiobook Player";
 
     public string FooterText =>
@@ -301,6 +313,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(IsLibraryListView))]
     [NotifyPropertyChangedFor(nameof(IsLibraryTileView))]
     private LibraryViewMode _selectedLibraryView = LibraryViewMode.List;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLibrarySearchText))]
+    [NotifyPropertyChangedFor(nameof(IsLibrarySearchEmpty))]
+    [NotifyPropertyChangedFor(nameof(LibrarySearchEmptyTitle))]
+    [NotifyPropertyChangedFor(nameof(LibraryBookCountText))]
+    private string _librarySearchText = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLibraryGroupingActive))]
@@ -573,9 +592,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         ? "1 storage item needs attention"
         : $"{ManagedStorageIssueCount} storage items need attention";
 
-    public string LibraryBookCountText => LibraryBooks.Count == 1
-        ? "1 audiobook"
-        : $"{LibraryBooks.Count} audiobooks";
+    public string LibraryBookCountText => HasLibrarySearchText
+        ? $"{FilteredLibraryBooks.Count} of {LibraryBooks.Count} audiobooks"
+        : LibraryBooks.Count == 1
+            ? "1 audiobook"
+            : $"{LibraryBooks.Count} audiobooks";
 
     public string ManagedLibraryPath => _audiobookLibrary.ManagedLibraryPath;
 
@@ -946,6 +967,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [RelayCommand]
     private void ShowLibraryAsTiles() => SaveLibraryViewMode(LibraryViewMode.Tiles);
+
+    [RelayCommand]
+    private void ClearLibrarySearch() => LibrarySearchText = string.Empty;
+
+    partial void OnLibrarySearchTextChanged(string value) => ApplyLibrarySearch();
 
     partial void OnSelectedLibraryGroupOptionChanged(LibraryGroupOptionViewModel value)
     {
@@ -1969,7 +1995,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                     RemoveBookAsync));
             }
 
-            RebuildLibraryGroups();
+            ApplyLibrarySearch();
 
             OnPropertyChanged(nameof(HasLibraryBooks));
             OnPropertyChanged(nameof(IsLibraryEmpty));
@@ -2050,6 +2076,22 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
+    private void ApplyLibrarySearch()
+    {
+        FilteredLibraryBooks.Clear();
+        foreach (var book in LibraryBooks.Where(book =>
+                     LibraryBookSearch.Matches(book.Book, LibrarySearchText)))
+        {
+            FilteredLibraryBooks.Add(book);
+        }
+
+        RebuildLibraryGroups();
+        OnPropertyChanged(nameof(HasVisibleLibraryBooks));
+        OnPropertyChanged(nameof(IsLibrarySearchEmpty));
+        OnPropertyChanged(nameof(LibrarySearchEmptyTitle));
+        OnPropertyChanged(nameof(LibraryBookCountText));
+    }
+
     private void RebuildLibraryGroups()
     {
         var activeGroupName = ActiveLibraryGroup?.Name;
@@ -2060,7 +2102,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         {
             LibraryGroups.Add(new LibraryGroupViewModel(
                 "All audiobooks",
-                LibraryBooks.ToArray(),
+                FilteredLibraryBooks.ToArray(),
                 showHeader: false));
             ActiveLibraryGroup = null;
             return;
@@ -2068,7 +2110,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         var groupedBooks = new Dictionary<string, List<LibraryBookItemViewModel>>(
             StringComparer.OrdinalIgnoreCase);
-        foreach (var book in LibraryBooks)
+        foreach (var book in FilteredLibraryBooks)
         {
             foreach (var groupName in GetGroupNames(book, groupMode))
             {
