@@ -77,7 +77,14 @@ public sealed class CrossPlatformProjectConfigurationTests
         Assert.Contains("Bundle-LinuxLibVlc.sh", script, StringComparison.Ordinal);
         Assert.Contains("bundledVlcRoot", script, StringComparison.Ordinal);
         Assert.Contains("bundledVlcPlugins", script, StringComparison.Ordinal);
+        Assert.Contains("LISTENSHELF_PACKAGING_VLC_APP", script, StringComparison.Ordinal);
+        Assert.Contains("packaging/macos/listenshelf-launcher.sh", script, StringComparison.Ordinal);
         Assert.Contains("--verify-native-runtime", script, StringComparison.Ordinal);
+
+        var linuxBundler = File.ReadAllText(FindRepositoryFile(
+            "build",
+            "Bundle-LinuxLibVlc.sh"));
+        Assert.Contains("LISTENSHELF_LIBVLC_SYSROOT", linuxBundler, StringComparison.Ordinal);
     }
 
     private static string FindRepositoryFile(params string[] relativePathParts)

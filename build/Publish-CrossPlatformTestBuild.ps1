@@ -145,17 +145,28 @@ else
     $frameworksRoot = Join-Path $contentsRoot 'Frameworks'
     New-Item -ItemType Directory -Path $macOsRoot, $resourcesRoot, $frameworksRoot -Force | Out-Null
     Copy-Item -Path (Join-Path $publishRoot '*') -Destination $macOsRoot -Recurse
+    Move-Item -LiteralPath (Join-Path $macOsRoot 'ListenShelf') -Destination (Join-Path $macOsRoot 'ListenShelf.bin')
+    Copy-Item -LiteralPath (Join-Path $repoRoot 'packaging/macos/listenshelf-launcher.sh') -Destination (Join-Path $macOsRoot 'ListenShelf')
     Copy-Item -LiteralPath (Join-Path $repoRoot 'src/ListenShelf.Desktop/Assets/Branding/listenshelf.icns') -Destination $resourcesRoot
     Copy-Item -LiteralPath (Join-Path $repoRoot 'packaging/macos/TEST-BUILD-README.txt') -Destination $packageRoot
     Copy-Item -LiteralPath (Join-Path $repoRoot 'docs/CROSS_PLATFORM_TEST_BUILDS.md') -Destination (Join-Path $packageRoot 'TESTING-INSTRUCTIONS.md')
 
-    $installedVlcRoot = '/Applications/VLC.app/Contents/MacOS'
+    $vlcAppPath = if ([string]::IsNullOrWhiteSpace($env:LISTENSHELF_PACKAGING_VLC_APP))
+    {
+        '/Applications/VLC.app'
+    }
+    else
+    {
+        $env:LISTENSHELF_PACKAGING_VLC_APP
+    }
+    $vlcContentsRoot = Join-Path $vlcAppPath 'Contents'
+    $installedVlcRoot = Join-Path $vlcContentsRoot 'MacOS'
     $installedVlcLib = Join-Path $installedVlcRoot 'lib'
     $installedVlcPlugins = Join-Path $installedVlcRoot 'plugins'
     if (-not (Test-Path -LiteralPath (Join-Path $installedVlcLib 'libvlc.dylib')) -or
         -not (Test-Path -LiteralPath $installedVlcPlugins))
     {
-        throw 'A complete architecture-compatible VLC.app is required on the packaging machine so its LibVLC runtime can be embedded.'
+        throw "A complete architecture-compatible VLC.app is required at '$vlcAppPath' so its LibVLC runtime can be embedded."
     }
 
     $bundledVlcRoot = Join-Path $frameworksRoot 'libvlc'
@@ -171,6 +182,8 @@ else
     {
         throw "Copying the macOS LibVLC plugins failed with exit code $LASTEXITCODE."
     }
+    Get-ChildItem -LiteralPath $bundledVlcPlugins -Recurse -File -Filter 'plugins.dat' |
+        Remove-Item -Force
 
     $expectedArchitecture = if ($RuntimeIdentifier -eq 'osx-arm64') { 'arm64' } else { 'x86_64' }
     $bundledLibVlcPath = Join-Path $bundledVlcLib 'libvlc.dylib'
@@ -195,7 +208,6 @@ else
 
     $bundledLicenseRoot = Join-Path $bundledVlcRoot 'licenses'
     New-Item -ItemType Directory -Path $bundledLicenseRoot -Force | Out-Null
-    $vlcContentsRoot = '/Applications/VLC.app/Contents'
     $licenseCandidates = @(Get-ChildItem -LiteralPath $vlcContentsRoot -Recurse -File |
         Where-Object { $_.Name -match '^(AUTHORS|COPYING|COPYRIGHT|LICENSE)(\..*)?$' })
     foreach ($licenseFile in $licenseCandidates)
@@ -207,7 +219,7 @@ else
         Copy-Item -LiteralPath $licenseFile.FullName -Destination (Join-Path $bundledLicenseRoot $licenseName)
     }
 
-    $vlcVersion = (& plutil '-extract' 'CFBundleShortVersionString' 'raw' '/Applications/VLC.app/Contents/Info.plist').Trim()
+    $vlcVersion = (& plutil '-extract' 'CFBundleShortVersionString' 'raw' (Join-Path $vlcContentsRoot 'Info.plist')).Trim()
     if ($LASTEXITCODE -ne 0)
     {
         throw "Reading the bundled VLC version failed with exit code $LASTEXITCODE."
@@ -231,7 +243,7 @@ else
         (Join-Path $contentsRoot 'Info.plist'),
         $plist,
         [Text.UTF8Encoding]::new($false))
-    & chmod '+x' (Join-Path $macOsRoot 'ListenShelf')
+    & chmod '+x' (Join-Path $macOsRoot 'ListenShelf') (Join-Path $macOsRoot 'ListenShelf.bin')
     if ($LASTEXITCODE -ne 0)
     {
         throw "chmod failed with exit code $LASTEXITCODE."

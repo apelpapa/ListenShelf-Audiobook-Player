@@ -9,6 +9,7 @@ fi
 
 package_root="$(realpath "$1")"
 runtime_root="$(realpath -m "$2")"
+source_root="$(realpath "${LISTENSHELF_LIBVLC_SYSROOT:-/}")"
 
 if [[ ! -x "$package_root/ListenShelf.bin" ]]; then
     echo "ListenShelf.bin was not found or is not executable in $package_root" >&2
@@ -25,17 +26,11 @@ case "$(uname -m)" in
         ;;
 esac
 
-find_package_file() {
-    local package_name="$1"
-    local file_pattern="$2"
-    dpkg-query -L "$package_name" \
-        | grep -E "/${expected_library_pattern}/${file_pattern}$" \
-        | sed -n '1p'
-}
-
-libvlc_path="$(find_package_file libvlc5 'libvlc\.so\.5(\.[0-9]+)*')"
-libvlccore_path="$(find_package_file libvlccore9 'libvlccore\.so\.9(\.[0-9]+)*')"
-plugin_root="$(find "/usr/lib/${expected_library_pattern}/vlc" \
+libvlc_path="$(find "$source_root/usr/lib/$expected_library_pattern" \
+    -maxdepth 1 -name 'libvlc.so.5*' -print | sort | tail -1)"
+libvlccore_path="$(find "$source_root/usr/lib/$expected_library_pattern" \
+    -maxdepth 1 -name 'libvlccore.so.9*' -print | sort | tail -1)"
+plugin_root="$(find "$source_root/usr/lib/${expected_library_pattern}/vlc" \
     -type d -path '*/plugins' -print -quit)"
 
 if [[ -z "$libvlc_path" || -z "$libvlccore_path" || -z "$plugin_root" ]]; then
@@ -46,6 +41,22 @@ fi
 rm -rf "$runtime_root"
 mkdir -p "$runtime_root/deps"
 
+if [[ "$source_root" != "/" ]]; then
+    declare -a library_roots=()
+    for candidate_root in \
+        "$source_root/lib/$expected_library_pattern" \
+        "$source_root/usr/lib/$expected_library_pattern"; do
+        if [[ -d "$candidate_root" ]]; then
+            library_roots+=("$candidate_root")
+        fi
+    done
+    library_search_path="$(find "${library_roots[@]}" \
+        -type f \
+        \( -name '*.so' -o -name '*.so.*' \) -printf '%h\n' \
+        | sort -u | paste -sd: -)"
+    export LD_LIBRARY_PATH="$library_search_path${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
+
 declare -A packaged_debian_packages=(
     [libvlc5]=1
     [libvlccore9]=1
@@ -55,6 +66,9 @@ declare -A packaged_debian_packages=(
 record_package_owner() {
     local source_path="$1"
     local owner
+    if [[ "$source_root" != "/" ]]; then
+        return
+    fi
     owner="$(dpkg-query -S "$source_path" 2>/dev/null | sed -n '1p' || true)"
     if [[ -n "$owner" ]]; then
         owner="${owner%%:*}"
@@ -134,16 +148,24 @@ fi
 
 license_root="$runtime_root/licenses"
 mkdir -p "$license_root"
-for package_name in "${!packaged_debian_packages[@]}"; do
-    copyright_path="/usr/share/doc/$package_name/copyright"
-    if [[ -f "$copyright_path" ]]; then
+if [[ "$source_root" == "/" ]]; then
+    for package_name in "${!packaged_debian_packages[@]}"; do
+        copyright_path="/usr/share/doc/$package_name/copyright"
+        if [[ -f "$copyright_path" ]]; then
+            cp "$copyright_path" "$license_root/$package_name.copyright"
+        fi
+    done
+    package_list="$(printf '%s\n' "${!packaged_debian_packages[@]}" | sort | paste -sd, -)"
+    vlc_version="$(dpkg-query -W -f='${Version}' libvlc5)"
+else
+    while IFS= read -r copyright_path; do
+        package_name="$(basename "$(dirname "$copyright_path")")"
         cp "$copyright_path" "$license_root/$package_name.copyright"
-    fi
-done
-
-package_list="$(printf '%s\n' "${!packaged_debian_packages[@]}" | sort | paste -sd, -)"
-
-vlc_version="$(dpkg-query -W -f='${Version}' libvlc5)"
+    done < <(find "$source_root/usr/share/doc" -mindepth 2 -maxdepth 2 \
+        -type f -name copyright -print)
+    package_list="$(cat "$source_root/LISTENSHELF-PACKAGES.txt")"
+    vlc_version="$(cat "$source_root/LISTENSHELF-LIBVLC-VERSION.txt")"
+fi
 {
     printf 'ListenShelf private LibVLC runtime\n'
     printf 'Source packages: Ubuntu/Debian libvlc5, libvlccore9, vlc-plugin-base\n'
