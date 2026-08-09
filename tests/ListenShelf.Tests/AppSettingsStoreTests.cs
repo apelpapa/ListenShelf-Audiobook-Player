@@ -19,6 +19,8 @@ public sealed class AppSettingsStoreTests
         Assert.Equal(220d, store.GetLibraryTileWidth());
         Assert.Equal(80d, store.GetPlaybackVolume());
         Assert.Equal(1d, store.GetPlaybackRate());
+        Assert.Equal(15, store.GetRewindSeconds());
+        Assert.Equal(30, store.GetForwardSeconds());
     }
 
     [Fact]
@@ -34,6 +36,8 @@ public sealed class AppSettingsStoreTests
         store.SaveLibraryTileWidth(275d);
         store.SavePlaybackVolume(64d);
         store.SavePlaybackRate(1.5d);
+        store.SaveRewindSeconds(10);
+        store.SaveForwardSeconds(45);
 
         var reloadedStore = new SqliteAppSettingsStore(
             new ListenShelfDatabase(workspace.DatabasePath));
@@ -44,6 +48,8 @@ public sealed class AppSettingsStoreTests
         Assert.Equal(275d, reloadedStore.GetLibraryTileWidth());
         Assert.Equal(64d, reloadedStore.GetPlaybackVolume());
         Assert.Equal(1.5d, reloadedStore.GetPlaybackRate());
+        Assert.Equal(10, reloadedStore.GetRewindSeconds());
+        Assert.Equal(45, reloadedStore.GetForwardSeconds());
     }
 
     [Theory]
@@ -58,5 +64,70 @@ public sealed class AppSettingsStoreTests
             new ListenShelfDatabase(workspace.DatabasePath));
 
         Assert.Throws<ArgumentOutOfRangeException>(() => store.SavePlaybackVolume(value));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(600)]
+    public void SkipIntervals_AcceptRangeBoundaries(int seconds)
+    {
+        using var workspace = new TestWorkspace();
+        var store = new SqliteAppSettingsStore(new ListenShelfDatabase(workspace.DatabasePath));
+
+        store.SaveRewindSeconds(seconds);
+        store.SaveForwardSeconds(seconds);
+
+        Assert.Equal(seconds, store.GetRewindSeconds());
+        Assert.Equal(seconds, store.GetForwardSeconds());
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(0)]
+    [InlineData(601)]
+    [InlineData(int.MaxValue)]
+    public void SkipIntervals_RejectInvalidValuesWithoutOverwritingSavedSettings(int seconds)
+    {
+        using var workspace = new TestWorkspace();
+        var store = new SqliteAppSettingsStore(new ListenShelfDatabase(workspace.DatabasePath));
+        store.SaveRewindSeconds(20);
+        store.SaveForwardSeconds(40);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => store.SaveRewindSeconds(seconds));
+        Assert.Throws<ArgumentOutOfRangeException>(() => store.SaveForwardSeconds(seconds));
+
+        Assert.Equal(20, store.GetRewindSeconds());
+        Assert.Equal(40, store.GetForwardSeconds());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("not a number")]
+    [InlineData("0")]
+    [InlineData("-15")]
+    [InlineData("601")]
+    [InlineData("2147483648")]
+    [InlineData("15.5")]
+    [InlineData("NaN")]
+    [InlineData("Infinity")]
+    public void SkipIntervals_UseDefaultsForMalformedStoredValues(string value)
+    {
+        using var workspace = new TestWorkspace();
+        var database = new ListenShelfDatabase(workspace.DatabasePath);
+        using (var connection = database.OpenConnection())
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText =
+                """
+                INSERT INTO app_settings (setting_key, setting_value)
+                VALUES ('player.rewind_seconds', $value), ('player.forward_seconds', $value);
+                """;
+            command.Parameters.AddWithValue("$value", value);
+            command.ExecuteNonQuery();
+        }
+
+        var store = new SqliteAppSettingsStore(database);
+        Assert.Equal(15, store.GetRewindSeconds());
+        Assert.Equal(30, store.GetForwardSeconds());
     }
 }

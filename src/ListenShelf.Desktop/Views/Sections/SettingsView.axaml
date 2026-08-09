@@ -109,6 +109,70 @@
                     <TextBlock FontSize="19"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource PrimaryTextBrush}"
+                               Text="Playback" />
+                    <TextBlock FontSize="13"
+                               Foreground="{DynamicResource MutedTextBrush}"
+                               Text="Choose how far to skip. Changes apply immediately to every audiobook and are remembered next time."
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Border Padding="18"
+                        CornerRadius="15"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="16">
+                        <TextBlock FontSize="12"
+                                   Foreground="{DynamicResource MutedTextBrush}"
+                                   Text="Use whole seconds from 1–600. Player buttons, keyboard shortcuts, and Windows headphone/media controls all use these intervals."
+                                   TextWrapping="Wrap" />
+
+                        <Grid ColumnDefinitions="*,140" ColumnSpacing="18" RowDefinitions="Auto,Auto" RowSpacing="5">
+                            <StackPanel Spacing="4" VerticalAlignment="Center">
+                                <TextBlock FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource PrimaryTextBrush}" Text="Rewind" />
+                                <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                                           Text="Left Arrow / J / Previous media button" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <NumericUpDown Grid.Column="1"
+                                           VerticalAlignment="Center"
+                                           FormatString="0" ParsingNumberStyle="Integer" Increment="1"
+                                           Minimum="{Binding SkipSettings.MinimumSeconds}"
+                                           Maximum="{Binding SkipSettings.MaximumSeconds}"
+                                           Value="{Binding SkipSettings.RewindSeconds, Mode=TwoWay}"
+                                           AutomationProperties.Name="Rewind interval in seconds" />
+                            <TextBlock Grid.Row="1" Grid.ColumnSpan="2"
+                                       FontSize="11" Foreground="{DynamicResource AccentTextBrush}"
+                                       Text="{Binding SkipSettings.RewindMessage}" TextWrapping="Wrap" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,140" ColumnSpacing="18" RowDefinitions="Auto,Auto" RowSpacing="5">
+                            <StackPanel Spacing="4" VerticalAlignment="Center">
+                                <TextBlock FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource PrimaryTextBrush}" Text="Forward" />
+                                <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                                           Text="Right Arrow / L / Next media button" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <NumericUpDown Grid.Column="1"
+                                           VerticalAlignment="Center"
+                                           FormatString="0" ParsingNumberStyle="Integer" Increment="1"
+                                           Minimum="{Binding SkipSettings.MinimumSeconds}"
+                                           Maximum="{Binding SkipSettings.MaximumSeconds}"
+                                           Value="{Binding SkipSettings.ForwardSeconds, Mode=TwoWay}"
+                                           AutomationProperties.Name="Forward interval in seconds" />
+                            <TextBlock Grid.Row="1" Grid.ColumnSpan="2"
+                                       FontSize="11" Foreground="{DynamicResource AccentTextBrush}"
+                                       Text="{Binding SkipSettings.ForwardMessage}" TextWrapping="Wrap" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="10">
+                <StackPanel Spacing="5">
+                    <TextBlock FontSize="19"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
                                Text="Library storage" />
                     <TextBlock FontSize="13"
                                Foreground="{DynamicResource MutedTextBrush}"

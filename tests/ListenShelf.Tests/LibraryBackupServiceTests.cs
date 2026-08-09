@@ -86,7 +86,10 @@ public sealed class LibraryBackupServiceTests
             "Chapter 3",
             savedAtUtc,
             savedAtUtc));
-        new SqliteAppSettingsStore(source.Database).SaveTheme(AppTheme.Light);
+        var sourceSettings = new SqliteAppSettingsStore(source.Database);
+        sourceSettings.SaveTheme(AppTheme.Light);
+        sourceSettings.SaveRewindSeconds(12);
+        sourceSettings.SaveForwardSeconds(90);
         var backupPath = Path.Combine(
             GetWorkspaceRoot(sourceWorkspace),
             "exports",
@@ -135,6 +138,8 @@ public sealed class LibraryBackupServiceTests
         Assert.Equal(bookmarkId, restoredBookmark.Id);
         Assert.Equal("Remember this", restoredBookmark.Note);
         Assert.Equal(AppTheme.Light, new SqliteAppSettingsStore(target.Database).GetTheme());
+        Assert.Equal(12, new SqliteAppSettingsStore(target.Database).GetRewindSeconds());
+        Assert.Equal(90, new SqliteAppSettingsStore(target.Database).GetForwardSeconds());
         Assert.True(target.Checker.Check().IsHealthy);
     }
 

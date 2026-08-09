@@ -82,6 +82,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _progressStore = progressStore;
         _bookmarkStore = bookmarkStore;
         _appSettingsStore = appSettingsStore;
+        SkipSettings = new PlaybackSkipSettingsViewModel(appSettingsStore);
         _themeService = themeService;
         _audiobookLibrary = audiobookLibrary;
         _bookMetadataEditorService = bookMetadataEditorService;
@@ -180,6 +181,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public IReadOnlyList<double> PlaybackRates { get; } =
         [0.75d, 1d, 1.25d, 1.5d, 1.75d, 2d];
+
+    public PlaybackSkipSettingsViewModel SkipSettings { get; }
 
     public async Task InitializeAsync()
     {
@@ -933,6 +936,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void ReloadPreferencesAfterRestore()
     {
+        SkipSettings.Reload();
         SelectedTheme = _appSettingsStore.GetTheme();
         _themeService.ApplyTheme(SelectedTheme);
         AppearanceSettingsMessage = $"{SelectedTheme} appearance is active.";
@@ -1330,7 +1334,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         if (CanControlPlayback)
         {
-            SeekPlayback(CurrentPlaybackPosition - TimeSpan.FromSeconds(15));
+            SeekPlayback(CurrentPlaybackPosition - TimeSpan.FromSeconds(SkipSettings.EffectiveRewindSeconds));
         }
     }
 
@@ -1339,7 +1343,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         if (CanControlPlayback)
         {
-            SeekPlayback(CurrentPlaybackPosition + TimeSpan.FromSeconds(30));
+            SeekPlayback(CurrentPlaybackPosition + TimeSpan.FromSeconds(SkipSettings.EffectiveForwardSeconds));
         }
     }
 

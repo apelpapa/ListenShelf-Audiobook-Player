@@ -129,10 +129,10 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 ### Playback improvements
 
-- [ ] Add configurable rewind intervals.
-- [ ] Add configurable forward intervals.
-- [ ] Remember the selected rewind and forward intervals globally.
-- [ ] Route selected intervals through player buttons, keyboard shortcuts, headphones, and media controls.
+- [x] Add configurable rewind intervals.
+- [x] Add configurable forward intervals.
+- [x] Remember the selected rewind and forward intervals globally.
+- [x] Route selected intervals through player buttons, keyboard shortcuts, headphones, and media controls.
 - [ ] Add smart rewind after longer pauses.
 
 ### Cross-platform architecture

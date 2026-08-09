@@ -12,6 +12,8 @@ public sealed class SqliteAppSettingsStore(ListenShelfDatabase database) : IAppS
     private const string LibraryTileWidthKey = "library.tile_width";
     private const string PlaybackVolumeKey = "player.volume";
     private const string PlaybackRateKey = "player.playback_rate";
+    private const string RewindSecondsKey = "player.rewind_seconds";
+    private const string ForwardSecondsKey = "player.forward_seconds";
     private const double DefaultLibraryTileWidth = 220d;
     private const double MinimumLibraryTileWidth = 180d;
     private const double MaximumLibraryTileWidth = 320d;
@@ -186,6 +188,45 @@ public sealed class SqliteAppSettingsStore(ListenShelfDatabase database) : IAppS
             MinimumPlaybackRate,
             MaximumPlaybackRate,
             nameof(rate));
+
+    public int GetRewindSeconds() =>
+        GetSkipInterval(RewindSecondsKey, PlaybackSkipIntervals.DefaultRewindSeconds);
+
+    public void SaveRewindSeconds(int seconds) => SaveSkipInterval(RewindSecondsKey, seconds);
+
+    public int GetForwardSeconds() =>
+        GetSkipInterval(ForwardSecondsKey, PlaybackSkipIntervals.DefaultForwardSeconds);
+
+    public void SaveForwardSeconds(int seconds) => SaveSkipInterval(ForwardSecondsKey, seconds);
+
+    private int GetSkipInterval(string key, int defaultValue)
+    {
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT setting_value
+            FROM app_settings
+            WHERE setting_key = $setting_key;
+            """;
+        command.Parameters.AddWithValue("$setting_key", key);
+
+        return int.TryParse(
+            command.ExecuteScalar() as string,
+            NumberStyles.Integer,
+            CultureInfo.InvariantCulture,
+            out var seconds) && PlaybackSkipIntervals.IsValid(seconds)
+                ? seconds
+                : defaultValue;
+    }
+
+    private void SaveSkipInterval(string key, int seconds) =>
+        SaveDoubleSetting(
+            key,
+            seconds,
+            PlaybackSkipIntervals.MinimumSeconds,
+            PlaybackSkipIntervals.MaximumSeconds,
+            nameof(seconds));
 
     private double GetDoubleSetting(
         string key,

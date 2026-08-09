@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ListenShelf.Application\ListenShelf.Application.csproj" />
+    <ProjectReference Include="..\..\src\ListenShelf.Desktop\ListenShelf.Desktop.csproj" />
     <ProjectReference Include="..\..\src\ListenShelf.Infrastructure\ListenShelf.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\ListenShelf.Playback\ListenShelf.Playback.csproj" />
   </ItemGroup>

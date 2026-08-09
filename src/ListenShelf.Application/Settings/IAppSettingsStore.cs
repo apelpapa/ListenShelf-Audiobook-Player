@@ -25,4 +25,12 @@ public interface IAppSettingsStore
     double GetPlaybackRate();
 
     void SavePlaybackRate(double rate);
+
+    int GetRewindSeconds();
+
+    void SaveRewindSeconds(int seconds);
+
+    int GetForwardSeconds();
+
+    void SaveForwardSeconds(int seconds);
 }
