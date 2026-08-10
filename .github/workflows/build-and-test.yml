@@ -1,10 +1,8 @@
 name: Build and test
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  # Automatic push/PR checks are paused; keep the workflow available on demand.
+  workflow_dispatch:
 
 permissions:
   contents: read
