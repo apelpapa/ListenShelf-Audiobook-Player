@@ -11,7 +11,7 @@
                 Background="{DynamicResource SurfaceAltBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="1">
-            <Grid RowDefinitions="Auto,Auto" RowSpacing="8">
+            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
                 <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                 <Border Grid.Column="0"
                         Padding="9,5"
@@ -137,6 +137,42 @@
                             Content="Clear"
                             IsVisible="{Binding HasLibrarySearchText}" />
                 </Grid>
+
+                <WrapPanel Grid.Row="2" Orientation="Horizontal" IsVisible="{Binding HasLibraryBooks}">
+                    <StackPanel Orientation="Horizontal" Spacing="7" Margin="0,0,16,0">
+                        <TextBlock VerticalAlignment="Center" FontSize="10"
+                                   Foreground="{DynamicResource MutedTextBrush}" Text="SORT BY" />
+                        <ComboBox Width="182"
+                                  ItemsSource="{Binding LibrarySortOptions}"
+                                  SelectedItem="{Binding SelectedLibrarySortOption, Mode=TwoWay}"
+                                  AutomationProperties.Name="Sort audiobooks"
+                                  ToolTip.Tip="Sort books and group stacks. Each stack is ranked by its first matching book.">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LibrarySortOptionViewModel">
+                                    <TextBlock Text="{Binding DisplayName}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="7" Margin="0,0,16,0">
+                        <TextBlock VerticalAlignment="Center" FontSize="10"
+                                   Foreground="{DynamicResource MutedTextBrush}" Text="STATUS" />
+                        <ComboBox Width="142"
+                                  ItemsSource="{Binding LibraryStatusOptions}"
+                                  SelectedItem="{Binding SelectedLibraryStatusOption, Mode=TwoWay}"
+                                  AutomationProperties.Name="Filter by listening status"
+                                  ToolTip.Tip="Status follows the saved position. Finished means the end was reached; rewinding makes a book in progress again.">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LibraryStatusOptionViewModel">
+                                    <TextBlock Text="{Binding DisplayName}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                    <Button Padding="12,6" VerticalAlignment="Center"
+                            Command="{Binding ClearLibraryFiltersCommand}"
+                            Content="Clear filters" IsVisible="{Binding HasLibraryFilters}" />
+                </WrapPanel>
             </Grid>
         </Border>
 
@@ -199,14 +235,14 @@
                     <TextBlock HorizontalAlignment="Center"
                                FontSize="13"
                                Foreground="{DynamicResource MutedTextBrush}"
-                               Text="Try fewer words or search another title, author, series, narrator, or filename."
+                               Text="{Binding LibrarySearchEmptyDescription}"
                                TextAlignment="Center"
                                TextWrapping="Wrap" />
                     <Button Margin="0,6,0,0"
                             Padding="15,8"
                             HorizontalAlignment="Center"
-                            Command="{Binding ClearLibrarySearchCommand}"
-                            Content="Clear search" />
+                            Command="{Binding ClearLibraryFiltersCommand}"
+                            Content="Clear filters" />
                 </StackPanel>
             </Border>
 

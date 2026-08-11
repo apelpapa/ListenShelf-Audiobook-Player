@@ -36,6 +36,13 @@ The library includes instant local search across titles, subtitles, authors,
 series, narrators, genres, publishers, identifiers, publication details, and
 filenames. Multiple words can match different fields, and the filtered results
 flow through list, tile, and grouped views without sending library data anywhere.
+Library controls can sort by title, author, numeric series/book order, recently
+played, date added, or listening progress, and filter to All, Not started,
+In progress, or Finished. Sort and status choices are remembered between launches
+and included in local backups. Filters combine with search; group counts and
+previews use only matching books, and stacks follow the sort order of their first
+matching book. Finished means the saved position has reached the known duration;
+rewinding back into a book makes it In progress again.
 
 On startup, ListenShelf performs a read-only managed-storage integrity check.
 The same check can be run again from Storage Care to find catalog entries with

@@ -2,6 +2,8 @@ using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ListenShelf.Application.Library;
+using ListenShelf.Application.Progress;
+using ListenShelf.Application.Settings;
 
 namespace ListenShelf.Desktop.ViewModels;
 
@@ -14,15 +16,17 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
 
     public LibraryBookItemViewModel(
         LibraryBook book,
-        string progressSummary,
+        PlaybackProgress? progress,
         double tileWidth,
         Func<LibraryBook, Task> playBookAsync,
         Func<LibraryBook, Task> chooseCoverAsync,
         Func<LibraryBook, Task> editMetadataAsync,
-        Func<LibraryBook, Task> removeBookAsync)
+        Func<LibraryBook, Task> removeBookAsync,
+        bool isProgressAvailable = true)
     {
         Book = book;
-        ProgressSummary = progressSummary;
+        Progress = progress;
+        IsProgressAvailable = isProgressAvailable;
         _playBookAsync = playBookAsync;
         _chooseCoverAsync = chooseCoverAsync;
         _editMetadataAsync = editMetadataAsync;
@@ -80,7 +84,51 @@ public sealed partial class LibraryBookItemViewModel : ViewModelBase, IDisposabl
 
     public string FileSizeText => FormatFileSize(Book.FileSizeBytes);
 
-    public string ProgressSummary { get; }
+    public PlaybackProgress? Progress { get; private set; }
+
+    public bool IsProgressAvailable { get; private set; }
+
+    public string ProgressSummary
+    {
+        get
+        {
+            if (!IsAvailable)
+            {
+                return "File missing";
+            }
+
+            if (!IsProgressAvailable)
+            {
+                return "Progress unavailable";
+            }
+
+            var status = LibraryBookQuery.GetStatus(Progress);
+            if (status == LibraryStatusFilter.Finished)
+            {
+                return "Finished";
+            }
+
+            if (status == LibraryStatusFilter.NotStarted)
+            {
+                return "Not started";
+            }
+
+            var position = Progress!.Position;
+            var timestamp = Progress.Duration.TotalHours >= 1 || position.TotalHours >= 1
+                ? $"{(int)position.TotalHours}:{position.Minutes:00}:{position.Seconds:00}"
+                : $"{position.Minutes}:{position.Seconds:00}";
+            return $"In progress · Resume at {timestamp}";
+        }
+    }
+
+    public void UpdateProgress(PlaybackProgress progress)
+    {
+        Progress = progress;
+        IsProgressAvailable = true;
+        OnPropertyChanged(nameof(Progress));
+        OnPropertyChanged(nameof(IsProgressAvailable));
+        OnPropertyChanged(nameof(ProgressSummary));
+    }
 
     [ObservableProperty]
     private double _tileWidth;

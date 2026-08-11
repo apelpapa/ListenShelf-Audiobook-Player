@@ -24,6 +24,22 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private const double MinimumPlaybackVolume = 0d;
     private const double MaximumPlaybackVolume = 100d;
     private const double DefaultPlaybackRate = 1d;
+    private static readonly LibrarySortOptionViewModel[] SortOptions =
+    [
+        new(LibrarySortMode.Title, "Title (A–Z)"),
+        new(LibrarySortMode.Author, "Author (A–Z)"),
+        new(LibrarySortMode.SeriesOrder, "Series / book order"),
+        new(LibrarySortMode.RecentlyPlayed, "Recently played"),
+        new(LibrarySortMode.DateAdded, "Date added (newest)"),
+        new(LibrarySortMode.Progress, "Progress (most first)"),
+    ];
+    private static readonly LibraryStatusOptionViewModel[] StatusOptions =
+    [
+        new(LibraryStatusFilter.All, "All"),
+        new(LibraryStatusFilter.NotStarted, "Not started"),
+        new(LibraryStatusFilter.InProgress, "In progress"),
+        new(LibraryStatusFilter.Finished, "Finished"),
+    ];
     private static readonly LibraryGroupOptionViewModel[] GroupOptions =
     [
         new(LibraryGroupMode.None, "None"),
@@ -56,6 +72,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private bool _sleepTimerPausePending;
     private string? _currentFilePath;
     private TimeSpan? _pendingResumePosition;
+    private PlaybackProgress? _lastSavedProgress;
     private DateTimeOffset? _sleepTimerDeadlineUtc;
     private DateTimeOffset _lastSavedAtUtc = DateTimeOffset.MinValue;
     private Bitmap? _currentCoverImage;
@@ -168,6 +185,28 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             _selectedPlaybackRate = DefaultPlaybackRate;
         }
 
+        try
+        {
+            var sortMode = _appSettingsStore.GetLibrarySortMode();
+            _selectedLibrarySortOption = SortOptions.FirstOrDefault(option => option.Mode == sortMode)
+                ?? SortOptions[0];
+        }
+        catch
+        {
+            _selectedLibrarySortOption = SortOptions[0];
+        }
+
+        try
+        {
+            var statusFilter = _appSettingsStore.GetLibraryStatusFilter();
+            _selectedLibraryStatusOption = StatusOptions.FirstOrDefault(option => option.Filter == statusFilter)
+                ?? StatusOptions[0];
+        }
+        catch
+        {
+            _selectedLibraryStatusOption = StatusOptions[0];
+        }
+
         _themeService.ApplyTheme(_selectedTheme);
 
         _audioEngine.ProgressChanged += OnProgressChanged;
@@ -256,6 +295,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public IReadOnlyList<LibraryGroupOptionViewModel> LibraryGroupOptions => GroupOptions;
 
+    public IReadOnlyList<LibrarySortOptionViewModel> LibrarySortOptions => SortOptions;
+
+    public IReadOnlyList<LibraryStatusOptionViewModel> LibraryStatusOptions => StatusOptions;
+
     public double MinimumTileWidth => MinimumLibraryTileWidth;
 
     public double MaximumTileWidth => MaximumLibraryTileWidth;
@@ -282,13 +325,21 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool HasLibrarySearchText => !string.IsNullOrWhiteSpace(LibrarySearchText);
 
+    public bool HasLibraryFilters => HasLibrarySearchText
+        || SelectedLibraryStatusOption.Filter != LibraryStatusFilter.All;
+
     public bool HasVisibleLibraryBooks => FilteredLibraryBooks.Count > 0;
 
     public bool IsLibrarySearchEmpty =>
-        HasLibraryBooks && HasLibrarySearchText && !HasVisibleLibraryBooks;
+        HasLibraryBooks && HasLibraryFilters && !HasVisibleLibraryBooks;
 
-    public string LibrarySearchEmptyTitle =>
-        $"No audiobooks match “{LibrarySearchText.Trim()}”";
+    public string LibrarySearchEmptyTitle => HasLibrarySearchText
+        ? $"No audiobooks match “{LibrarySearchText.Trim()}”"
+        : $"No {SelectedLibraryStatusOption.DisplayName.ToLowerInvariant()} audiobooks";
+
+    public string LibrarySearchEmptyDescription => SelectedLibraryStatusOption.Filter == LibraryStatusFilter.All
+        ? "Try fewer words or search another title, author, series, narrator, or filename."
+        : $"Only {SelectedLibraryStatusOption.DisplayName.ToLowerInvariant()} books are shown. Change the status or clear filters to see more books.";
 
     public string WindowTitle => "ListenShelf — Audiobook Player";
 
@@ -316,6 +367,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(IsLibraryListView))]
     [NotifyPropertyChangedFor(nameof(IsLibraryTileView))]
     private LibraryViewMode _selectedLibraryView = LibraryViewMode.List;
+
+    [ObservableProperty]
+    private LibrarySortOptionViewModel _selectedLibrarySortOption = SortOptions[0];
+
+    [ObservableProperty]
+    private LibraryStatusOptionViewModel _selectedLibraryStatusOption = StatusOptions[0];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasLibrarySearchText))]
@@ -595,7 +652,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         ? "1 storage item needs attention"
         : $"{ManagedStorageIssueCount} storage items need attention";
 
-    public string LibraryBookCountText => HasLibrarySearchText
+    public string LibraryBookCountText => HasLibraryFilters
         ? $"{FilteredLibraryBooks.Count} of {LibraryBooks.Count} audiobooks"
         : LibraryBooks.Count == 1
             ? "1 audiobook"
@@ -636,6 +693,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void ShowLibrary()
     {
+        SaveCurrentProgress(force: true);
         RefreshLibrary();
         SelectedSection = AppSection.Library;
     }
@@ -945,6 +1003,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         var restoredGroupMode = _appSettingsStore.GetLibraryGroupMode();
         SelectedLibraryGroupOption = GroupOptions.FirstOrDefault(option =>
             option.Mode == restoredGroupMode) ?? GroupOptions[0];
+        var restoredSortMode = _appSettingsStore.GetLibrarySortMode();
+        SelectedLibrarySortOption = SortOptions.FirstOrDefault(option =>
+            option.Mode == restoredSortMode) ?? SortOptions[0];
+        var restoredStatusFilter = _appSettingsStore.GetLibraryStatusFilter();
+        SelectedLibraryStatusOption = StatusOptions.FirstOrDefault(option =>
+            option.Filter == restoredStatusFilter) ?? StatusOptions[0];
         LibraryTileWidth = Math.Clamp(
             _appSettingsStore.GetLibraryTileWidth(),
             MinimumLibraryTileWidth,
@@ -975,7 +1039,40 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void ClearLibrarySearch() => LibrarySearchText = string.Empty;
 
-    partial void OnLibrarySearchTextChanged(string value) => ApplyLibrarySearch();
+    [RelayCommand]
+    private void ClearLibraryFilters()
+    {
+        LibrarySearchText = string.Empty;
+        SelectedLibraryStatusOption = StatusOptions[0];
+    }
+
+    partial void OnLibrarySearchTextChanged(string value) => ApplyLibraryQuery();
+
+    partial void OnSelectedLibrarySortOptionChanged(LibrarySortOptionViewModel value)
+    {
+        ApplyLibraryQuery();
+        try
+        {
+            _appSettingsStore.SaveLibrarySortMode(value.Mode);
+        }
+        catch (Exception exception)
+        {
+            LibraryStatusMessage = $"Sort order changed for this session, but could not be saved: {exception.Message}";
+        }
+    }
+
+    partial void OnSelectedLibraryStatusOptionChanged(LibraryStatusOptionViewModel value)
+    {
+        ApplyLibraryQuery();
+        try
+        {
+            _appSettingsStore.SaveLibraryStatusFilter(value.Filter);
+        }
+        catch (Exception exception)
+        {
+            LibraryStatusMessage = $"Status filter changed for this session, but could not be saved: {exception.Message}";
+        }
+    }
 
     partial void OnSelectedLibraryGroupOptionChanged(LibraryGroupOptionViewModel value)
     {
@@ -1097,6 +1194,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
             _currentFilePath = Path.GetFullPath(filePath);
             var savedProgress = knownProgress ?? _progressStore.Get(_currentFilePath);
+            _lastSavedProgress = savedProgress;
             _pendingResumePosition = savedProgress?.Position > TimeSpan.Zero
                 ? savedProgress.Position
                 : null;
@@ -1860,6 +1958,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         _audioEngine.Seek(clampedPosition);
+        SaveProgress(clampedPosition, CurrentPlaybackDuration, force: true);
     }
 
     private void ApplyRestoredProgress(PlaybackProgress? progress)
@@ -1926,20 +2025,37 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         var now = DateTimeOffset.UtcNow;
+        var progress = new PlaybackProgress(_currentFilePath, position, duration, now);
+        // Don't leave a book in the wrong status filter until the next timed save.
+        force |= LibraryBookQuery.GetStatus(progress) != LibraryBookQuery.GetStatus(_lastSavedProgress);
         if (!force && now - _lastSavedAtUtc < AutomaticSaveInterval)
+        {
+            return;
+        }
+
+        if (!IsPlaying && _lastSavedProgress is { } previous
+            && PathsEqual(previous.FilePath, _currentFilePath)
+            && previous.Position == position && previous.Duration == duration)
         {
             return;
         }
 
         try
         {
-            _progressStore.Save(new PlaybackProgress(
-                _currentFilePath,
-                position,
-                duration,
-                now));
+            _progressStore.Save(progress);
+            _lastSavedProgress = progress;
             _lastSavedAtUtc = now;
             ProgressText = $"Place saved at {FormatTime(position.TotalSeconds, duration.TotalSeconds)}";
+            var libraryItem = LibraryBooks.FirstOrDefault(book => PathsEqual(book.FilePath, _currentFilePath));
+            if (libraryItem is not null)
+            {
+                libraryItem.UpdateProgress(progress);
+                if (SelectedLibraryStatusOption.Filter != LibraryStatusFilter.All
+                    || SelectedLibrarySortOption.Mode is LibrarySortMode.RecentlyPlayed or LibrarySortMode.Progress)
+                {
+                    ApplyLibraryQuery();
+                }
+            }
         }
         catch (Exception exception)
         {
@@ -1989,17 +2105,29 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
             foreach (var book in books)
             {
+                PlaybackProgress? progress = null;
+                var progressAvailable = true;
+                try
+                {
+                    progress = _progressStore.Get(book.FilePath);
+                }
+                catch
+                {
+                    progressAvailable = false;
+                }
+
                 LibraryBooks.Add(new LibraryBookItemViewModel(
                     book,
-                    GetProgressSummary(book),
+                    progress,
                     LibraryTileWidth,
                     PlayLibraryBookAsync,
                     ChooseCoverAsync,
                     EditMetadataAsync,
-                    RemoveBookAsync));
+                    RemoveBookAsync,
+                    progressAvailable));
             }
 
-            ApplyLibrarySearch();
+            ApplyLibraryQuery();
 
             OnPropertyChanged(nameof(HasLibraryBooks));
             OnPropertyChanged(nameof(IsLibraryEmpty));
@@ -2080,11 +2208,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private void ApplyLibrarySearch()
+    private void ApplyLibraryQuery()
     {
         FilteredLibraryBooks.Clear();
-        foreach (var book in LibraryBooks.Where(book =>
-                     LibraryBookSearch.Matches(book.Book, LibrarySearchText)))
+        var statusFilter = SelectedLibraryStatusOption.Filter;
+        var candidates = LibraryBooks.Where(book =>
+            statusFilter == LibraryStatusFilter.All || book.IsProgressAvailable);
+        foreach (var book in LibraryBookQuery.Apply(
+                     candidates, book => book.Book, book => book.Progress,
+                     LibrarySearchText, statusFilter, SelectedLibrarySortOption.Mode))
         {
             FilteredLibraryBooks.Add(book);
         }
@@ -2093,6 +2225,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(HasVisibleLibraryBooks));
         OnPropertyChanged(nameof(IsLibrarySearchEmpty));
         OnPropertyChanged(nameof(LibrarySearchEmptyTitle));
+        OnPropertyChanged(nameof(LibrarySearchEmptyDescription));
+        OnPropertyChanged(nameof(HasLibraryFilters));
         OnPropertyChanged(nameof(LibraryBookCountText));
     }
 
@@ -2128,17 +2262,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             }
         }
 
+        // Group contents retain the selected book order. A stack is ranked by
+        // its first matching book, so Recent/Progress also reorder the overview.
+        var bookRanks = FilteredLibraryBooks
+            .Select((book, index) => (book.Book.Id, index))
+            .ToDictionary(pair => pair.Id, pair => pair.index);
         var groups = groupedBooks
-            .Select(pair => CreateLibraryGroup(
-                pair.Key,
-                OrderGroupBooks(pair.Value, groupMode).ToArray()));
-        groups = groupMode == LibraryGroupMode.Year
-            ? groups
-                .OrderBy(group => IsFallbackGroup(group.Name))
-                .ThenByDescending(group => ParseYear(group.Name))
-            : groups
-                .OrderBy(group => IsFallbackGroup(group.Name))
-                .ThenBy(group => group.Name, StringComparer.OrdinalIgnoreCase);
+            .Select(pair => CreateLibraryGroup(pair.Key, pair.Value.ToArray()))
+            .OrderBy(group => bookRanks[group.Books[0].Book.Id])
+            .ThenBy(group => group.Name, StringComparer.OrdinalIgnoreCase);
 
         foreach (var group in groups)
         {
@@ -2203,17 +2335,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         return normalized.Length > 0 ? normalized : [GetFallbackGroupName(groupMode)];
     }
 
-    private static IEnumerable<LibraryBookItemViewModel> OrderGroupBooks(
-        IEnumerable<LibraryBookItemViewModel> books,
-        LibraryGroupMode groupMode)
-    {
-        return groupMode == LibraryGroupMode.Series
-            ? books
-                .OrderBy(book => ParseSeriesPosition(book.Book.Metadata.SeriesPosition))
-                .ThenBy(book => book.Title, StringComparer.OrdinalIgnoreCase)
-            : books.OrderBy(book => book.Title, StringComparer.OrdinalIgnoreCase);
-    }
-
     private static string GetFallbackGroupName(LibraryGroupMode groupMode) => groupMode switch
     {
         LibraryGroupMode.Series => "No series",
@@ -2225,26 +2346,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _ => "Other",
     };
 
-    private static bool IsFallbackGroup(string groupName) =>
-        groupName is "No series"
-            or "Unknown author"
-            or "Unknown narrator"
-            or "Uncategorized"
-            or "Unknown publisher"
-            or "Year unknown";
-
-    private static int ParseYear(string value) =>
-        int.TryParse(value, out var year) ? year : int.MinValue;
-
-    private static decimal ParseSeriesPosition(string? value) =>
-        decimal.TryParse(
-            value,
-            System.Globalization.NumberStyles.Number,
-            System.Globalization.CultureInfo.InvariantCulture,
-            out var position)
-                ? position
-                : decimal.MaxValue;
-
     private static bool PathsEqual(string firstPath, string secondPath) =>
         string.Equals(
             Path.GetFullPath(firstPath),
@@ -2252,26 +2353,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             OperatingSystem.IsWindows()
                 ? StringComparison.OrdinalIgnoreCase
                 : StringComparison.Ordinal);
-
-    private string GetProgressSummary(LibraryBook book)
-    {
-        if (!File.Exists(book.FilePath))
-        {
-            return "File missing";
-        }
-
-        try
-        {
-            var progress = _progressStore.Get(book.FilePath);
-            return progress is { Position: var position } && position > TimeSpan.Zero
-                ? $"Resume at {FormatTime(position.TotalSeconds, progress.Duration.TotalSeconds)}"
-                : "Not started";
-        }
-        catch
-        {
-            return "Progress unavailable";
-        }
-    }
 
     private static string BuildImportSummary(
         int addedCount,

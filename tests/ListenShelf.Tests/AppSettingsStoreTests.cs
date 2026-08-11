@@ -16,6 +16,8 @@ public sealed class AppSettingsStoreTests
         Assert.Equal(AppTheme.Dark, store.GetTheme());
         Assert.Equal(LibraryViewMode.List, store.GetLibraryViewMode());
         Assert.Equal(LibraryGroupMode.None, store.GetLibraryGroupMode());
+        Assert.Equal(LibrarySortMode.Title, store.GetLibrarySortMode());
+        Assert.Equal(LibraryStatusFilter.All, store.GetLibraryStatusFilter());
         Assert.Equal(220d, store.GetLibraryTileWidth());
         Assert.Equal(80d, store.GetPlaybackVolume());
         Assert.Equal(1d, store.GetPlaybackRate());
@@ -33,6 +35,8 @@ public sealed class AppSettingsStoreTests
         store.SaveTheme(AppTheme.Light);
         store.SaveLibraryViewMode(LibraryViewMode.Tiles);
         store.SaveLibraryGroupMode(LibraryGroupMode.Author);
+        store.SaveLibrarySortMode(LibrarySortMode.RecentlyPlayed);
+        store.SaveLibraryStatusFilter(LibraryStatusFilter.InProgress);
         store.SaveLibraryTileWidth(275d);
         store.SavePlaybackVolume(64d);
         store.SavePlaybackRate(1.5d);
@@ -45,11 +49,56 @@ public sealed class AppSettingsStoreTests
         Assert.Equal(AppTheme.Light, reloadedStore.GetTheme());
         Assert.Equal(LibraryViewMode.Tiles, reloadedStore.GetLibraryViewMode());
         Assert.Equal(LibraryGroupMode.Author, reloadedStore.GetLibraryGroupMode());
+        Assert.Equal(LibrarySortMode.RecentlyPlayed, reloadedStore.GetLibrarySortMode());
+        Assert.Equal(LibraryStatusFilter.InProgress, reloadedStore.GetLibraryStatusFilter());
         Assert.Equal(275d, reloadedStore.GetLibraryTileWidth());
         Assert.Equal(64d, reloadedStore.GetPlaybackVolume());
         Assert.Equal(1.5d, reloadedStore.GetPlaybackRate());
         Assert.Equal(10, reloadedStore.GetRewindSeconds());
         Assert.Equal(45, reloadedStore.GetForwardSeconds());
+    }
+
+    [Theory]
+    [InlineData("unknown")]
+    [InlineData("999")]
+    [InlineData("")]
+    public void LibraryBrowsing_UsesDefaultsForInvalidStoredValues(string value)
+    {
+        using var workspace = new TestWorkspace();
+        var database = new ListenShelfDatabase(workspace.DatabasePath);
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            INSERT INTO app_settings (setting_key, setting_value)
+            VALUES ('library.sort_mode', $value), ('library.status_filter', $value);
+            """;
+        command.Parameters.AddWithValue("$value", value);
+        command.ExecuteNonQuery();
+
+        var store = new SqliteAppSettingsStore(database);
+        Assert.Equal(LibrarySortMode.Title, store.GetLibrarySortMode());
+        Assert.Equal(LibraryStatusFilter.All, store.GetLibraryStatusFilter());
+        Assert.Throws<ArgumentOutOfRangeException>(() => store.SaveLibrarySortMode((LibrarySortMode)999));
+        Assert.Throws<ArgumentOutOfRangeException>(() => store.SaveLibraryStatusFilter((LibraryStatusFilter)999));
+    }
+
+    [Fact]
+    public void LibraryBrowsing_AllChoicesRoundTrip()
+    {
+        using var workspace = new TestWorkspace();
+        var store = new SqliteAppSettingsStore(new ListenShelfDatabase(workspace.DatabasePath));
+        foreach (var mode in Enum.GetValues<LibrarySortMode>())
+        {
+            store.SaveLibrarySortMode(mode);
+            Assert.Equal(mode, store.GetLibrarySortMode());
+        }
+
+        foreach (var status in Enum.GetValues<LibraryStatusFilter>())
+        {
+            store.SaveLibraryStatusFilter(status);
+            Assert.Equal(status, store.GetLibraryStatusFilter());
+        }
     }
 
     [Theory]

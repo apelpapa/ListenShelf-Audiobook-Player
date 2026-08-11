@@ -70,7 +70,9 @@ public sealed class LibVlcAudioEngine : IAudioEngine
     public string? CurrentFilePath { get; private set; }
 
     public TimeSpan Position =>
-        _restartPosition ?? TimeSpan.FromMilliseconds(Math.Max(0, _mediaPlayer.Time));
+        _restartPosition ?? (_hasReachedEnd
+            ? Duration
+            : TimeSpan.FromMilliseconds(Math.Max(0, _mediaPlayer.Time)));
 
     public TimeSpan Duration
     {

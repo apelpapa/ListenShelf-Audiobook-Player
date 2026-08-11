@@ -86,15 +86,16 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Search by series.
 - [x] Search by narrator.
 - [x] Search by filename.
-- [ ] Sort by title.
-- [ ] Sort by author.
-- [ ] Sort by series order.
-- [ ] Sort by recently played.
-- [ ] Sort by date added.
-- [ ] Sort by listening progress.
-- [ ] Filter books that have not been started.
-- [ ] Filter books that are in progress.
-- [ ] Filter completed books.
+- [x] Sort by title.
+- [x] Sort by author.
+- [x] Sort by series order.
+- [x] Sort by recently played.
+- [x] Sort by date added.
+- [x] Sort by listening progress.
+- [x] Filter books that have not been started.
+- [x] Filter books that are in progress.
+- [x] Filter completed books.
+- [x] Remember sort/status choices and combine them with search, list/tile views, and group stacks.
 
 ### Diagnostics and support
 
@@ -119,7 +120,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 ### Continuous integration
 
-- [x] Add GitHub Actions builds and tests for Windows, macOS, and Linux.
+- [x] Add GitHub Actions builds and tests for Windows, macOS, and Linux (currently manual-only).
 - [x] Add a manual GitHub Actions matrix that compiles, tests, and packages macOS and Linux test builds on native runners.
 - [x] Generate checksums for every packaged artifact.
 - [ ] Keep published source tags synchronized with downloadable builds.
@@ -191,6 +192,10 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [ ] Test clean installation.
 - [ ] Test upgrades from existing alpha data.
 - [ ] Test uninstallation without deleting user data.
+
+### Build automation
+
+- [ ] Re-enable automatic GitHub Actions build-and-test checks on pushes to `main` and pull requests for Windows, macOS, and Linux; the workflow is currently manual-only.
 
 ## P3 — Enhancements
 

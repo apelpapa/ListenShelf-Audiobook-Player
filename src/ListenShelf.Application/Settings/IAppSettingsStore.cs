@@ -14,6 +14,14 @@ public interface IAppSettingsStore
 
     void SaveLibraryGroupMode(LibraryGroupMode groupMode);
 
+    LibrarySortMode GetLibrarySortMode();
+
+    void SaveLibrarySortMode(LibrarySortMode sortMode);
+
+    LibraryStatusFilter GetLibraryStatusFilter();
+
+    void SaveLibraryStatusFilter(LibraryStatusFilter statusFilter);
+
     double GetLibraryTileWidth();
 
     void SaveLibraryTileWidth(double tileWidth);

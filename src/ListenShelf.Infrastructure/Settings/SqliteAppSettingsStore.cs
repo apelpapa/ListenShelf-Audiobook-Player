@@ -9,6 +9,8 @@ public sealed class SqliteAppSettingsStore(ListenShelfDatabase database) : IAppS
     private const string ThemeKey = "appearance.theme";
     private const string LibraryViewModeKey = "library.view_mode";
     private const string LibraryGroupModeKey = "library.group_mode";
+    private const string LibrarySortModeKey = "library.sort_mode";
+    private const string LibraryStatusFilterKey = "library.status_filter";
     private const string LibraryTileWidthKey = "library.tile_width";
     private const string PlaybackVolumeKey = "player.volume";
     private const string PlaybackRateKey = "player.playback_rate";
@@ -141,6 +143,47 @@ public sealed class SqliteAppSettingsStore(ListenShelfDatabase database) : IAppS
             """;
         command.Parameters.AddWithValue("$setting_key", LibraryGroupModeKey);
         command.Parameters.AddWithValue("$setting_value", groupMode.ToString());
+        command.ExecuteNonQuery();
+    }
+
+    public LibrarySortMode GetLibrarySortMode() =>
+        GetEnumSetting(LibrarySortModeKey, LibrarySortMode.Title);
+
+    public void SaveLibrarySortMode(LibrarySortMode sortMode) =>
+        SaveEnumSetting(LibrarySortModeKey, sortMode);
+
+    public LibraryStatusFilter GetLibraryStatusFilter() =>
+        GetEnumSetting(LibraryStatusFilterKey, LibraryStatusFilter.All);
+
+    public void SaveLibraryStatusFilter(LibraryStatusFilter statusFilter) =>
+        SaveEnumSetting(LibraryStatusFilterKey, statusFilter);
+
+    private T GetEnumSetting<T>(string key, T defaultValue) where T : struct, Enum
+    {
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT setting_value FROM app_settings WHERE setting_key = $key;";
+        command.Parameters.AddWithValue("$key", key);
+        return Enum.TryParse<T>(command.ExecuteScalar() as string, ignoreCase: true, out var value)
+            && Enum.IsDefined(value) ? value : defaultValue;
+    }
+
+    private void SaveEnumSetting<T>(string key, T value) where T : struct, Enum
+    {
+        if (!Enum.IsDefined(value))
+        {
+            throw new ArgumentOutOfRangeException(nameof(value));
+        }
+
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            INSERT INTO app_settings (setting_key, setting_value) VALUES ($key, $value)
+            ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value;
+            """;
+        command.Parameters.AddWithValue("$key", key);
+        command.Parameters.AddWithValue("$value", value.ToString());
         command.ExecuteNonQuery();
     }
 

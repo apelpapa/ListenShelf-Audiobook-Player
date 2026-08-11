@@ -90,6 +90,8 @@ public sealed class LibraryBackupServiceTests
         sourceSettings.SaveTheme(AppTheme.Light);
         sourceSettings.SaveRewindSeconds(12);
         sourceSettings.SaveForwardSeconds(90);
+        sourceSettings.SaveLibrarySortMode(LibrarySortMode.SeriesOrder);
+        sourceSettings.SaveLibraryStatusFilter(LibraryStatusFilter.InProgress);
         var backupPath = Path.Combine(
             GetWorkspaceRoot(sourceWorkspace),
             "exports",
@@ -140,6 +142,8 @@ public sealed class LibraryBackupServiceTests
         Assert.Equal(AppTheme.Light, new SqliteAppSettingsStore(target.Database).GetTheme());
         Assert.Equal(12, new SqliteAppSettingsStore(target.Database).GetRewindSeconds());
         Assert.Equal(90, new SqliteAppSettingsStore(target.Database).GetForwardSeconds());
+        Assert.Equal(LibrarySortMode.SeriesOrder, new SqliteAppSettingsStore(target.Database).GetLibrarySortMode());
+        Assert.Equal(LibraryStatusFilter.InProgress, new SqliteAppSettingsStore(target.Database).GetLibraryStatusFilter());
         Assert.True(target.Checker.Check().IsHealthy);
     }
 
