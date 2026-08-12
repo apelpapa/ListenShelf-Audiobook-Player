@@ -6,7 +6,10 @@ public interface IAudiobookLibrary
 
     IReadOnlyList<LibraryBook> GetBooks();
 
-    LibraryImportResult Import(string sourceFilePath);
+    LibraryImportResult Import(
+        string sourceFilePath,
+        IProgress<LibraryImportProgress>? progress = null,
+        CancellationToken cancellationToken = default);
 
     LibraryRemovalResult Remove(Guid bookId);
 

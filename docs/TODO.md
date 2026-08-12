@@ -51,6 +51,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Test library importing.
 - [x] Test duplicate detection.
 - [x] Test managed-copy verification and integrity.
+- [x] Test byte-progress reporting, cancellation during copying and verification, completed-import preservation, cleanup failures, batch summaries, and delayed UI progress updates.
 - [x] Test metadata and cover persistence.
 - [x] Test listening-position persistence.
 - [x] Test global playback-settings persistence.
@@ -77,7 +78,8 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Add a non-blocking Storage Care area with an attention indicator, orphan recovery, and inline-confirmed cleanup.
 - [ ] Persist managed-file checksums and add audiobook corruption detection.
 - [ ] Improve duplicate detection and duplicate-import messages.
-- [ ] Add clear progress and error reporting for large imports.
+- [x] Add clear progress and error reporting for large imports, with copying/verification bytes, book counts, overall progress, and per-file results.
+- [x] Allow safe import cancellation: keep completed books, remove unfinished copies, leave source files untouched, and wait for cleanup on a normal window close.
 
 ### Library search, sorting, and filters
 

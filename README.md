@@ -32,6 +32,16 @@ requires confirmation and permanently deletes its ListenShelf-managed audio,
 cached cover, metadata, bookmarks, and listening progress together; the original
 source file is never a deletion target.
 
+Imports show the current filename, book count, copying and SHA-256 verification
+byte progress, and overall batch progress directly in the Library. **Cancel
+import** stops unfinished work and removes that attempt's partial copy; books
+already added stay in the library and original files remain untouched. A book
+already in the final catalog-save step finishes safely before cancellation takes
+effect. A normal window close waits for that cleanup or final save. A dismissible
+summary lists added, duplicate, failed, canceled, and unprocessed files, with
+per-file details and Storage Care guidance if an unfinished copy could not be
+removed. Playback can continue while importing.
+
 The library includes instant local search across titles, subtitles, authors,
 series, narrators, genres, publishers, identifiers, publication details, and
 filenames. Multiple words can match different fields, and the filtered results

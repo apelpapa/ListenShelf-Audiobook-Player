@@ -102,6 +102,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         SkipSettings = new PlaybackSkipSettingsViewModel(appSettingsStore);
         _themeService = themeService;
         _audiobookLibrary = audiobookLibrary;
+        Imports = new LibraryImportViewModel(audiobookLibrary);
         _bookMetadataEditorService = bookMetadataEditorService;
         _bookmarkEditorService = bookmarkEditorService;
         _bookRemovalConfirmationService = bookRemovalConfirmationService;
@@ -222,6 +223,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         [0.75d, 1d, 1.25d, 1.5d, 1.75d, 2d];
 
     public PlaybackSkipSettingsViewModel SkipSettings { get; }
+
+    public LibraryImportViewModel Imports { get; }
 
     public async Task InitializeAsync()
     {
@@ -410,6 +413,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private bool _isLibraryBusy;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanAddAudiobooks))]
     [NotifyPropertyChangedFor(nameof(CanRunBackupOperation))]
     [NotifyCanExecuteChangedFor(nameof(ExportBackupCommand))]
     [NotifyCanExecuteChangedFor(nameof(ChooseBackupToRestoreCommand))]
@@ -443,6 +447,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private string? _selectedBackupToRestorePath;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanAddAudiobooks))]
     [NotifyPropertyChangedFor(nameof(CanCheckManagedStorage))]
     [NotifyCanExecuteChangedFor(nameof(CheckManagedStorageCommand))]
     private bool _isManagedStorageCheckRunning;
@@ -632,7 +637,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool IsLibraryEmpty => !HasLibraryBooks;
 
-    public bool CanAddAudiobooks => !IsLibraryBusy;
+    public bool CanAddAudiobooks => !IsLibraryBusy && !IsBackupBusy && !IsManagedStorageCheckRunning;
 
     public bool CanRunBackupOperation => !IsLibraryBusy && !IsBackupBusy;
 
@@ -1119,48 +1124,27 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        IsLibraryBusy = true;
         try
         {
             var filePaths = await _filePickerService.PickAudiobookFilesAsync();
-            if (filePaths.Count == 0)
+            if (filePaths.Count == 0 || _disposed)
             {
                 return;
             }
 
-            IsLibraryBusy = true;
-            LibraryStatusMessage =
-                $"Copying {filePaths.Count} audiobook(s) into the library…";
-
-            var addedCount = 0;
-            var existingCount = 0;
-            var failures = new List<string>();
-
-            foreach (var filePath in filePaths)
+            SelectedSection = AppSection.Library;
+            LibraryStatusMessage = "Import in progress — see the progress panel below.";
+            var result = await Imports.ImportAsync(filePaths);
+            if (!_disposed)
             {
-                try
-                {
-                    var result = await Task.Run(() => _audiobookLibrary.Import(filePath));
-                    if (result.WasAdded)
-                    {
-                        addedCount++;
-                    }
-                    else
-                    {
-                        existingCount++;
-                    }
-                }
-                catch (Exception exception)
-                {
-                    failures.Add($"{Path.GetFileName(filePath)}: {exception.Message}");
-                }
+                RefreshLibrary();
+                LibraryStatusMessage = result.Summary;
             }
-
-            RefreshLibrary();
-            LibraryStatusMessage = BuildImportSummary(addedCount, existingCount, failures);
         }
         catch (Exception exception)
         {
-            LibraryStatusMessage = $"Audiobooks could not be selected: {exception.Message}";
+            LibraryStatusMessage = $"Audiobook import could not finish: {exception.Message}";
         }
         finally
         {
@@ -1263,6 +1247,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private async Task ChooseCoverAsync(LibraryBook book)
     {
+        if (IsLibraryBusy || IsBackupBusy)
+        {
+            return;
+        }
+
+        IsLibraryBusy = true;
         try
         {
             var imagePath = await _filePickerService.PickCoverImageAsync();
@@ -1271,7 +1261,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            IsLibraryBusy = true;
             LibraryStatusMessage = $"Adding a cover for {book.Title}…";
 
             using (var image = new Bitmap(imagePath))
@@ -1304,6 +1293,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private async Task EditMetadataAsync(LibraryBook book)
     {
+        if (IsLibraryBusy || IsBackupBusy)
+        {
+            return;
+        }
+
+        IsLibraryBusy = true;
         try
         {
             var suggestions = AudiobookMetadataSuggestions.FromBooks(
@@ -1314,7 +1309,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            IsLibraryBusy = true;
             LibraryStatusMessage = $"Saving details for {book.Title}…";
 
             var updatedBook = await Task.Run(() =>
@@ -1622,6 +1616,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        Imports.CancelCommand.Execute(null);
         SaveCurrentProgress(force: true);
         _disposed = true;
         _sleepTimer.Stop();
@@ -2353,25 +2348,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             OperatingSystem.IsWindows()
                 ? StringComparison.OrdinalIgnoreCase
                 : StringComparison.Ordinal);
-
-    private static string BuildImportSummary(
-        int addedCount,
-        int existingCount,
-        IReadOnlyList<string> failures)
-    {
-        var summary = $"Added {addedCount} audiobook(s).";
-        if (existingCount > 0)
-        {
-            summary += $" {existingCount} already in the library.";
-        }
-
-        if (failures.Count > 0)
-        {
-            summary += $" {failures.Count} failed: {string.Join(" | ", failures)}";
-        }
-
-        return summary;
-    }
 
     private static string FormatTime(double seconds, double totalSeconds)
     {

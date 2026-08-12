@@ -95,8 +95,13 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         return books;
     }
 
-    public LibraryImportResult Import(string sourceFilePath)
+    public LibraryImportResult Import(
+        string sourceFilePath,
+        IProgress<LibraryImportProgress>? progress = null,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        progress?.Report(new LibraryImportProgress(LibraryImportStage.Checking));
         var normalizedSourcePath = NormalizeAudiobookPath(sourceFilePath);
         var sourceFile = new FileInfo(normalizedSourcePath);
         if (!sourceFile.Exists)
@@ -104,7 +109,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             throw new FileNotFoundException("The selected audiobook could not be found.", normalizedSourcePath);
         }
 
-        return ImportManaged(sourceFile);
+        return ImportManaged(sourceFile, progress, cancellationToken);
     }
 
     public LibraryRemovalResult Remove(Guid bookId)
@@ -257,10 +262,14 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             ?? throw new KeyNotFoundException("The selected audiobook is no longer in the library.");
     }
 
-    private LibraryImportResult ImportManaged(FileInfo sourceFile)
+    private LibraryImportResult ImportManaged(
+        FileInfo sourceFile,
+        IProgress<LibraryImportProgress>? progress,
+        CancellationToken cancellationToken)
     {
         var sourceKey = CreatePathKey(sourceFile.FullName);
         var existing = FindBySourceKey(sourceKey);
+        cancellationToken.ThrowIfCancellationRequested();
         if (existing is not null)
         {
             return new LibraryImportResult(existing, WasAdded: false);
@@ -271,11 +280,19 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         var destinationPath = Path.Combine(bookDirectory, sourceFile.Name);
         var temporaryPath = destinationPath + ".importing";
 
-        Directory.CreateDirectory(bookDirectory);
+        if (Directory.Exists(bookDirectory))
+        {
+            throw new IOException("The new managed-book folder already exists. Please try the import again.");
+        }
 
         try
         {
-            CopyAndVerify(sourceFile, temporaryPath);
+            Directory.CreateDirectory(bookDirectory);
+            CopyAndVerify(sourceFile, temporaryPath, progress, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            // This short finalization must complete together. A late cancellation
+            // stops the next file, never deletes a successfully cataloged book.
+            progress?.Report(new LibraryImportProgress(LibraryImportStage.Finalizing));
             File.Move(temporaryPath, destinationPath);
             File.SetLastWriteTimeUtc(destinationPath, sourceFile.LastWriteTimeUtc);
 
@@ -287,29 +304,41 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
                 managedFile.Length,
                 DateTimeOffset.UtcNow);
 
-            try
-            {
-                Insert(book, sourceFile.FullName, sourceKey);
-            }
-            catch
-            {
-                File.Delete(destinationPath);
-                throw;
-            }
+            Insert(book, sourceFile.FullName, sourceKey);
 
             return new LibraryImportResult(book, WasAdded: true);
         }
-        finally
+        catch (Exception importFailure)
         {
-            if (File.Exists(temporaryPath))
+            try
             {
-                File.Delete(temporaryPath);
+                // Only remove this attempt's exact files; never the source or
+                // unrelated folder contents. Preserve a copy if catalog state
+                // cannot be determined safely after an insertion failure.
+                if (File.Exists(temporaryPath))
+                {
+                    File.Delete(temporaryPath);
+                }
+
+                if (File.Exists(destinationPath) && !CatalogContainsBook(bookId))
+                {
+                    File.Delete(destinationPath);
+                }
+
+                if (Directory.Exists(bookDirectory) && !Directory.EnumerateFileSystemEntries(bookDirectory).Any())
+                {
+                    Directory.Delete(bookDirectory);
+                }
+            }
+            catch (Exception cleanupFailure)
+            {
+                throw new IOException(
+                    $"Import stopped: {importFailure.Message} Cleanup could not finish: {cleanupFailure.Message} "
+                    + "A leftover managed copy may remain; check Storage Care. The original file was not changed.",
+                    importFailure);
             }
 
-            if (Directory.Exists(bookDirectory) && !Directory.EnumerateFileSystemEntries(bookDirectory).Any())
-            {
-                Directory.Delete(bookDirectory);
-            }
+            throw;
         }
     }
 
@@ -689,9 +718,15 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         return pendingRemovals;
     }
 
-    private static void CopyAndVerify(FileInfo sourceFile, string temporaryPath)
+    private static void CopyAndVerify(
+        FileInfo sourceFile,
+        string temporaryPath,
+        IProgress<LibraryImportProgress>? progress,
+        CancellationToken cancellationToken)
     {
         byte[] sourceHash;
+        var expectedLength = sourceFile.Length;
+        var buffer = new byte[1024 * 1024];
 
         using (var source = new FileStream(
                    sourceFile.FullName,
@@ -705,28 +740,58 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
                    FileShare.None))
         {
             using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-            var buffer = new byte[1024 * 1024];
+            var processed = 0L;
             int bytesRead;
+            progress?.Report(new LibraryImportProgress(LibraryImportStage.Copying, 0, expectedLength));
 
-            while ((bytesRead = source.Read(buffer, 0, buffer.Length)) > 0)
+            while (true)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+                bytesRead = source.Read(buffer, 0, buffer.Length);
+                if (bytesRead == 0)
+                {
+                    break;
+                }
+
                 destination.Write(buffer, 0, bytesRead);
                 hash.AppendData(buffer, 0, bytesRead);
+                processed += bytesRead;
+                progress?.Report(new LibraryImportProgress(LibraryImportStage.Copying, processed, expectedLength));
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             destination.Flush(flushToDisk: true);
             sourceHash = hash.GetHashAndReset();
         }
 
         var copiedLength = new FileInfo(temporaryPath).Length;
-        if (copiedLength != sourceFile.Length)
+        if (copiedLength != expectedLength)
         {
             throw new IOException(
-                $"The managed copy was incomplete: expected {sourceFile.Length} bytes but copied {copiedLength} bytes.");
+                $"The managed copy was incomplete: expected {expectedLength} bytes but copied {copiedLength} bytes.");
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
+        progress?.Report(new LibraryImportProgress(LibraryImportStage.Verifying, 0, expectedLength));
         using var copiedFile = File.OpenRead(temporaryPath);
-        var copiedHash = SHA256.HashData(copiedFile);
+        using var verificationHash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        var verified = 0L;
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var bytesRead = copiedFile.Read(buffer, 0, buffer.Length);
+            if (bytesRead == 0)
+            {
+                break;
+            }
+
+            verificationHash.AppendData(buffer, 0, bytesRead);
+            verified += bytesRead;
+            progress?.Report(new LibraryImportProgress(LibraryImportStage.Verifying, verified, expectedLength));
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        var copiedHash = verificationHash.GetHashAndReset();
         if (!CryptographicOperations.FixedTimeEquals(sourceHash, copiedHash))
         {
             throw new IOException("The managed copy failed its SHA-256 verification check.");

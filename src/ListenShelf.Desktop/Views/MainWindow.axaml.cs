@@ -12,6 +12,7 @@ namespace ListenShelf.Desktop.Views
         private readonly IGlobalMediaKeyService _mediaKeyService =
             GlobalMediaKeyServiceFactory.Create();
         private MainWindowViewModel? _viewModel;
+        private bool _waitingForImportToClose;
 
         public MainWindow()
         {
@@ -19,6 +20,36 @@ namespace ListenShelf.Desktop.Views
             DataContextChanged += OnDataContextChanged;
             Opened += OnOpened;
             Closed += OnClosed;
+        }
+
+        protected override async void OnClosing(WindowClosingEventArgs e)
+        {
+            base.OnClosing(e);
+            if (e.Cancel || _viewModel?.Imports.IsRunning != true)
+            {
+                return;
+            }
+
+            e.Cancel = true;
+            if (_waitingForImportToClose)
+            {
+                return;
+            }
+
+            _waitingForImportToClose = true;
+            try
+            {
+                await _viewModel.Imports.CancelAndWaitAsync();
+                Close();
+            }
+            catch (Exception exception)
+            {
+                _viewModel.LibraryStatusMessage = $"Import could not finish closing safely: {exception.Message}";
+            }
+            finally
+            {
+                _waitingForImportToClose = false;
+            }
         }
 
         protected override void OnKeyDown(KeyEventArgs e)
