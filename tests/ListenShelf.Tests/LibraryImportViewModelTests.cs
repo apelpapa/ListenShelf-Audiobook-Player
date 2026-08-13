@@ -96,6 +96,39 @@ public sealed class LibraryImportViewModelTests
         }
     }
 
+    [Theory]
+    [InlineData(LibraryImportStage.Fingerprinting, "Checking audiobook fingerprint")]
+    [InlineData(LibraryImportStage.Comparing, "Comparing with Existing")]
+    public async Task DuplicateChecks_ShowProgressAndRemainCancelable(LibraryImportStage stage, string label)
+    {
+        using var workspace = new TestWorkspace();
+        var inner = CreateLibrary(workspace);
+        var bytes = new byte[2 * 1024 * 1024];
+        inner.Import(workspace.CreateSourceFile("Existing.m4b", bytes));
+        var source = workspace.CreateSourceFile("Renamed.m4b", bytes);
+        using var library = new GatedLibrary(inner, source, stage);
+        var model = new LibraryImportViewModel(library, action => action());
+        var import = model.ImportAsync([source]);
+        try
+        {
+            await library.ReachedGate.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Equal(label, model.StageText);
+            Assert.Contains("of 2 MB", model.ByteProgressText);
+            Assert.False(model.IsStageIndeterminate);
+            var cancel = model.CancelAndWaitAsync();
+            library.Release();
+            await cancel.WaitAsync(TimeSpan.FromSeconds(10));
+            Assert.Equal(1, (await import).CanceledCount);
+            Assert.Single(inner.GetBooks());
+            Assert.True(File.Exists(source));
+        }
+        finally
+        {
+            library.Release();
+            await import.WaitAsync(TimeSpan.FromSeconds(10));
+        }
+    }
+
     [Fact]
     public async Task DelayedProgress_CannotOverwriteCompletedResultsOrTheNextBatch()
     {

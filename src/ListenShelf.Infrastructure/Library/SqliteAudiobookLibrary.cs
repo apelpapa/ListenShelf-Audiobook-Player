@@ -7,7 +7,7 @@ using Microsoft.Data.Sqlite;
 
 namespace ListenShelf.Infrastructure.Library;
 
-public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
+public sealed partial class SqliteAudiobookLibrary : IAudiobookLibrary
 {
     private const string RemovalStagingDirectoryName = ".removing";
 
@@ -109,6 +109,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
             throw new FileNotFoundException("The selected audiobook could not be found.", normalizedSourcePath);
         }
 
+        using var importLock = AcquireImportLock(progress, cancellationToken);
         return ImportManaged(sourceFile, progress, cancellationToken);
     }
 
@@ -267,13 +268,27 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         IProgress<LibraryImportProgress>? progress,
         CancellationToken cancellationToken)
     {
-        var sourceKey = CreatePathKey(sourceFile.FullName);
-        var existing = FindBySourceKey(sourceKey);
         cancellationToken.ThrowIfCancellationRequested();
-        if (existing is not null)
+        var sourceKey = CreatePathKey(sourceFile.FullName);
+        // Keep the source read-locked on Windows through duplicate checks and
+        // copying so another program cannot swap its contents between stages.
+        using var sourceGuard = new FileStream(sourceFile.FullName, FileMode.Open, FileAccess.Read, FileShare.Read);
+        sourceFile.Refresh();
+        var candidates = GetFingerprintCandidates(sourceFile.Length);
+        string? checkedHash = null;
+        if (candidates.Count > 0)
         {
-            return new LibraryImportResult(existing, WasAdded: false);
+            checkedHash = ReadFingerprint(sourceFile.FullName, sourceFile.Length,
+                LibraryImportStage.Fingerprinting, progress, cancellationToken);
+            var existing = FindContentDuplicate(candidates, checkedHash, progress, cancellationToken);
+            if (existing is not null)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return new LibraryImportResult(existing, WasAdded: false);
+            }
         }
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         var bookId = Guid.NewGuid();
         var bookDirectory = Path.Combine(ManagedLibraryPath, bookId.ToString("N"));
@@ -288,7 +303,11 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         try
         {
             Directory.CreateDirectory(bookDirectory);
-            CopyAndVerify(sourceFile, temporaryPath, progress, cancellationToken);
+            var contentHash = CopyAndVerify(sourceFile, temporaryPath, progress, cancellationToken);
+            if (checkedHash is not null && checkedHash != contentHash)
+            {
+                throw new IOException("The source audiobook changed during import. Please try again when it is no longer being edited.");
+            }
             cancellationToken.ThrowIfCancellationRequested();
             // This short finalization must complete together. A late cancellation
             // stops the next file, never deletes a successfully cataloged book.
@@ -304,7 +323,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
                 managedFile.Length,
                 DateTimeOffset.UtcNow);
 
-            Insert(book, sourceFile.FullName, sourceKey);
+            Insert(book, sourceFile.FullName, sourceKey, contentHash);
 
             return new LibraryImportResult(book, WasAdded: true);
         }
@@ -718,7 +737,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         return pendingRemovals;
     }
 
-    private static void CopyAndVerify(
+    private static string CopyAndVerify(
         FileInfo sourceFile,
         string temporaryPath,
         IProgress<LibraryImportProgress>? progress,
@@ -796,10 +815,9 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         {
             throw new IOException("The managed copy failed its SHA-256 verification check.");
         }
-    }
 
-    private LibraryBook? FindBySourceKey(string sourceKey) =>
-        Find("source_key", sourceKey);
+        return Convert.ToHexString(copiedHash);
+    }
 
     private LibraryBook? FindById(Guid bookId) =>
         Find("book_id", bookId.ToString("D"));
@@ -825,7 +843,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         return reader.Read() ? ReadBook(reader) : null;
     }
 
-    private void Insert(LibraryBook book, string sourcePath, string? sourceKey)
+    private void Insert(LibraryBook book, string sourcePath, string? sourceKey, string contentHash)
     {
         var normalizedFilePath = Path.GetFullPath(book.FilePath);
 
@@ -841,6 +859,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
                 storage_mode,
                 source_path,
                 source_key,
+                content_sha256,
                 file_size_bytes,
                 added_utc,
                 cover_path,
@@ -870,6 +889,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
                 $storage_mode,
                 $source_path,
                 $source_key,
+                $content_sha256,
                 $file_size_bytes,
                 $added_utc,
                 $cover_path,
@@ -899,6 +919,7 @@ public sealed class SqliteAudiobookLibrary : IAudiobookLibrary
         command.Parameters.AddWithValue("$storage_mode", "Managed");
         command.Parameters.AddWithValue("$source_path", sourcePath);
         command.Parameters.AddWithValue("$source_key", (object?)sourceKey ?? DBNull.Value);
+        command.Parameters.AddWithValue("$content_sha256", contentHash);
         command.Parameters.AddWithValue("$file_size_bytes", book.FileSizeBytes);
         command.Parameters.AddWithValue(
             "$added_utc",

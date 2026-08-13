@@ -175,10 +175,12 @@ public sealed partial class LibraryImportViewModel : ViewModelBase
         StagePercentage = update.FileProgress.StageFraction * 100d;
         StageText = update.FileProgress.Stage switch
         {
+            LibraryImportStage.Fingerprinting => "Checking audiobook fingerprint",
+            LibraryImportStage.Comparing => $"Comparing with {update.FileProgress.Detail}",
             LibraryImportStage.Copying => "Copying",
             LibraryImportStage.Verifying => "Verifying SHA-256",
             LibraryImportStage.Finalizing => "Saving to library",
-            _ => "Checking file and duplicates",
+            _ => update.FileProgress.Detail ?? "Checking file and duplicates",
         };
         IsStageIndeterminate = update.FileProgress.Stage is LibraryImportStage.Checking or LibraryImportStage.Finalizing;
         ByteProgressText = IsStageIndeterminate ? string.Empty
@@ -201,17 +203,20 @@ public sealed partial class LibraryImportViewModel : ViewModelBase
         private long _lastReport;
         private int _fileNumber;
         private LibraryImportStage? _stage;
+        private string? _detail;
 
         public void Report(LibraryImportBatchProgress value)
         {
             var now = Stopwatch.GetTimestamp();
             if (value.CompletedFile is not null || value.FileNumber != _fileNumber
                 || value.FileProgress.Stage != _stage || value.FileProgress.StageFraction >= 1
+                || value.FileProgress.Detail != _detail
                 || Stopwatch.GetElapsedTime(_lastReport, now) >= TimeSpan.FromMilliseconds(100))
             {
                 _lastReport = now;
                 _fileNumber = value.FileNumber;
                 _stage = value.FileProgress.Stage;
+                _detail = value.FileProgress.Detail;
                 report(value);
             }
         }

@@ -5,12 +5,13 @@ namespace ListenShelf.Infrastructure.Storage;
 
 public sealed class ListenShelfDatabase
 {
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
 
     private static readonly DatabaseMigration[] Migrations =
     [
         new(1, "Create current ListenShelf schema", ApplyCurrentSchema),
         new(2, "Remove retired library mode setting", RemoveRetiredLibraryModeSetting),
+        new(3, "Add managed audiobook content fingerprints", AddContentFingerprints),
     ];
 
     private readonly string _connectionString;
@@ -372,6 +373,22 @@ public sealed class ListenShelfDatabase
         command.ExecuteNonQuery();
     }
 
+    private static void AddContentFingerprints(SqliteConnection connection, SqliteTransaction transaction)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText =
+            """
+            ALTER TABLE library_books ADD COLUMN content_sha256 TEXT NULL
+                CHECK (content_sha256 IS NULL OR
+                    (length(content_sha256) = 64 AND content_sha256 NOT GLOB '*[^0-9A-F]*'));
+            DROP INDEX IF EXISTS ux_library_books_managed_source;
+            CREATE INDEX ix_library_books_content ON library_books(file_size_bytes, content_sha256)
+                WHERE storage_mode = 'Managed';
+            """;
+        command.ExecuteNonQuery();
+    }
+
     private static void EnsureColumn(
         SqliteConnection connection,
         SqliteTransaction transaction,
@@ -494,6 +511,7 @@ public sealed class ListenShelfDatabase
             "source_path",
             "source_key",
             "file_size_bytes",
+            "content_sha256",
             "added_utc",
             "cover_path",
             "subtitle",

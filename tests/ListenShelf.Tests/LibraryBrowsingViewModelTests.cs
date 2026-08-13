@@ -162,7 +162,7 @@ public sealed class LibraryBrowsingViewModelTests
 
         void Add(string title, string series, string number, int? position, int day)
         {
-            var book = library.Import(workspace.CreateSourceFile($"{title}.m4b", [1, 2, 3])).Book;
+            var book = library.Import(workspace.CreateSourceFile($"{title}.m4b", System.Text.Encoding.UTF8.GetBytes(title))).Book;
             library.UpdateMetadata(book.Id, new AudiobookMetadata
             {
                 Title = title,

@@ -64,7 +64,8 @@ public sealed class LibraryImportBatch(IAudiobookLibrary library)
                 fileResult = new LibraryImportFileResult(filePath,
                     result.WasAdded ? LibraryImportOutcome.Added : LibraryImportOutcome.AlreadyInLibrary,
                     result.WasAdded ? "Copied, verified, and added to the library."
-                        : "This source location is already in the library; no extra copy was made.");
+                        : $"Identical file already in library: \"{result.Book.Title}\" ({Path.GetFileName(result.Book.FilePath)}). "
+                            + "Existing details, bookmarks, and listening position were kept; no extra copy was made.");
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

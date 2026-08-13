@@ -50,6 +50,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Test damaged-database preservation, managed-catalog rebuilding, and recovery-mode backup restore.
 - [x] Test library importing.
 - [x] Test duplicate detection.
+- [x] Test content-based duplicates across names and folders, legacy fingerprints, same-path replacement, listening-data preservation, cancellation, concurrent imports, migrations, and backup restore.
 - [x] Test managed-copy verification and integrity.
 - [x] Test byte-progress reporting, cancellation during copying and verification, completed-import preservation, cleanup failures, batch summaries, and delayed UI progress updates.
 - [x] Test metadata and cover persistence.
@@ -76,8 +77,9 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Remove a book by deleting its catalog entry, managed audiobook copy, cached cover, metadata, bookmarks, and listening progress as one confirmed operation.
 - [x] Add a read-only managed-storage integrity check for missing, unreferenced, unsafe, and stale import paths.
 - [x] Add a non-blocking Storage Care area with an attention indicator, orphan recovery, and inline-confirmed cleanup.
-- [ ] Persist managed-file checksums and add audiobook corruption detection.
-- [ ] Improve duplicate detection and duplicate-import messages.
+- [x] Persist SHA-256 fingerprints for verified imports and fingerprint older same-sized candidate books on demand.
+- [ ] Add an explicit managed-audiobook corruption scan in Storage Care using saved fingerprints.
+- [x] Detect byte-identical duplicate imports regardless of filename or location and identify the existing book without changing its listening data.
 - [x] Add clear progress and error reporting for large imports, with copying/verification bytes, book counts, overall progress, and per-file results.
 - [x] Allow safe import cancellation: keep completed books, remove unfinished copies, leave source files untouched, and wait for cleanup on a normal window close.
 

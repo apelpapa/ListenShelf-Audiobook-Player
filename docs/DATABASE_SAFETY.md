@@ -26,6 +26,15 @@ running application supports is never downgraded or modified; the user must
 install a compatible newer ListenShelf build or explicitly restore an older
 backup.
 
+Schema version 3 adds a nullable `content_sha256` fingerprint to managed books.
+It removes the unique source-path index because a source filename can later hold
+a different recording. The migration changes no audiobook files or existing
+catalog entries and does not hash the library during startup. Verified new
+imports save their SHA-256; older entries acquire one on demand when a same-sized
+import needs comparison. Saved fingerprints travel with local database backups.
+Existing duplicate entries remain intact, and a saved fingerprint is not silently
+replaced when a managed file no longer matches it.
+
 ## Startup failure categories
 
 The normal library window is only created after database initialization

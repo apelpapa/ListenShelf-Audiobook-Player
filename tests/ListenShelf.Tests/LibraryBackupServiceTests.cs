@@ -145,6 +145,16 @@ public sealed class LibraryBackupServiceTests
         Assert.Equal(LibrarySortMode.SeriesOrder, new SqliteAppSettingsStore(target.Database).GetLibrarySortMode());
         Assert.Equal(LibraryStatusFilter.InProgress, new SqliteAppSettingsStore(target.Database).GetLibraryStatusFilter());
         Assert.True(target.Checker.Check().IsHealthy);
+        using var restoredConnection = target.Database.OpenConnection();
+        using var fingerprintCommand = restoredConnection.CreateCommand();
+        fingerprintCommand.CommandText = "SELECT content_sha256 FROM library_books;";
+        Assert.Equal(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(audioContents)),
+            fingerprintCommand.ExecuteScalar());
+        var renamedDuplicate = targetWorkspace.CreateSourceFile("Renamed after restore.mp3", audioContents);
+        var duplicate = target.Library.Import(renamedDuplicate);
+        Assert.False(duplicate.WasAdded);
+        Assert.Equal(restoredBook.Id, duplicate.Book.Id);
+        Assert.Equal(TimeSpan.FromMinutes(12), new SqlitePlaybackProgressStore(target.Database).Get(restoredBook.FilePath)!.Position);
     }
 
     [Fact]

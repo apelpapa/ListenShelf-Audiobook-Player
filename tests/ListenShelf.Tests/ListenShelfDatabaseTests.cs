@@ -185,6 +185,88 @@ public sealed class ListenShelfDatabaseTests
             SearchOption.AllDirectories).Any());
     }
 
+    [Fact]
+    public void VersionTwoMigration_AddsNullableFingerprintsWithoutScanningOrChangingBooks()
+    {
+        using var workspace = new TestWorkspace();
+        var previous = CreateVersionTwoFixture(workspace);
+        var originalBook = Assert.Single(new SqliteAudiobookLibrary(previous, workspace.ManagedLibraryPath).GetBooks());
+
+        var upgraded = new ListenShelfDatabase(workspace.DatabasePath);
+
+        Assert.Equal(3, upgraded.SchemaVersion);
+        Assert.NotNull(upgraded.MigrationSafetyCopyPath);
+        using var connection = upgraded.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT content_sha256 FROM library_books;";
+        Assert.Equal(DBNull.Value, command.ExecuteScalar());
+        var book = Assert.Single(new SqliteAudiobookLibrary(upgraded, workspace.ManagedLibraryPath).GetBooks());
+        Assert.Equal(originalBook.Id, book.Id);
+        Assert.Equal(originalBook.Title, book.Title);
+        Assert.Equal(originalBook.FilePath, book.FilePath);
+        Assert.Equal(new byte[] { 1, 2, 3 }, File.ReadAllBytes(book.FilePath));
+        using var preserved = OpenRawDatabase(upgraded.MigrationSafetyCopyPath!);
+        using var preservedCommand = preserved.CreateCommand();
+        preservedCommand.CommandText = "PRAGMA user_version;";
+        Assert.Equal(2L, preservedCommand.ExecuteScalar());
+        preservedCommand.CommandText = "SELECT COUNT(*) FROM pragma_table_info('library_books') WHERE name = 'content_sha256';";
+        Assert.Equal(0L, preservedCommand.ExecuteScalar());
+        Assert.Null(new ListenShelfDatabase(workspace.DatabasePath).MigrationSafetyCopyPath);
+    }
+
+    [Fact]
+    public void FingerprintMigrationFailure_RollsBackColumnIndexAndVersionChanges()
+    {
+        using var workspace = new TestWorkspace();
+        var previous = CreateVersionTwoFixture(workspace);
+        using (var connection = previous.OpenConnection())
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText =
+                """
+                CREATE TRIGGER reject_fingerprint_migration BEFORE INSERT ON schema_migrations
+                WHEN NEW.version = 3
+                BEGIN SELECT RAISE(ABORT, 'Test migration failure'); END;
+                """;
+            command.ExecuteNonQuery();
+        }
+
+        var error = Assert.Throws<ListenShelfDatabaseException>(() => new ListenShelfDatabase(workspace.DatabasePath));
+
+        Assert.Equal(ListenShelfDatabaseFailureKind.MigrationFailed, error.Kind);
+        using var verify = previous.OpenConnection();
+        using var check = verify.CreateCommand();
+        check.CommandText = "PRAGMA user_version;";
+        Assert.Equal(2L, check.ExecuteScalar());
+        check.CommandText = "SELECT COUNT(*) FROM pragma_table_info('library_books') WHERE name = 'content_sha256';";
+        Assert.Equal(0L, check.ExecuteScalar());
+        check.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE name = 'ux_library_books_managed_source';";
+        Assert.Equal(1L, check.ExecuteScalar());
+        check.CommandText = "SELECT COUNT(*) FROM library_books;";
+        Assert.Equal(1L, check.ExecuteScalar());
+    }
+
+    private static ListenShelfDatabase CreateVersionTwoFixture(TestWorkspace workspace)
+    {
+        var database = new ListenShelfDatabase(workspace.DatabasePath);
+        var library = new SqliteAudiobookLibrary(database, workspace.ManagedLibraryPath);
+        library.Import(workspace.CreateSourceFile("Existing v2 book.m4b", [1, 2, 3]));
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        // Reconstruct the released v2 shape in this isolated test database only.
+        command.CommandText =
+            """
+            DROP INDEX ix_library_books_content;
+            ALTER TABLE library_books DROP COLUMN content_sha256;
+            CREATE UNIQUE INDEX ux_library_books_managed_source ON library_books(source_key)
+                WHERE source_key IS NOT NULL;
+            DELETE FROM schema_migrations WHERE version = 3;
+            PRAGMA user_version = 2;
+            """;
+        command.ExecuteNonQuery();
+        return database;
+    }
+
     private static void CreateLegacyDatabase(string databasePath)
     {
         Directory.CreateDirectory(

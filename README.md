@@ -26,13 +26,16 @@ The preliminary Windows app has Library, Player, Storage Care, and Settings sect
 ListenShelf maintains one application-managed library: adding an audiobook
 creates a SHA-256-verified copy in ListenShelf's library while leaving the
 original source file untouched. Library entries support editable book details
-and locally cached PNG, JPEG, or WebP covers, and repeat imports from the same
-source location are detected instead of creating another copy. Removing a book
+and locally cached PNG, JPEG, or WebP covers. Byte-identical audiobooks are
+recognized by SHA-256 even after renaming or moving the source file; duplicate
+imports identify the existing book and keep its metadata and listening data
+without creating another copy. Different bytes, including different recordings,
+remain separate even if the title or source filename is the same. Removing a book
 requires confirmation and permanently deletes its ListenShelf-managed audio,
 cached cover, metadata, bookmarks, and listening progress together; the original
 source file is never a deletion target.
 
-Imports show the current filename, book count, copying and SHA-256 verification
+Imports show the current filename, book count, fingerprint checks, copying and SHA-256 verification
 byte progress, and overall batch progress directly in the Library. **Cancel
 import** stops unfinished work and removes that attempt's partial copy; books
 already added stay in the library and original files remain untouched. A book
@@ -41,6 +44,14 @@ effect. A normal window close waits for that cleanup or final save. A dismissibl
 summary lists added, duplicate, failed, canceled, and unprocessed files, with
 per-file details and Storage Care guidance if an unfinished copy could not be
 removed. Playback can continue while importing.
+
+Fingerprints are saved with newly verified imports. Older books are fingerprinted
+on demand only when their recorded size matches an incoming file, not during
+startup. An existing fingerprint match is checked against the managed file
+before skipping the import. Missing, unreadable, or changed candidate files
+produce a clear error instead of claiming a healthy duplicate. Existing duplicate
+catalog entries are not automatically merged or deleted. This is exact-file
+matching, not audio similarity: retagging or re-encoding a file changes its bytes.
 
 The library includes instant local search across titles, subtitles, authors,
 series, narrators, genres, publishers, identifiers, publication details, and
