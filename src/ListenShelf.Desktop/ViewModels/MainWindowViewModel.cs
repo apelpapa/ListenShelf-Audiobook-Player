@@ -92,7 +92,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IBookRemovalConfirmationService bookRemovalConfirmationService,
         IManagedLibraryIntegrityChecker managedLibraryIntegrityChecker,
         IManagedLibraryMaintenance managedLibraryMaintenance,
-        ILibraryBackupService libraryBackupService)
+        ILibraryBackupService libraryBackupService,
+        IManagedFileVerifier managedFileVerifier)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
@@ -103,6 +104,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _themeService = themeService;
         _audiobookLibrary = audiobookLibrary;
         Imports = new LibraryImportViewModel(audiobookLibrary);
+        Verification = new ManagedFileVerificationViewModel(managedFileVerifier,
+            TryBeginFileVerification, () => IsLibraryBusy = false);
+        Verification.PropertyChanged += OnVerificationPropertyChanged;
         _bookMetadataEditorService = bookMetadataEditorService;
         _bookmarkEditorService = bookmarkEditorService;
         _bookRemovalConfirmationService = bookRemovalConfirmationService;
@@ -225,6 +229,29 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public PlaybackSkipSettingsViewModel SkipSettings { get; }
 
     public LibraryImportViewModel Imports { get; }
+
+    public ManagedFileVerificationViewModel Verification { get; }
+
+    private bool TryBeginFileVerification()
+    {
+        if (_disposed || !CanAddAudiobooks) return false;
+        IsLibraryBusy = true;
+        return true;
+    }
+
+    private void OnVerificationPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(Verification.HasProblems)) OnPropertyChanged(nameof(HasStorageAttention));
+    }
+
+    partial void OnIsLibraryBusyChanged(bool value) => UpdateVerificationAvailability();
+    partial void OnIsBackupBusyChanged(bool value) => UpdateVerificationAvailability();
+    partial void OnIsManagedStorageCheckRunningChanged(bool value) => UpdateVerificationAvailability();
+
+    private void UpdateVerificationAvailability()
+    {
+        if (Verification is not null) Verification.IsAvailable = CanAddAudiobooks && !_disposed;
+    }
 
     public async Task InitializeAsync()
     {
@@ -458,6 +485,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasManagedStorageIssues))]
+    [NotifyPropertyChangedFor(nameof(HasStorageAttention))]
     [NotifyPropertyChangedFor(nameof(IsManagedStorageHealthy))]
     [NotifyPropertyChangedFor(nameof(ManagedStorageAttentionText))]
     private int _managedStorageIssueCount;
@@ -650,6 +678,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool HasManagedStorageIssues => ManagedStorageIssueCount > 0;
 
+    public bool HasStorageAttention => HasManagedStorageIssues || Verification.HasProblems;
+
     public bool IsManagedStorageHealthy =>
         HasManagedStorageBeenChecked && !HasManagedStorageIssues;
 
@@ -676,7 +706,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public string PageSubtitle => SelectedSection switch
     {
         AppSection.Player => "Listen locally with automatic progress saving.",
-        AppSection.StorageCare => "Recover useful orphaned audiobooks or clean up unneeded storage.",
+        AppSection.StorageCare => "Verify audiobook files, recover useful orphans, and manage storage.",
         AppSection.Settings => "Personalize ListenShelf.",
         _ => "Your audiobooks, series, and collections will live here.",
     };
@@ -943,6 +973,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             var result = await Task.Run(() =>
                 _libraryBackupService.Restore(backupPath, progress));
             restoreApplied = true;
+            Verification.ClearResults();
 
             ReloadPreferencesAfterRestore();
             RefreshLibrary();
@@ -1617,6 +1648,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         Imports.CancelCommand.Execute(null);
+        Verification.CancelCommand.Execute(null);
+        Verification.PropertyChanged -= OnVerificationPropertyChanged;
         SaveCurrentProgress(force: true);
         _disposed = true;
         _sleepTimer.Stop();
@@ -2095,6 +2128,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         try
         {
             var books = _audiobookLibrary.GetBooks();
+            Verification.UpdateBooks(books);
             DisposeLibraryItems();
             LibraryBooks.Clear();
 

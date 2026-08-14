@@ -79,6 +79,21 @@ otherwise it verifies a new managed copy before removing the oddly placed
 orphan. ListenShelf refuses cleanup requests outside managed storage, against
 a cataloged audiobook, or through a filesystem link or junction.
 
+Storage Care also includes **Verify library files**, a separate manual check for
+one selected book or the entire managed library. It compares file contents with
+saved SHA-256 fingerprints and reports **Verified unchanged**, **Changed**,
+**Missing**, **Unreadable**, or **No verification baseline**. A changed file may
+reflect corruption or an external edit; an unchanged fingerprint is not a test
+of audio playability. Older or recovered books with no fingerprint are never
+claimed to be verified, and scanning does not create or replace their baselines.
+Scans show byte and batch progress, can be canceled, and retain completed results.
+Findings remain visible in Storage Care for the current session; checking another
+book or canceling does not clear an earlier finding. Results are dated snapshots,
+not continuous monitoring. Playback remains available, while conflicting imports,
+removals, backups, and recovery operations are unavailable until the scan ends. A normal
+window close cancels the scan and waits for its file handles to close. No scan
+runs automatically at startup, and verification never deletes or repairs files.
+
 Managed-book editing includes an optional [Open Library](https://openlibrary.org/) lookup. Searches are sent directly from the desktop app with no ListenShelf account or central server; only the text entered in the search box is transmitted. The user chooses a result, reviews the populated fields, and decides whether an available cover should be saved into ListenShelf's local cover cache. Manual metadata remains editable and audiobook-specific fields are not replaced by print-book search results.
 
 The player supports local `.m4b`, `.m4a`, and `.mp3` audiobooks and provides play/pause, seeking, configurable rewind and forward intervals, playback-speed selection, volume, elapsed/remaining time, a sleep timer, and automatic per-file position persistence in a local SQLite database. Per-audiobook bookmarks can save the current timestamp with an optional name and note, retain the chapter context, and later be jumped to, edited, or deleted without modifying the audiobook file. Playback speed, volume, and skip intervals are remembered globally between launches. Under **Settings → Playback**, rewind and forward can each be set to 1–600 whole seconds; the defaults remain 15 seconds backward and 30 seconds forward. These intervals apply immediately to player buttons, keyboard shortcuts, and Windows headphone/media controls. On startup, ListenShelf restores those player settings, loads the most recently played available audiobook at its saved position, and opens the Player without starting playback. Space or K toggles playback, Left Arrow or J rewinds, and Right Arrow or L moves forward. On Windows, keyboard, headset, and other media buttons continue to control the loaded book while ListenShelf is minimized. When a file contains embedded chapters, ListenShelf discovers them during loading so the chapter selector and previous/next controls are ready before Play, tracks the current chapter, and provides direct chapter navigation.

@@ -40,7 +40,8 @@ public sealed class PlaybackSkipCommandTests
             bookRemovalConfirmationService: null!,
             managedLibraryIntegrityChecker: null!,
             managedLibraryMaintenance: null!,
-            libraryBackupService: null!);
+            libraryBackupService: null!,
+            managedFileVerifier: null!);
         viewModel.IsFileLoaded = true;
 
         Skip();

@@ -52,6 +52,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Test duplicate detection.
 - [x] Test content-based duplicates across names and folders, legacy fingerprints, same-path replacement, listening-data preservation, cancellation, concurrent imports, migrations, and backup restore.
 - [x] Test managed-copy verification and integrity.
+- [x] Test manual file verification for single books and full libraries, read-only behavior, missing/changed/unreadable files, absent baselines, progress, cancellation, and retained findings.
 - [x] Test byte-progress reporting, cancellation during copying and verification, completed-import preservation, cleanup failures, batch summaries, and delayed UI progress updates.
 - [x] Test metadata and cover persistence.
 - [x] Test listening-position persistence.
@@ -78,7 +79,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Add a read-only managed-storage integrity check for missing, unreferenced, unsafe, and stale import paths.
 - [x] Add a non-blocking Storage Care area with an attention indicator, orphan recovery, and inline-confirmed cleanup.
 - [x] Persist SHA-256 fingerprints for verified imports and fingerprint older same-sized candidate books on demand.
-- [ ] Add an explicit managed-audiobook corruption scan in Storage Care using saved fingerprints.
+- [x] Add an explicit managed-audiobook verification scan in Storage Care using saved fingerprints, with per-book or whole-library scope, progress, cancellation, and no automatic repair or baseline changes.
 - [x] Detect byte-identical duplicate imports regardless of filename or location and identify the existing book without changing its listening data.
 - [x] Add clear progress and error reporting for large imports, with copying/verification bytes, book counts, overall progress, and per-file results.
 - [x] Allow safe import cancellation: keep completed books, remove unfinished copies, leave source files untouched, and wait for cleanup on a normal window close.

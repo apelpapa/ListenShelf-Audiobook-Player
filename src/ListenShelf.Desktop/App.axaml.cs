@@ -111,7 +111,8 @@ namespace ListenShelf.Desktop
                 new AvaloniaBookRemovalConfirmationService(mainWindow),
                 integrityChecker,
                 libraryMaintenance,
-                backupService);
+                backupService,
+                new SqliteManagedFileVerifier(database, audiobookLibrary.ManagedLibraryPath));
 
             mainWindow.DataContext = viewModel;
             mainWindow.Opened += async (_, _) =>

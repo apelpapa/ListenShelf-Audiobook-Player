@@ -98,7 +98,7 @@
                                     Height="22"
                                     CornerRadius="11"
                                     Background="{DynamicResource WarmAccentBrush}"
-                                    IsVisible="{Binding HasManagedStorageIssues}"
+                                    IsVisible="{Binding HasStorageAttention}"
                                     ToolTip.Tip="Managed storage needs attention">
                                 <TextBlock HorizontalAlignment="Center"
                                            VerticalAlignment="Center"

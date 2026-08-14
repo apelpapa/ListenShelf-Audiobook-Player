@@ -13,6 +13,26 @@ namespace ListenShelf.Tests;
 
 public sealed class LibraryBrowsingViewModelTests
 {
+    [Fact]
+    public void FileVerificationAvailability_FollowsLibraryBackupAndStorageOperations()
+    {
+        using var workspace = new TestWorkspace();
+        SeedLibrary(workspace);
+        using var model = CreateViewModel(workspace);
+        Assert.True(model.Verification.CanVerifyAll);
+        Assert.False(model.Verification.HasResults);
+        model.IsLibraryBusy = true;
+        Assert.False(model.Verification.CanVerifyAll);
+        model.IsLibraryBusy = false;
+        model.IsBackupBusy = true;
+        Assert.False(model.Verification.CanVerifyAll);
+        model.IsBackupBusy = false;
+        model.IsManagedStorageCheckRunning = true;
+        Assert.False(model.Verification.CanVerifyAll);
+        model.IsManagedStorageCheckRunning = false;
+        Assert.True(model.Verification.CanVerifyAll);
+    }
+
     [Theory]
     [InlineData(LibraryViewMode.List)]
     [InlineData(LibraryViewMode.Tiles)]
@@ -189,7 +209,8 @@ public sealed class LibraryBrowsingViewModelTests
             appSettingsStore: new SqliteAppSettingsStore(database), themeService: new NoOpThemeService(),
             audiobookLibrary: new SqliteAudiobookLibrary(database, workspace.ManagedLibraryPath),
             bookMetadataEditorService: null!, bookmarkEditorService: null!, bookRemovalConfirmationService: null!,
-            managedLibraryIntegrityChecker: null!, managedLibraryMaintenance: null!, libraryBackupService: null!);
+            managedLibraryIntegrityChecker: null!, managedLibraryMaintenance: null!, libraryBackupService: null!,
+            managedFileVerifier: new SqliteManagedFileVerifier(database, workspace.ManagedLibraryPath));
     }
 
     private static string[] Titles(IEnumerable<LibraryBookItemViewModel> books) =>

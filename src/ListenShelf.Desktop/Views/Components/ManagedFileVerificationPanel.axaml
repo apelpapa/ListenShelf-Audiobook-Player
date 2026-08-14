@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+             xmlns:library="using:ListenShelf.Application.Library"
+             x:Class="ListenShelf.Desktop.Views.Components.ManagedFileVerificationPanel"
+             x:DataType="vm:ManagedFileVerificationViewModel">
+    <UserControl.Styles>
+        <Style Selector="ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+    </UserControl.Styles>
+    <UserControl.Resources>
+        <DataTemplate x:Key="VerificationResultTemplate" x:DataType="library:ManagedFileVerificationResult">
+            <StackPanel Margin="0,5" Spacing="4" HorizontalAlignment="Stretch">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <TextBlock FontWeight="SemiBold" FontSize="13" Text="{Binding Title}"
+                               Foreground="{DynamicResource PrimaryTextBrush}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1" FontWeight="SemiBold" FontSize="11" Text="{Binding StatusText}"
+                               Foreground="{DynamicResource AccentTextBrush}" />
+                </Grid>
+                <TextBlock FontSize="11" Text="{Binding Detail}" TextWrapping="Wrap"
+                           Foreground="{DynamicResource SecondaryTextBrush}" />
+                <TextBlock FontSize="10" Text="{Binding FilePath}" TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource MutedTextBrush}" ToolTip.Tip="{Binding FilePath}" />
+                <TextBlock FontSize="10" Text="{Binding CheckedAtUtc, StringFormat='Reported: {0:g} (UTC)'}"
+                           Foreground="{DynamicResource SubtleTextBrush}" />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+    <Border Padding="18" CornerRadius="13" Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+        <StackPanel Spacing="12">
+            <TextBlock Text="Verify library files" FontSize="15" FontWeight="SemiBold"
+                       Foreground="{DynamicResource PrimaryTextBrush}" />
+            <TextBlock Text="Compare audiobook contents with their saved SHA-256 fingerprints. This is a manual, read-only check—not a playback test. Older books without a fingerprint are reported as having no verification baseline."
+                       TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource SubtleTextBrush}" />
+            <WrapPanel>
+                <Button Content="Verify entire library" Command="{Binding VerifyAllCommand}" Padding="14,8" Margin="0,0,10,6" />
+                <ComboBox Width="310" MaxDropDownHeight="300" ItemsSource="{Binding Books}"
+                          SelectedItem="{Binding SelectedBook, Mode=TwoWay}" PlaceholderText="Choose one audiobook"
+                          IsEnabled="{Binding CanVerifyAll}" Margin="0,0,10,6" AutomationProperties.Name="Audiobook to verify">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:VerificationBookOption">
+                            <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FilePath}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Content="Verify selected" Command="{Binding VerifySelectedCommand}" Padding="14,8" Margin="0,0,10,6" />
+                <Button Content="Cancel scan" Command="{Binding CancelCommand}" IsVisible="{Binding IsRunning}" Padding="14,8" Margin="0,0,0,6" />
+            </WrapPanel>
+            <TextBlock Text="{Binding StatusText}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" />
+            <StackPanel Spacing="6" IsVisible="{Binding IsRunning}">
+                <TextBlock Text="{Binding CurrentBookText}" FontSize="12" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource PrimaryTextBrush}" />
+                <TextBlock Text="{Binding ByteProgressText}" FontSize="11" Foreground="{DynamicResource MutedTextBrush}" />
+                <ProgressBar Minimum="0" Maximum="100" Value="{Binding FilePercentage}" Height="8" AutomationProperties.Name="Current file verification progress" />
+                <TextBlock Text="OVERALL" FontSize="10" Foreground="{DynamicResource SubtleTextBrush}" />
+                <ProgressBar Minimum="0" Maximum="100" Value="{Binding OverallPercentage}" Height="5" AutomationProperties.Name="Overall verification progress" />
+            </StackPanel>
+            <TextBlock Text="{Binding LastCheckedText}" FontSize="10" TextWrapping="Wrap" Foreground="{DynamicResource SubtleTextBrush}" />
+            <ListBox ItemsSource="{Binding Results}" ItemTemplate="{StaticResource VerificationResultTemplate}"
+                     IsVisible="{Binding HasResults}" MaxHeight="290"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Latest scan results" />
+            <Expander Header="Outstanding findings from this session" IsVisible="{Binding HasProblems}" HorizontalContentAlignment="Stretch">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Checking one book or canceling a scan does not clear findings for other books. Verify those books again after addressing the problem. No files or saved fingerprints are changed by verification."
+                               TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource MutedTextBrush}" />
+                    <ListBox ItemsSource="{Binding KnownProblems}" ItemTemplate="{StaticResource VerificationResultTemplate}"
+                             MaxHeight="240" ScrollViewer.HorizontalScrollBarVisibility="Disabled" />
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </Border>
+</UserControl>

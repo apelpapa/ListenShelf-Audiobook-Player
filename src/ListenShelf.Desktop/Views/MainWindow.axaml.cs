@@ -12,7 +12,7 @@ namespace ListenShelf.Desktop.Views
         private readonly IGlobalMediaKeyService _mediaKeyService =
             GlobalMediaKeyServiceFactory.Create();
         private MainWindowViewModel? _viewModel;
-        private bool _waitingForImportToClose;
+        private bool _waitingForWorkToClose;
 
         public MainWindow()
         {
@@ -25,30 +25,31 @@ namespace ListenShelf.Desktop.Views
         protected override async void OnClosing(WindowClosingEventArgs e)
         {
             base.OnClosing(e);
-            if (e.Cancel || _viewModel?.Imports.IsRunning != true)
+            if (e.Cancel || _viewModel is null || (!_viewModel.Imports.IsRunning && !_viewModel.Verification.IsRunning))
             {
                 return;
             }
 
             e.Cancel = true;
-            if (_waitingForImportToClose)
+            if (_waitingForWorkToClose)
             {
                 return;
             }
 
-            _waitingForImportToClose = true;
+            _waitingForWorkToClose = true;
             try
             {
-                await _viewModel.Imports.CancelAndWaitAsync();
+                if (_viewModel.Imports.IsRunning) await _viewModel.Imports.CancelAndWaitAsync();
+                if (_viewModel.Verification.IsRunning) await _viewModel.Verification.CancelAndWaitAsync();
                 Close();
             }
             catch (Exception exception)
             {
-                _viewModel.LibraryStatusMessage = $"Import could not finish closing safely: {exception.Message}";
+                _viewModel.LibraryStatusMessage = $"Background work could not finish closing safely: {exception.Message}";
             }
             finally
             {
-                _waitingForImportToClose = false;
+                _waitingForWorkToClose = false;
             }
         }
 
