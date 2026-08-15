@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using System.Text;
 using ListenShelf.Application.Library;
 
 namespace ListenShelf.Infrastructure.Library;
@@ -154,55 +153,11 @@ public sealed partial class SqliteAudiobookLibrary
         return Convert.ToHexString(hash.GetHashAndReset());
     }
 
-    private IDisposable AcquireImportLock(IProgress<LibraryImportProgress>? progress, CancellationToken cancellationToken)
-    {
-        // Serialize imports into the same catalog across app windows/processes,
-        // without holding a database write lock during large file reads.
-        var key = OperatingSystem.IsWindows() ? _database.DatabasePath.ToUpperInvariant() : _database.DatabasePath;
-        var mutex = new Mutex(false, "ListenShelf.Import." + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key))));
-        try
-        {
-            var reportedWaiting = false;
-            while (true)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                try
-                {
-                    if (mutex.WaitOne(TimeSpan.FromMilliseconds(100)))
-                    {
-                        return new ImportLock(mutex);
-                    }
-
-                    if (!reportedWaiting)
-                    {
-                        progress?.Report(new LibraryImportProgress(LibraryImportStage.Checking,
-                            Detail: "Waiting for another import to finish"));
-                        reportedWaiting = true;
-                    }
-                }
-                catch (AbandonedMutexException)
-                {
-                    // The previous process exited. The mutex is now ours; existing
-                    // unfinished files remain under Storage Care's recovery policy.
-                    return new ImportLock(mutex);
-                }
-            }
-        }
-        catch
-        {
-            mutex.Dispose();
-            throw;
-        }
-    }
+    private IDisposable AcquireImportLock(IProgress<LibraryImportProgress>? progress, CancellationToken cancellationToken) =>
+        ManagedLibraryOperationLock.Acquire(_database.DatabasePath, cancellationToken,
+            () => progress?.Report(new LibraryImportProgress(LibraryImportStage.Checking,
+                Detail: "Waiting for another library operation to finish")));
 
     private sealed record FingerprintCandidate(LibraryBook Book, string? Hash);
 
-    private sealed class ImportLock(Mutex mutex) : IDisposable
-    {
-        public void Dispose()
-        {
-            mutex.ReleaseMutex();
-            mutex.Dispose();
-        }
-    }
 }

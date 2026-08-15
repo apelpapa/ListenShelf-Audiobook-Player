@@ -6,6 +6,7 @@ using System.Text.Json;
 using ListenShelf.Application.Backup;
 using ListenShelf.Application.Library;
 using ListenShelf.Infrastructure.Storage;
+using ListenShelf.Infrastructure.Library;
 using Microsoft.Data.Sqlite;
 
 namespace ListenShelf.Infrastructure.Backup;
@@ -74,6 +75,7 @@ public sealed class ZipLibraryBackupService : ILibraryBackupService
         IProgress<LibraryBackupProgress>? progress = null)
     {
         EnsureNormalLibraryIsAvailable();
+        using var operationLock = ManagedLibraryOperationLock.Acquire(GetDatabase().DatabasePath);
         return CreateBackup(destinationPath, allowIncompleteCatalog: false, progress);
     }
 
@@ -100,6 +102,7 @@ public sealed class ZipLibraryBackupService : ILibraryBackupService
         IProgress<LibraryBackupProgress>? progress = null)
     {
         EnsureNormalLibraryIsAvailable();
+        using var operationLock = ManagedLibraryOperationLock.Acquire(GetDatabase().DatabasePath);
         var normalizedBackupPath = NormalizeExistingBackupPath(backupPath);
         EnsurePathIsOutsideDataRoot(normalizedBackupPath, "The selected backup");
 

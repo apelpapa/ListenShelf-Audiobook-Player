@@ -63,7 +63,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Test orphaned audiobook recovery, stale-import cleanup, confirmed folder cleanup, and refusal to delete cataloged audiobooks.
 - [x] Test versioned local backup creation, full integrity validation, path-rebased restore, pre-restore safety backups, and tamper rejection.
 - [ ] Test bookmark jumping through the player.
-- [ ] Test missing-file and relinking behavior.
+- [x] Test fingerprint-matched repair of missing or changed managed files, listening-data preservation, mismatched sources, cancellation, retained copies, failed replacement, and repair UI confirmation/close-wait behavior.
 - [ ] Test M4B playback behavior.
 - [ ] Test M4A playback behavior.
 - [ ] Test MP3 playback behavior.
@@ -74,7 +74,8 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 ### Library management
 
-- [ ] Relink an audiobook that has moved or is missing from its saved location.
+- [x] Repair a missing or changed managed audiobook from a fingerprint-matching source, preserving its catalog identity and listening data instead of relinking to an external file.
+- [ ] Manually smoke-test repair in the Windows app, including reloading the current book paused and confirming retained-copy cleanup.
 - [x] Remove a book by deleting its catalog entry, managed audiobook copy, cached cover, metadata, bookmarks, and listening progress as one confirmed operation.
 - [x] Add a read-only managed-storage integrity check for missing, unreferenced, unsafe, and stale import paths.
 - [x] Add a non-blocking Storage Care area with an attention indicator, orphan recovery, and inline-confirmed cleanup.

@@ -241,7 +241,7 @@ public sealed class ContentDuplicateTests
             var waitingStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var waiting = Task.Run(() => secondLibrary.Import(second, new InlineProgress<LibraryImportProgress>(update =>
             {
-                if (update.Detail == "Waiting for another import to finish")
+                if (update.Detail == "Waiting for another library operation to finish")
                 {
                     waitingStarted.TrySetResult();
                 }
@@ -252,7 +252,7 @@ public sealed class ContentDuplicateTests
             var secondStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             secondImport = Task.Run(() => secondLibrary.Import(second, new InlineProgress<LibraryImportProgress>(update =>
             {
-                if (update.Detail == "Waiting for another import to finish")
+                if (update.Detail == "Waiting for another library operation to finish")
                 {
                     secondStarted.TrySetResult();
                 }

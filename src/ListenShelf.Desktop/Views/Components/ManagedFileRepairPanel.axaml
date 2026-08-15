@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+             x:Class="ListenShelf.Desktop.Views.Components.ManagedFileRepairPanel"
+             x:DataType="vm:ManagedFileRepairViewModel">
+    <Border Padding="18" CornerRadius="13" Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+        <StackPanel Spacing="12">
+            <TextBlock Text="Repair managed copy" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}" />
+            <TextBlock Text="Restore a missing or changed audiobook using the exact original file or a known-good copy. ListenShelf checks it against the saved SHA-256 fingerprint, copies it, and verifies the copy before replacement. Books without a saved fingerprint cannot be repaired this way."
+                       TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource SubtleTextBrush}" />
+            <WrapPanel>
+                <ComboBox Width="310" MaxDropDownHeight="300" ItemsSource="{Binding Books}" SelectedItem="{Binding SelectedBook, Mode=TwoWay}"
+                          PlaceholderText="Choose an audiobook to repair" IsEnabled="{Binding IsAvailable}" Margin="0,0,10,6"
+                          AutomationProperties.Name="Audiobook to repair">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:VerificationBookOption">
+                            <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding FilePath}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <Button Content="Choose repair file…" Command="{Binding ChooseSourceCommand}" Padding="14,8" Margin="0,0,10,6" />
+            </WrapPanel>
+            <Border IsVisible="{Binding HasSource}" Background="{DynamicResource SurfaceAltBrush}" Padding="12" CornerRadius="8">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{Binding SelectedBook.Title, StringFormat='Repair book: {0}'}" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="{DynamicResource PrimaryTextBrush}" />
+                    <TextBlock Text="{Binding SourcePath, StringFormat='Copy from: {0}'}" TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" />
+                    <TextBlock Text="Your selected source stays untouched. The book keeps its saved place, bookmarks, cover, and details. Any previous managed file is kept below for confirmed cleanup. If this book is loaded, it will be unloaded for repair and reopened paused; its sleep timer will stop."
+                               TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource SubtleTextBrush}" />
+                    <WrapPanel IsEnabled="{Binding IsAvailable}">
+                        <Button Content="Repair managed copy" Command="{Binding ConfirmRepairCommand}" Padding="14,8" Margin="0,0,10,0" />
+                        <Button Content="Cancel" Command="{Binding DismissSourceCommand}" Padding="14,8" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+            <TextBlock Text="{Binding StatusText}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource SecondaryTextBrush}" />
+            <StackPanel IsVisible="{Binding IsRunning}" Spacing="8">
+                <TextBlock Text="{Binding ProgressText}" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" />
+                <ProgressBar Minimum="0" Maximum="100" Value="{Binding Percentage}" Height="8" AutomationProperties.Name="Current repair stage progress" />
+                <Button Content="Cancel repair" Command="{Binding CancelCommand}" Padding="14,8" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

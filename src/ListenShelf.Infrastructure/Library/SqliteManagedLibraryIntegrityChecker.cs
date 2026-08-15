@@ -317,6 +317,20 @@ public sealed class SqliteManagedLibraryIntegrityChecker : IManagedLibraryIntegr
         List<ManagedLibraryIntegrityIssue> issues,
         Guid? bookId = null)
     {
+        if (filePath.EndsWith(".repair-backup", StringComparison.OrdinalIgnoreCase)
+            || filePath.EndsWith(".repairing", StringComparison.OrdinalIgnoreCase))
+        {
+            var retained = filePath.EndsWith(".repair-backup", StringComparison.OrdinalIgnoreCase);
+            issues.Add(new ManagedLibraryIntegrityIssue(
+                retained ? ManagedLibraryIntegrityIssueKind.RetainedRepairCopy : ManagedLibraryIntegrityIssueKind.IncompleteRepairFile,
+                Path.GetFullPath(filePath),
+                retained
+                    ? "A previous managed copy retained during repair. It may be damaged. Verify the repaired book before confirming cleanup; this copy is never deleted automatically."
+                    : "A file left by an interrupted repair. It may contain a complete verified replacement or an incomplete copy. Verify the book and retry repair before confirming cleanup.",
+                bookId));
+            return;
+        }
+
         if (filePath.EndsWith(".importing", StringComparison.OrdinalIgnoreCase))
         {
             if (IsStaleImportFile(filePath, checkedAtUtc))

@@ -27,6 +27,7 @@ public sealed class SqliteManagedLibraryMaintenance : IManagedLibraryMaintenance
 
     public ManagedLibraryRecoveryResult RecoverAudiobook(string orphanedFilePath)
     {
+        using var operationLock = ManagedLibraryOperationLock.Acquire(_database.DatabasePath);
         var normalizedPath = ValidateManagedPath(orphanedFilePath);
         _ = FindCurrentIssue(
             normalizedPath,
@@ -62,12 +63,15 @@ public sealed class SqliteManagedLibraryMaintenance : IManagedLibraryMaintenance
 
     public ManagedLibraryCleanupResult CleanUp(string orphanedPath)
     {
+        using var operationLock = ManagedLibraryOperationLock.Acquire(_database.DatabasePath);
         var normalizedPath = ValidateManagedPath(orphanedPath);
         _ = FindCurrentIssue(
             normalizedPath,
             ManagedLibraryIntegrityIssueKind.UnreferencedFile,
             ManagedLibraryIntegrityIssueKind.UnreferencedDirectory,
-            ManagedLibraryIntegrityIssueKind.StaleImportFile);
+            ManagedLibraryIntegrityIssueKind.StaleImportFile,
+            ManagedLibraryIntegrityIssueKind.RetainedRepairCopy,
+            ManagedLibraryIntegrityIssueKind.IncompleteRepairFile);
 
         var isDirectory = Directory.Exists(normalizedPath);
         if (!isDirectory && !File.Exists(normalizedPath))

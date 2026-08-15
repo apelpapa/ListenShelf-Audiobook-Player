@@ -112,7 +112,8 @@ namespace ListenShelf.Desktop
                 integrityChecker,
                 libraryMaintenance,
                 backupService,
-                new SqliteManagedFileVerifier(database, audiobookLibrary.ManagedLibraryPath));
+                new SqliteManagedFileVerifier(database, audiobookLibrary.ManagedLibraryPath),
+                audiobookLibrary);
 
             mainWindow.DataContext = viewModel;
             mainWindow.Opened += async (_, _) =>

@@ -36,6 +36,8 @@ public sealed partial class ManagedStorageIssueItemViewModel : ObservableObject
         ManagedLibraryIntegrityIssueKind.StaleImportFile => "STALE IMPORT",
         ManagedLibraryIntegrityIssueKind.PendingRemovalCleanup => "PENDING REMOVAL CLEANUP",
         ManagedLibraryIntegrityIssueKind.UnreadablePath => "UNREADABLE PATH",
+        ManagedLibraryIntegrityIssueKind.RetainedRepairCopy => "RETAINED REPAIR COPY",
+        ManagedLibraryIntegrityIssueKind.IncompleteRepairFile => "INTERRUPTED REPAIR",
         _ => "STORAGE ISSUE",
     };
 
@@ -54,13 +56,17 @@ public sealed partial class ManagedStorageIssueItemViewModel : ObservableObject
     public bool CanCleanUp => Issue.Kind is
         ManagedLibraryIntegrityIssueKind.UnreferencedDirectory
         or ManagedLibraryIntegrityIssueKind.UnreferencedFile
-        or ManagedLibraryIntegrityIssueKind.StaleImportFile;
+        or ManagedLibraryIntegrityIssueKind.StaleImportFile
+        or ManagedLibraryIntegrityIssueKind.RetainedRepairCopy
+        or ManagedLibraryIntegrityIssueKind.IncompleteRepairFile;
 
     public bool ShowPrimaryActions =>
         !IsCleanupConfirmationVisible && (CanRecover || CanCleanUp);
 
     public string CleanupPrompt => Issue.Kind == ManagedLibraryIntegrityIssueKind.UnreferencedDirectory
         ? "Permanently delete this folder and everything currently inside it?"
+        : Issue.Kind is ManagedLibraryIntegrityIssueKind.RetainedRepairCopy or ManagedLibraryIntegrityIssueKind.IncompleteRepairFile
+        ? "Permanently delete this retained repair file? Check that the cataloged audiobook is healthy first. This cannot be undone."
         : "Permanently delete this unreferenced file?";
 
     public string CleanupButtonText => Issue.Kind == ManagedLibraryIntegrityIssueKind.UnreferencedDirectory

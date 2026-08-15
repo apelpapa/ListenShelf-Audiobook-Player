@@ -210,7 +210,8 @@ public sealed class LibraryBrowsingViewModelTests
             audiobookLibrary: new SqliteAudiobookLibrary(database, workspace.ManagedLibraryPath),
             bookMetadataEditorService: null!, bookmarkEditorService: null!, bookRemovalConfirmationService: null!,
             managedLibraryIntegrityChecker: null!, managedLibraryMaintenance: null!, libraryBackupService: null!,
-            managedFileVerifier: new SqliteManagedFileVerifier(database, workspace.ManagedLibraryPath));
+            managedFileVerifier: new SqliteManagedFileVerifier(database, workspace.ManagedLibraryPath),
+            managedFileRepairer: new SqliteAudiobookLibrary(database, workspace.ManagedLibraryPath));
     }
 
     private static string[] Titles(IEnumerable<LibraryBookItemViewModel> books) =>

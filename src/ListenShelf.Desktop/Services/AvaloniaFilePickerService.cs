@@ -48,6 +48,22 @@ public sealed class AvaloniaFilePickerService(Window owner) : IFilePickerService
         return files.Select(file => file.Path.LocalPath).ToArray();
     }
 
+    public async Task<string?> PickRepairSourceAsync()
+    {
+        if (!owner.StorageProvider.CanOpen)
+            throw new NotSupportedException("This system does not provide a file picker.");
+        var files = await owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Choose the original or a known-good copy for repair",
+            AllowMultiple = false,
+            // All files also permits a retained .repairing/.repair-backup artifact.
+            // The repair service checks bytes, not the chosen file's name.
+            FileTypeFilter = [AudiobookFileType, FilePickerFileTypes.All],
+            SuggestedFileType = AudiobookFileType,
+        });
+        return files.Count == 1 ? files[0].Path.LocalPath : null;
+    }
+
     public async Task<string?> PickCoverImageAsync()
     {
         if (!owner.StorageProvider.CanOpen)

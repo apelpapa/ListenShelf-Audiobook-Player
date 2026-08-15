@@ -25,7 +25,7 @@ namespace ListenShelf.Desktop.Views
         protected override async void OnClosing(WindowClosingEventArgs e)
         {
             base.OnClosing(e);
-            if (e.Cancel || _viewModel is null || (!_viewModel.Imports.IsRunning && !_viewModel.Verification.IsRunning))
+            if (e.Cancel || _viewModel is null || (!_viewModel.Imports.IsRunning && !_viewModel.Verification.IsRunning && !_viewModel.Repair.IsRunning))
             {
                 return;
             }
@@ -41,6 +41,7 @@ namespace ListenShelf.Desktop.Views
             {
                 if (_viewModel.Imports.IsRunning) await _viewModel.Imports.CancelAndWaitAsync();
                 if (_viewModel.Verification.IsRunning) await _viewModel.Verification.CancelAndWaitAsync();
+                if (_viewModel.Repair.IsRunning) await _viewModel.Repair.CancelAndWaitAsync();
                 Close();
             }
             catch (Exception exception)

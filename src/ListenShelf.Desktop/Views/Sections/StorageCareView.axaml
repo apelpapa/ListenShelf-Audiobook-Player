@@ -10,6 +10,7 @@
                     HorizontalAlignment="Stretch"
                     Spacing="14">
             <components:ManagedFileVerificationPanel DataContext="{Binding Verification}" />
+            <components:ManagedFileRepairPanel DataContext="{Binding Repair}" />
             <Border Padding="18"
                     CornerRadius="13"
                     Background="{DynamicResource SurfaceBrush}"

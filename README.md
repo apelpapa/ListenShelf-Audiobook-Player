@@ -94,6 +94,25 @@ removals, backups, and recovery operations are unavailable until the scan ends. 
 window close cancels the scan and waits for its file handles to close. No scan
 runs automatically at startup, and verification never deletes or repairs files.
 
+For missing or changed books, **Storage Care → Repair managed copy** lets you
+select an original file or a known-good copy and then explicitly confirm repair.
+The source must match the book's saved SHA-256 fingerprint exactly; a different
+edition, re-encoded audio, or even changed embedded tags will be refused. Repair
+copies the source and verifies the staged copy before replacing the managed file
+at its existing path. Book identity, metadata, cover, bookmarks, and listening
+position stay intact, and the source is never modified. Books without a saved
+fingerprint require a known-good library backup instead; repair never invents a baseline.
+
+If the book is loaded, repair unloads it (stopping its sleep timer) and reopens
+it paused at its saved position. Other library-changing operations are blocked
+during repair. Copying and verification show byte progress and can be canceled;
+once final replacement starts, a normal window close waits for it to finish.
+Any displaced managed file remains as a **Retained repair copy** in the storage
+check below, requiring inline-confirmed cleanup. Interrupted repair files also
+remain visible there if cleanup or replacement could not finish. Neither is
+deleted automatically. Full library backups include these retained files.
+See [managed-file repair and testing](docs/MANAGED_FILE_REPAIR.md) for details.
+
 Managed-book editing includes an optional [Open Library](https://openlibrary.org/) lookup. Searches are sent directly from the desktop app with no ListenShelf account or central server; only the text entered in the search box is transmitted. The user chooses a result, reviews the populated fields, and decides whether an available cover should be saved into ListenShelf's local cover cache. Manual metadata remains editable and audiobook-specific fields are not replaced by print-book search results.
 
 The player supports local `.m4b`, `.m4a`, and `.mp3` audiobooks and provides play/pause, seeking, configurable rewind and forward intervals, playback-speed selection, volume, elapsed/remaining time, a sleep timer, and automatic per-file position persistence in a local SQLite database. Per-audiobook bookmarks can save the current timestamp with an optional name and note, retain the chapter context, and later be jumped to, edited, or deleted without modifying the audiobook file. Playback speed, volume, and skip intervals are remembered globally between launches. Under **Settings → Playback**, rewind and forward can each be set to 1–600 whole seconds; the defaults remain 15 seconds backward and 30 seconds forward. These intervals apply immediately to player buttons, keyboard shortcuts, and Windows headphone/media controls. On startup, ListenShelf restores those player settings, loads the most recently played available audiobook at its saved position, and opens the Player without starting playback. Space or K toggles playback, Left Arrow or J rewinds, and Right Arrow or L moves forward. On Windows, keyboard, headset, and other media buttons continue to control the loaded book while ListenShelf is minimized. When a file contains embedded chapters, ListenShelf discovers them during loading so the chapter selector and previous/next controls are ready before Play, tracks the current chapter, and provides direct chapter navigation.

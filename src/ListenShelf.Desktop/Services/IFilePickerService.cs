@@ -4,6 +4,8 @@ public interface IFilePickerService
 {
     Task<IReadOnlyList<string>> PickAudiobookFilesAsync();
 
+    Task<string?> PickRepairSourceAsync();
+
     Task<string?> PickCoverImageAsync();
 
     Task<string?> PickBackupExportPathAsync(string suggestedFileName);

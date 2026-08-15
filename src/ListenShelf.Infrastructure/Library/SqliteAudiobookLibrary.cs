@@ -7,7 +7,7 @@ using Microsoft.Data.Sqlite;
 
 namespace ListenShelf.Infrastructure.Library;
 
-public sealed partial class SqliteAudiobookLibrary : IAudiobookLibrary
+public sealed partial class SqliteAudiobookLibrary : IAudiobookLibrary, IManagedFileRepairer
 {
     private const string RemovalStagingDirectoryName = ".removing";
 
@@ -115,6 +115,7 @@ public sealed partial class SqliteAudiobookLibrary : IAudiobookLibrary
 
     public LibraryRemovalResult Remove(Guid bookId)
     {
+        using var operationLock = ManagedLibraryOperationLock.Acquire(_database.DatabasePath);
         if (bookId == Guid.Empty)
         {
             throw new ArgumentException("A valid audiobook identifier is required.", nameof(bookId));
@@ -689,6 +690,7 @@ public sealed partial class SqliteAudiobookLibrary : IAudiobookLibrary
 
     private void TryRecoverPendingRemovals()
     {
+        using var operationLock = ManagedLibraryOperationLock.Acquire(_database.DatabasePath);
         IReadOnlyList<PendingLibraryRemoval> pendingRemovals;
         try
         {

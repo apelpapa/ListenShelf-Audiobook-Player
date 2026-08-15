@@ -10,4 +10,6 @@ public enum ManagedLibraryIntegrityIssueKind
     StaleImportFile,
     PendingRemovalCleanup,
     UnreadablePath,
+    RetainedRepairCopy,
+    IncompleteRepairFile,
 }

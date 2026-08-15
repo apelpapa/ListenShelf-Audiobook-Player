@@ -93,7 +93,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IManagedLibraryIntegrityChecker managedLibraryIntegrityChecker,
         IManagedLibraryMaintenance managedLibraryMaintenance,
         ILibraryBackupService libraryBackupService,
-        IManagedFileVerifier managedFileVerifier)
+        IManagedFileVerifier managedFileVerifier,
+        IManagedFileRepairer managedFileRepairer)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
@@ -107,6 +108,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Verification = new ManagedFileVerificationViewModel(managedFileVerifier,
             TryBeginFileVerification, () => IsLibraryBusy = false);
         Verification.PropertyChanged += OnVerificationPropertyChanged;
+        Repair = new ManagedFileRepairViewModel(managedFileRepairer,
+            () => _filePickerService.PickRepairSourceAsync(), TryBeginFileVerification,
+            () => IsLibraryBusy = false, PrepareManagedFileRepair, FinishManagedFileRepairAsync);
         _bookMetadataEditorService = bookMetadataEditorService;
         _bookmarkEditorService = bookmarkEditorService;
         _bookRemovalConfirmationService = bookRemovalConfirmationService;
@@ -245,12 +249,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     }
 
     partial void OnIsLibraryBusyChanged(bool value) => UpdateVerificationAvailability();
+    partial void OnIsBusyChanged(bool value) => UpdateVerificationAvailability();
     partial void OnIsBackupBusyChanged(bool value) => UpdateVerificationAvailability();
     partial void OnIsManagedStorageCheckRunningChanged(bool value) => UpdateVerificationAvailability();
 
     private void UpdateVerificationAvailability()
     {
         if (Verification is not null) Verification.IsAvailable = CanAddAudiobooks && !_disposed;
+        if (Repair is not null) Repair.IsAvailable = CanAddAudiobooks && !IsBusy && !_disposed;
     }
 
     public async Task InitializeAsync()
@@ -750,6 +756,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        await RefreshManagedStorageAsync();
+    }
+
+    private async Task RefreshManagedStorageAsync()
+    {
         IsManagedStorageCheckRunning = true;
         ManagedStorageStatusText = "Checking managed library storage…";
 
@@ -974,6 +985,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 _libraryBackupService.Restore(backupPath, progress));
             restoreApplied = true;
             Verification.ClearResults();
+            Repair.ClearSelection();
 
             ReloadPreferencesAfterRestore();
             RefreshLibrary();
@@ -1264,10 +1276,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private async Task PlayLibraryBookAsync(LibraryBook book)
     {
+        if (Repair.IsRunning) return;
         if (!File.Exists(book.FilePath))
         {
             LibraryStatusMessage =
-                $"{book.Title} is missing from its saved location. Re-import it to add the new location.";
+                $"{book.Title} is missing. Use Repair managed copy in Storage Care to restore its file without losing your saved place.";
             RefreshLibrary();
             return;
         }
@@ -1649,6 +1662,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         Imports.CancelCommand.Execute(null);
         Verification.CancelCommand.Execute(null);
+        Repair.CancelCommand.Execute(null);
         Verification.PropertyChanged -= OnVerificationPropertyChanged;
         SaveCurrentProgress(force: true);
         _disposed = true;
@@ -2129,6 +2143,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         {
             var books = _audiobookLibrary.GetBooks();
             Verification.UpdateBooks(books);
+            Repair.UpdateBooks(books);
             DisposeLibraryItems();
             LibraryBooks.Clear();
 

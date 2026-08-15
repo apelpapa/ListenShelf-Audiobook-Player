@@ -95,6 +95,22 @@ public sealed partial class ManagedFileVerificationViewModel : ViewModelBase
         VerifySelectedCommand.NotifyCanExecuteChanged();
     }
 
+    // A confirmed repair resolves only the matching book's previous finding.
+    public void RecordRepair(ManagedFileRepairResult repair)
+    {
+        if (IsRunning) return;
+        var result = new ManagedFileVerificationResult(repair.BookId, repair.Title, repair.FilePath,
+            ManagedFileVerificationStatus.Unchanged, "A replacement matching the saved fingerprint was verified and installed by a confirmed repair.", DateTimeOffset.UtcNow);
+        RememberResult(result);
+        for (var index = 0; index < Results.Count; index++)
+        {
+            if (Results[index].BookId == repair.BookId) Results[index] = result;
+        }
+
+        LastCheckedText = $"Repair completed for {repair.Title} at {result.CheckedAtUtc.ToLocalTime():g}. Other results retain their original scan times.";
+        StatusText = $"Confirmed repair updated the finding for {repair.Title}. Verify again whenever you want a fresh check.";
+    }
+
     // A full backup restore replaces the files to which old session results refer.
     public void ClearResults()
     {
