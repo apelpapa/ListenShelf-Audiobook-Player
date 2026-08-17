@@ -148,6 +148,13 @@
                                        Foreground="{DynamicResource MutedTextBrush}"
                                        Text="{Binding RemainingText}" />
                         </Grid>
+                        <TextBlock HorizontalAlignment="Right"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource MutedTextBrush}"
+                                   Text="{Binding ListeningTimeRemainingText}"
+                                   TextWrapping="Wrap"
+                                   IsVisible="{Binding IsFileLoaded}"
+                                   ToolTip.Tip="Estimated listening time at the selected playback speed, excluding pauses. The timeline above stays in audiobook time." />
                         </StackPanel>
 
                     <Border Padding="11,9"

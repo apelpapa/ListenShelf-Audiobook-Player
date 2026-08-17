@@ -117,6 +117,14 @@ Managed-book editing includes an optional [Open Library](https://openlibrary.org
 
 The player supports local `.m4b`, `.m4a`, and `.mp3` audiobooks and provides play/pause, seeking, configurable rewind and forward intervals, playback-speed selection, volume, elapsed/remaining time, a sleep timer, and automatic per-file position persistence in a local SQLite database. Per-audiobook bookmarks can save the current timestamp with an optional name and note, retain the chapter context, and later be jumped to, edited, or deleted without modifying the audiobook file. Playback speed, volume, and skip intervals are remembered globally between launches. Under **Settings → Playback**, rewind and forward can each be set to 1–600 whole seconds; the defaults remain 15 seconds backward and 30 seconds forward. These intervals apply immediately to player buttons, keyboard shortcuts, and Windows headphone/media controls. On startup, ListenShelf restores those player settings, loads the most recently played available audiobook at its saved position, and opens the Player without starting playback. Space or K toggles playback, Left Arrow or J rewinds, and Right Arrow or L moves forward. On Windows, keyboard, headset, and other media buttons continue to control the loaded book while ListenShelf is minimized. When a file contains embedded chapters, ListenShelf discovers them during loading so the chapter selector and previous/next controls are ready before Play, tracks the current chapter, and provides direct chapter navigation.
 
+Below the player timeline, **Listening time left** estimates the remaining
+listening time at the selected playback speed, excluding pauses. For example,
+6 hours of audiobook time becomes about 4 hours at 1.5×. The estimate updates
+when you seek or change speed, while the timeline and saved positions remain
+in original audiobook time. It also works while paused, including after restoring
+a book with a known duration; an unknown duration shows a dash instead of a
+misleading zero.
+
 Settings can export the entire local library as one versioned
 `.listenshelf-backup` file. It contains a consistent database snapshot,
 managed audiobooks, covers, settings, bookmarks, progress, and recoverable

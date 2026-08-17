@@ -554,11 +554,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ElapsedText))]
     [NotifyPropertyChangedFor(nameof(RemainingText))]
+    [NotifyPropertyChangedFor(nameof(ListeningTimeRemainingText))]
     private double _positionSeconds;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DurationText))]
     [NotifyPropertyChangedFor(nameof(RemainingText))]
+    [NotifyPropertyChangedFor(nameof(ListeningTimeRemainingText))]
     [NotifyPropertyChangedFor(nameof(SeekMaximum))]
     private double _durationSeconds;
 
@@ -566,6 +568,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private double _volume = 80d;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ListeningTimeRemainingText))]
     private double _selectedPlaybackRate = 1d;
 
     [ObservableProperty]
@@ -730,6 +733,29 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public string RemainingText =>
         $"-{FormatTime(Math.Max(0d, DurationSeconds - PositionSeconds), DurationSeconds)}";
+
+    public string ListeningTimeRemainingText
+    {
+        get
+        {
+            // This is a listening-time estimate at the selected speed, not a
+            // replacement for the book's timeline or its saved position.
+            if (!double.IsFinite(DurationSeconds) || DurationSeconds <= 0
+                || !double.IsFinite(PositionSeconds)
+                || !PlaybackRates.Contains(SelectedPlaybackRate))
+            {
+                return "Listening time left: —";
+            }
+
+            var remaining = Math.Ceiling(Math.Max(0d, DurationSeconds - Math.Max(0d, PositionSeconds)) / SelectedPlaybackRate);
+            if (!double.IsFinite(remaining) || remaining >= TimeSpan.MaxValue.TotalSeconds)
+            {
+                return "Listening time left: —";
+            }
+
+            return $"Listening time left: ~{FormatTime(remaining, remaining)} at {SelectedPlaybackRate:0.##}×";
+        }
+    }
 
     [RelayCommand]
     private void ShowLibrary()
