@@ -163,7 +163,7 @@
                             BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1"
                             IsVisible="{Binding HasChapters}">
-                        <Grid RowDefinitions="Auto,Auto" RowSpacing="7">
+                        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="7">
                             <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
                                 <TextBlock FontSize="10"
                                            FontWeight="SemiBold"
@@ -204,6 +204,14 @@
                                         Command="{Binding NextChapterCommand}"
                                         Content="Next →" />
                             </Grid>
+                            <TextBlock Grid.Row="2"
+                                       HorizontalAlignment="Right"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource MutedTextBrush}"
+                                       Text="{Binding ChapterListeningTimeRemainingText}"
+                                       TextWrapping="Wrap"
+                                       IsVisible="{Binding HasChapterListeningTimeEstimate}"
+                                       ToolTip.Tip="Estimated listening time to this chapter's end at the selected speed, excluding pauses." />
                         </Grid>
                     </Border>
 

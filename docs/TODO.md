@@ -141,6 +141,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Remember the selected rewind and forward intervals globally.
 - [x] Route selected intervals through player buttons, keyboard shortcuts, headphones, and media controls.
 - [x] Show estimated listening time remaining at the selected playback speed, updating on playback/seek/speed changes while retaining original timeline timestamps.
+- [x] Show speed-adjusted current-chapter time remaining, following the playhead across chapter boundaries and hiding the estimate when chapter timing is unavailable.
 - [ ] Add smart rewind after longer pauses.
 
 ### Cross-platform architecture

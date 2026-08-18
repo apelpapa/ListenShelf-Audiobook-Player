@@ -221,6 +221,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _audioEngine.ProgressChanged += OnProgressChanged;
         _audioEngine.StateChanged += OnStateChanged;
         _audioEngine.ChaptersChanged += OnChaptersChanged;
+        Chapters.CollectionChanged += OnChapterTimingCollectionChanged;
         _audioEngine.Volume = (int)Volume;
         _audioEngine.TrySetPlaybackRate(SelectedPlaybackRate);
 
@@ -528,6 +529,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(CanControlPlayback))]
     [NotifyPropertyChangedFor(nameof(CanCreateBookmark))]
     [NotifyPropertyChangedFor(nameof(CanDisplayBookmarkPanel))]
+    [NotifyPropertyChangedFor(nameof(HasChapterListeningTimeEstimate))]
+    [NotifyPropertyChangedFor(nameof(ChapterListeningTimeRemainingText))]
     [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddBookmarkCommand))]
@@ -547,6 +550,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ChapterPositionText))]
+    [NotifyPropertyChangedFor(nameof(HasChapterListeningTimeEstimate))]
+    [NotifyPropertyChangedFor(nameof(ChapterListeningTimeRemainingText))]
     [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
     private PlaybackChapterItemViewModel? _selectedChapter;
@@ -555,12 +560,16 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(ElapsedText))]
     [NotifyPropertyChangedFor(nameof(RemainingText))]
     [NotifyPropertyChangedFor(nameof(ListeningTimeRemainingText))]
+    [NotifyPropertyChangedFor(nameof(HasChapterListeningTimeEstimate))]
+    [NotifyPropertyChangedFor(nameof(ChapterListeningTimeRemainingText))]
     private double _positionSeconds;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DurationText))]
     [NotifyPropertyChangedFor(nameof(RemainingText))]
     [NotifyPropertyChangedFor(nameof(ListeningTimeRemainingText))]
+    [NotifyPropertyChangedFor(nameof(HasChapterListeningTimeEstimate))]
+    [NotifyPropertyChangedFor(nameof(ChapterListeningTimeRemainingText))]
     [NotifyPropertyChangedFor(nameof(SeekMaximum))]
     private double _durationSeconds;
 
@@ -569,6 +578,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ListeningTimeRemainingText))]
+    [NotifyPropertyChangedFor(nameof(HasChapterListeningTimeEstimate))]
+    [NotifyPropertyChangedFor(nameof(ChapterListeningTimeRemainingText))]
     private double _selectedPlaybackRate = 1d;
 
     [ObservableProperty]
@@ -1697,6 +1708,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _audioEngine.ProgressChanged -= OnProgressChanged;
         _audioEngine.StateChanged -= OnStateChanged;
         _audioEngine.ChaptersChanged -= OnChaptersChanged;
+        Chapters.CollectionChanged -= OnChapterTimingCollectionChanged;
         _audioEngine.Dispose();
         SetCurrentCover(null);
         DisposeLibraryItems();

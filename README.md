@@ -125,6 +125,12 @@ in original audiobook time. It also works while paused, including after restorin
 a book with a known duration; an unknown duration shows a dash instead of a
 misleading zero.
 
+The chapter controls also show **Chapter time left**, adjusted for the selected
+speed and updated as you listen or seek between chapters. Missing chapter durations
+use the next chapter's start, or the known book ending for the final chapter.
+The estimate stays hidden for books without chapters or usable chapter boundaries.
+Chapter navigation and original audiobook timestamps remain unchanged.
+
 Settings can export the entire local library as one versioned
 `.listenshelf-backup` file. It contains a consistent database snapshot,
 managed audiobooks, covers, settings, bookmarks, progress, and recoverable
