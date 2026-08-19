@@ -99,6 +99,9 @@
                                     <MenuItem Header="{Binding SleepTimerStatusText}"
                                               IsEnabled="False" />
                                     <Separator />
+                                    <MenuItem Header="Stop at end of chapter"
+                                              Command="{Binding StartChapterSleepTimerCommand}" />
+                                    <Separator />
                                     <MenuItem Header="15 minutes"
                                               Command="{Binding StartSleepTimer15Command}" />
                                     <MenuItem Header="30 minutes"
@@ -112,7 +115,7 @@
                                     <Separator />
                                     <MenuItem Header="Add 10 minutes"
                                               Command="{Binding AddTenMinutesToSleepTimerCommand}"
-                                              IsEnabled="{Binding IsSleepTimerActive}" />
+                                              IsEnabled="{Binding CanAddTenMinutesToSleepTimer}" />
                                     <MenuItem Header="Cancel timer"
                                               Command="{Binding CancelSleepTimerCommand}"
                                               IsEnabled="{Binding IsSleepTimerActive}" />

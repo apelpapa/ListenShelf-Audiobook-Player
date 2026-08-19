@@ -529,6 +529,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(CanControlPlayback))]
     [NotifyPropertyChangedFor(nameof(CanCreateBookmark))]
     [NotifyPropertyChangedFor(nameof(CanDisplayBookmarkPanel))]
+    [NotifyPropertyChangedFor(nameof(CanStopAtChapterEnd))]
+    [NotifyCanExecuteChangedFor(nameof(StartChapterSleepTimerCommand))]
     [NotifyPropertyChangedFor(nameof(HasChapterListeningTimeEstimate))]
     [NotifyPropertyChangedFor(nameof(ChapterListeningTimeRemainingText))]
     [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
@@ -543,6 +545,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanControlPlayback))]
     [NotifyPropertyChangedFor(nameof(CanCreateBookmark))]
+    [NotifyPropertyChangedFor(nameof(CanStopAtChapterEnd))]
+    [NotifyCanExecuteChangedFor(nameof(StartChapterSleepTimerCommand))]
     [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddBookmarkCommand))]
@@ -562,6 +566,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(ListeningTimeRemainingText))]
     [NotifyPropertyChangedFor(nameof(HasChapterListeningTimeEstimate))]
     [NotifyPropertyChangedFor(nameof(ChapterListeningTimeRemainingText))]
+    [NotifyPropertyChangedFor(nameof(CanStopAtChapterEnd))]
+    [NotifyCanExecuteChangedFor(nameof(StartChapterSleepTimerCommand))]
     private double _positionSeconds;
 
     [ObservableProperty]
@@ -571,6 +577,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(HasChapterListeningTimeEstimate))]
     [NotifyPropertyChangedFor(nameof(ChapterListeningTimeRemainingText))]
     [NotifyPropertyChangedFor(nameof(SeekMaximum))]
+    [NotifyPropertyChangedFor(nameof(CanStopAtChapterEnd))]
+    [NotifyCanExecuteChangedFor(nameof(StartChapterSleepTimerCommand))]
     private double _durationSeconds;
 
     [ObservableProperty]
@@ -585,6 +593,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SleepTimerButtonText))]
     [NotifyPropertyChangedFor(nameof(SleepTimerStatusText))]
+    [NotifyPropertyChangedFor(nameof(CanAddTenMinutesToSleepTimer))]
+    [NotifyCanExecuteChangedFor(nameof(AddTenMinutesToSleepTimerCommand))]
     private bool _isSleepTimerActive;
 
     [ObservableProperty]
@@ -615,11 +625,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         : $"{Bookmarks.Count} bookmarks";
 
     public string SleepTimerButtonText => IsSleepTimerActive
-        ? $"Sleep {FormatSleepTimerRemaining(SleepTimerRemaining)}"
+        ? _chapterSleepTarget is { } chapter
+            ? $"Sleep • chapter {chapter.Number}"
+            : $"Sleep {FormatSleepTimerRemaining(SleepTimerRemaining)}"
         : "Sleep timer";
 
     public string SleepTimerStatusText => IsSleepTimerActive
-        ? $"Playback pauses in {FormatSleepTimerRemaining(SleepTimerRemaining)}."
+        ? _chapterSleepTarget is { } chapter
+            ? $"Playback pauses at the end of chapter {chapter.Number}. Speed changes and pauses keep this target."
+            : $"Playback pauses in {FormatSleepTimerRemaining(SleepTimerRemaining)}."
         : "Choose when playback should pause.";
 
     public string ChapterPositionText => SelectedChapter is null
@@ -1535,7 +1549,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void StartSleepTimer90() => StartSleepTimer(TimeSpan.FromMinutes(90));
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanAddTenMinutesToSleepTimer))]
     private void AddTenMinutesToSleepTimer()
     {
         if (!IsSleepTimerActive || _sleepTimerDeadlineUtc is not { } deadline)
@@ -1626,6 +1640,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         {
             SeekPlayback(TimeSpan.FromSeconds(value));
         }
+
+        EvaluateChapterSleep(value);
     }
 
     partial void OnVolumeChanged(double value)
@@ -1957,6 +1973,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        StopSleepTimer();
         _sleepTimerPausePending = false;
         _sleepTimerDeadlineUtc = DateTimeOffset.UtcNow + duration;
         SleepTimerRemaining = duration;
@@ -1966,11 +1983,22 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void OnSleepTimerTick(object? sender, EventArgs e)
     {
+        if (IsChapterSleepActive)
+        {
+            EvaluateChapterSleep(CurrentPlaybackPosition.TotalSeconds);
+            return;
+        }
+
         if (!UpdateSleepTimerRemaining())
         {
             return;
         }
 
+        FinishSleepTimer();
+    }
+
+    private void FinishSleepTimer()
+    {
         StopSleepTimer();
         if (IsPlaying && CanControlPlayback)
         {
@@ -2007,6 +2035,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         _sleepTimer.Stop();
         _sleepTimerDeadlineUtc = null;
+        SetChapterSleepTarget(null);
         SleepTimerRemaining = TimeSpan.Zero;
         IsSleepTimerActive = false;
     }

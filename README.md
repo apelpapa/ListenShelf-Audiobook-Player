@@ -131,6 +131,14 @@ use the next chapter's start, or the known book ending for the final chapter.
 The estimate stays hidden for books without chapters or usable chapter boundaries.
 Chapter navigation and original audiobook timestamps remain unchanged.
 
+The sleep-timer menu includes **Stop at end of chapter** when a usable chapter
+ending is known. It captures that chapter's media position, so changing speed
+or pausing does not change the target. Rewinding keeps the original target;
+seeking to or beyond it finishes the timer and pauses active playback. The timer
+turns itself off after firing and is canceled when loading another book. It is
+not restored on the next launch. Choosing a minutes-based timer replaces the
+chapter stop; **Add 10 minutes** applies only to minutes-based timers.
+
 Settings can export the entire local library as one versioned
 `.listenshelf-backup` file. It contains a consistent database snapshot,
 managed audiobooks, covers, settings, bookmarks, progress, and recoverable

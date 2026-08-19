@@ -12,8 +12,15 @@ public partial class MainWindowViewModel
 
     private double? GetChapterListeningSeconds()
     {
+        if (!PlaybackRates.Contains(SelectedPlaybackRate) || GetCurrentChapterEnd() is not { } chapter) return null;
+        var remaining = Math.Ceiling(Math.Max(0d, chapter.EndSeconds - PositionSeconds) / SelectedPlaybackRate);
+        return double.IsFinite(remaining) && remaining < TimeSpan.MaxValue.TotalSeconds ? remaining : null;
+    }
+
+    private (int Number, double EndSeconds)? GetCurrentChapterEnd()
+    {
         if (!IsFileLoaded || Chapters.Count == 0 || !double.IsFinite(PositionSeconds)
-            || PositionSeconds < 0 || !PlaybackRates.Contains(SelectedPlaybackRate))
+            || PositionSeconds < 0)
         {
             return null;
         }
@@ -52,13 +59,13 @@ public partial class MainWindowViewModel
             return null;
         }
 
-        var remaining = Math.Ceiling(Math.Max(0d, end - PositionSeconds) / SelectedPlaybackRate);
-        return double.IsFinite(remaining) && remaining < TimeSpan.MaxValue.TotalSeconds ? remaining : null;
+        return end < TimeSpan.MaxValue.TotalSeconds ? (chapter.Index + 1, end) : null;
     }
 
     private void OnChapterTimingCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         OnPropertyChanged(nameof(HasChapterListeningTimeEstimate));
         OnPropertyChanged(nameof(ChapterListeningTimeRemainingText));
+        NotifyChapterSleepAvailability();
     }
 }
