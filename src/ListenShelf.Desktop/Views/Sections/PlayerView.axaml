@@ -137,10 +137,20 @@
                                 Value="{Binding PositionSeconds, Mode=TwoWay}"
                                 IsEnabled="{Binding CanControlPlayback}" />
                         <Grid ColumnDefinitions="*,Auto,*">
-                            <TextBlock Grid.Column="0"
-                                       FontSize="12"
-                                       Foreground="{DynamicResource MutedTextBrush}"
-                                       Text="{Binding ElapsedText}" />
+                            <Button Grid.Column="0"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Top"
+                                    Padding="0"
+                                    MinHeight="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    FontSize="12"
+                                    Foreground="{DynamicResource AccentTextBrush}"
+                                    Cursor="Hand"
+                                    Command="{Binding JumpToTimeCommand}"
+                                    Content="{Binding ElapsedText}"
+                                    AutomationProperties.Name="Jump to time"
+                                    ToolTip.Tip="Jump to time — enter mm:ss or hh:mm:ss" />
                             <TextBlock Grid.Column="1"
                                        FontSize="12"
                                        Foreground="{DynamicResource SubtleTextBrush}"

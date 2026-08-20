@@ -60,6 +60,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IAudiobookLibrary _audiobookLibrary;
     private readonly IBookMetadataEditorService _bookMetadataEditorService;
     private readonly IBookmarkEditorService _bookmarkEditorService;
+    private readonly IJumpToTimeService _jumpToTimeService;
     private readonly IBookRemovalConfirmationService _bookRemovalConfirmationService;
     private readonly IManagedLibraryIntegrityChecker _managedLibraryIntegrityChecker;
     private readonly IManagedLibraryMaintenance _managedLibraryMaintenance;
@@ -94,7 +95,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IManagedLibraryMaintenance managedLibraryMaintenance,
         ILibraryBackupService libraryBackupService,
         IManagedFileVerifier managedFileVerifier,
-        IManagedFileRepairer managedFileRepairer)
+        IManagedFileRepairer managedFileRepairer,
+        IJumpToTimeService jumpToTimeService)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
@@ -113,6 +115,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             () => IsLibraryBusy = false, PrepareManagedFileRepair, FinishManagedFileRepairAsync);
         _bookMetadataEditorService = bookMetadataEditorService;
         _bookmarkEditorService = bookmarkEditorService;
+        _jumpToTimeService = jumpToTimeService;
         _bookRemovalConfirmationService = bookRemovalConfirmationService;
         _managedLibraryIntegrityChecker = managedLibraryIntegrityChecker;
         _managedLibraryMaintenance = managedLibraryMaintenance;
@@ -536,6 +539,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddBookmarkCommand))]
+    [NotifyPropertyChangedFor(nameof(CanJumpToTime))]
+    [NotifyCanExecuteChangedFor(nameof(JumpToTimeCommand))]
     private bool _isFileLoaded;
 
     [ObservableProperty]
@@ -550,6 +555,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddBookmarkCommand))]
+    [NotifyPropertyChangedFor(nameof(CanJumpToTime))]
+    [NotifyCanExecuteChangedFor(nameof(JumpToTimeCommand))]
     private bool _isBusy;
 
     [ObservableProperty]
@@ -579,6 +586,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(SeekMaximum))]
     [NotifyPropertyChangedFor(nameof(CanStopAtChapterEnd))]
     [NotifyCanExecuteChangedFor(nameof(StartChapterSleepTimerCommand))]
+    [NotifyPropertyChangedFor(nameof(CanJumpToTime))]
+    [NotifyCanExecuteChangedFor(nameof(JumpToTimeCommand))]
     private double _durationSeconds;
 
     [ObservableProperty]

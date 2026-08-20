@@ -225,7 +225,7 @@ public sealed class ChapterSleepTimerTests
             audiobookLibrary: new SqliteAudiobookLibrary(database, workspace.ManagedLibraryPath),
             bookMetadataEditorService: null!, bookmarkEditorService: null!, bookRemovalConfirmationService: null!,
             managedLibraryIntegrityChecker: null!, managedLibraryMaintenance: null!, libraryBackupService: null!,
-            managedFileVerifier: null!, managedFileRepairer: null!);
+            managedFileVerifier: null!, managedFileRepairer: null!, jumpToTimeService: null!);
         model.Chapters.Add(Chapter(0, 0, 600));
         model.Chapters.Add(Chapter(1, 600, 600));
         model.Chapters.Add(Chapter(2, 1200, 600));

@@ -1,0 +1,57 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+        x:Class="ListenShelf.Desktop.Views.JumpToTimeWindow"
+        x:DataType="vm:JumpToTimeViewModel"
+        Width="430"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        Background="{DynamicResource AppBackgroundBrush}"
+        Icon="/Assets/Branding/listenshelf.ico"
+        Title="Jump to time"
+        WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="24" Spacing="14">
+        <TextBlock FontSize="22"
+                   FontWeight="SemiBold"
+                   Foreground="{DynamicResource PrimaryTextBrush}"
+                   Text="Jump to time" />
+        <TextBlock FontSize="12"
+                   Foreground="{DynamicResource MutedTextBrush}"
+                   Text="Enter mm:ss or hh:mm:ss. Uses the original book timeline, regardless of playback speed."
+                   TextWrapping="Wrap" />
+        <TextBox x:Name="TimeInput"
+                 MaxLength="24"
+                 FontSize="20"
+                 Background="{DynamicResource SurfaceRaisedBrush}"
+                 BorderBrush="{DynamicResource BorderBrush}"
+                 Foreground="{DynamicResource PrimaryTextBrush}"
+                 Text="{Binding TimeText, Mode=TwoWay}"
+                 PlaceholderText="2:14:30"
+                 AutomationProperties.Name="Audiobook time, minutes and seconds or hours minutes and seconds" />
+        <TextBlock FontSize="12"
+                   Foreground="{DynamicResource SecondaryTextBrush}"
+                   Text="{Binding RangeText}" />
+        <TextBlock MinHeight="32"
+                   FontSize="12"
+                   Foreground="{DynamicResource AccentTextBrush}"
+                   Text="{Binding ValidationMessage}"
+                   TextWrapping="Wrap" />
+        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="10">
+            <Button Padding="18,9"
+                    Background="{DynamicResource SurfaceRaisedBrush}"
+                    Foreground="{DynamicResource SecondaryTextBrush}"
+                    IsCancel="True"
+                    Click="Cancel_OnClick"
+                    Content="Cancel" />
+            <Button Padding="18,9"
+                    Background="{DynamicResource AccentBrush}"
+                    Foreground="{DynamicResource OnAccentBrush}"
+                    FontWeight="SemiBold"
+                    IsDefault="True"
+                    IsEnabled="{Binding CanJump}"
+                    Click="Jump_OnClick"
+                    Content="Jump" />
+        </StackPanel>
+    </StackPanel>
+</Window>

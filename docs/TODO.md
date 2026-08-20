@@ -143,6 +143,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Show estimated listening time remaining at the selected playback speed, updating on playback/seek/speed changes while retaining original timeline timestamps.
 - [x] Show speed-adjusted current-chapter time remaining, following the playhead across chapter boundaries and hiding the estimate when chapter timing is unavailable.
 - [x] Add a one-shot stop-at-end-of-chapter sleep option, with a fixed media-position target, safe timer-mode switching, and no cross-book or restart carryover.
+- [x] Add Jump to time from the elapsed timestamp, with mm:ss/hh:mm:ss validation, book-length bounds, keyboard confirmation/cancel, and no automatic play/pause change.
 - [ ] Add smart rewind after longer pauses.
 
 ### Cross-platform architecture

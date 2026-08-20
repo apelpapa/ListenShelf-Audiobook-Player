@@ -113,7 +113,8 @@ namespace ListenShelf.Desktop
                 libraryMaintenance,
                 backupService,
                 new SqliteManagedFileVerifier(database, audiobookLibrary.ManagedLibraryPath),
-                audiobookLibrary);
+                audiobookLibrary,
+                new AvaloniaJumpToTimeService(mainWindow));
 
             mainWindow.DataContext = viewModel;
             mainWindow.Opened += async (_, _) =>

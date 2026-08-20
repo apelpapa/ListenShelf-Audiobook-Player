@@ -131,6 +131,15 @@ use the next chapter's start, or the known book ending for the final chapter.
 The estimate stays hidden for books without chapters or usable chapter boundaries.
 Chapter navigation and original audiobook timestamps remain unchanged.
 
+Click the elapsed timestamp beneath the seek bar to **Jump to time**. Enter
+`mm:ss` (including total minutes such as `90:00`) or `hh:mm:ss` such as
+`2:14:30`, then press Enter or click Jump. Escape or Cancel closes the dialog
+without seeking. Times use the original audiobook timeline, not the selected playback
+speed; out-of-range or malformed input cannot be submitted. The jump saves your
+place without starting paused playback or pausing active playback, except when
+an armed end-of-chapter sleep timer reaches its target. Playback continues while
+the dialog is open. The action becomes available once the book length is known.
+
 The sleep-timer menu includes **Stop at end of chapter** when a usable chapter
 ending is known. It captures that chapter's media position, so changing speed
 or pausing does not change the target. Rewinding keeps the original target;
