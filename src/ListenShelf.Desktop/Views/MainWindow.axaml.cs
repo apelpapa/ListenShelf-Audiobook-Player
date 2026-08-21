@@ -148,33 +148,15 @@ namespace ListenShelf.Desktop.Views
                 return PlaybackControlAction.Pause;
             }
 
-            if (e.KeyModifiers != KeyModifiers.None)
+            var focus = FocusManager?.GetFocusedElement() switch
             {
-                return null;
-            }
-
-            var focusedControl = FocusManager?.GetFocusedElement();
-            if (focusedControl is TextBox)
-            {
-                return null;
-            }
-
-            return e.Key switch
-            {
-                Key.Space when focusedControl is not Button and not ComboBox =>
-                    PlaybackControlAction.TogglePlayPause,
-                Key.K when focusedControl is not ComboBox =>
-                    PlaybackControlAction.TogglePlayPause,
-                Key.Left when focusedControl is not Slider and not ComboBox =>
-                    PlaybackControlAction.SkipBackward,
-                Key.J when focusedControl is not ComboBox =>
-                    PlaybackControlAction.SkipBackward,
-                Key.Right when focusedControl is not Slider and not ComboBox =>
-                    PlaybackControlAction.SkipForward,
-                Key.L when focusedControl is not ComboBox =>
-                    PlaybackControlAction.SkipForward,
-                _ => null,
+                TextBox => PlaybackKeyboardFocus.TextInput,
+                ComboBox => PlaybackKeyboardFocus.ComboBox,
+                Button => PlaybackKeyboardFocus.Button,
+                Slider => PlaybackKeyboardFocus.Slider,
+                _ => PlaybackKeyboardFocus.Other,
             };
+            return PlaybackKeyboardShortcuts.GetAction(e.Key, e.KeyModifiers, focus);
         }
     }
 }

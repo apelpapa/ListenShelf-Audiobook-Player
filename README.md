@@ -131,6 +131,14 @@ use the next chapter's start, or the known book ending for the final chapter.
 The estimate stays hidden for books without chapters or usable chapter boundaries.
 Chapter navigation and original audiobook timestamps remain unchanged.
 
+Click the speaker beside the volume slider or press **M** to mute/unmute
+ListenShelf without pausing playback or changing the Windows system volume.
+Muting keeps the selected volume and its saved setting; unmuting restores it.
+Moving the slider unmutes at the new level. At zero volume, unmute restores the
+last audible level from this session (or the default 80% if none is available).
+Mute is temporary and is not restored after restarting the app. The shortcut
+does not run while typing in text fields or selecting combo-box values.
+
 Click the elapsed timestamp beneath the seek bar to **Jump to time**. Enter
 `mm:ss` (including total minutes such as `90:00`) or `hh:mm:ss` such as
 `2:14:30`, then press Enter or click Jump. Escape or Cancel closes the dialog

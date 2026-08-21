@@ -370,15 +370,31 @@
                 </ScrollViewer>
 
                 <Grid Grid.Row="2" ColumnDefinitions="Auto,150,*,Auto,90">
-                    <TextBlock Grid.Column="0"
-                               Margin="0,0,12,0"
-                               VerticalAlignment="Center"
-                               FontSize="13"
-                               Foreground="{DynamicResource SecondaryTextBrush}"
-                               Text="Volume" />
+                    <Button Grid.Column="0"
+                            Margin="0,0,10,0"
+                            Padding="6"
+                            VerticalAlignment="Center"
+                            Background="{DynamicResource SurfaceRaisedBrush}"
+                            Command="{Binding ToggleMuteCommand}"
+                            ToolTip.Tip="{Binding MuteButtonToolTip}"
+                            AutomationProperties.Name="{Binding MuteButtonToolTip}">
+                        <Grid Width="24" Height="24">
+                            <Path Fill="{DynamicResource SecondaryTextBrush}"
+                                  Data="M 3,8 L 7,8 L 12,4 L 12,20 L 7,16 L 3,16 Z" />
+                            <Path Stroke="{DynamicResource SecondaryTextBrush}"
+                                  StrokeThickness="1.8"
+                                  Data="M 15,8 C 18,10 18,14 15,16 M 18,5 C 23,9 23,15 18,19"
+                                  IsVisible="{Binding IsVolumeAudible}" />
+                            <Path Stroke="{DynamicResource AccentTextBrush}"
+                                  StrokeThickness="2"
+                                  Data="M 16,9 L 22,15 M 22,9 L 16,15"
+                                  IsVisible="{Binding IsMuted}" />
+                        </Grid>
+                    </Button>
                     <Slider Grid.Column="1"
                             Minimum="0"
                             Maximum="100"
+                            AutomationProperties.Name="Volume"
                             Value="{Binding Volume, Mode=TwoWay}" />
 
                     <TextBlock Grid.Column="3"

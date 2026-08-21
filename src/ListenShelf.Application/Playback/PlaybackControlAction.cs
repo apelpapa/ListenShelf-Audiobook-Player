@@ -7,4 +7,5 @@ public enum PlaybackControlAction
     Pause,
     SkipBackward,
     SkipForward,
+    ToggleMute,
 }

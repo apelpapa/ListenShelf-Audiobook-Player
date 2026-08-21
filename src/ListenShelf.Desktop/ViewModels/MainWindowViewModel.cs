@@ -225,7 +225,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _audioEngine.StateChanged += OnStateChanged;
         _audioEngine.ChaptersChanged += OnChaptersChanged;
         Chapters.CollectionChanged += OnChapterTimingCollectionChanged;
-        _audioEngine.Volume = (int)Volume;
+        _audioEngine.Volume = (int)Math.Round(Volume);
+        if (Math.Round(Volume) > 0) _lastAudibleVolume = Volume;
         _audioEngine.TrySetPlaybackRate(SelectedPlaybackRate);
 
         RefreshLibrary();
@@ -651,6 +652,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool TryHandlePlaybackControl(PlaybackControlAction action)
     {
+        // Volume controls are available before a book is loaded, just like the
+        // volume slider. Playback/seek actions still require a ready book.
+        if (action == PlaybackControlAction.ToggleMute)
+        {
+            if (!CanToggleMute) return false;
+            ToggleMute();
+            return true;
+        }
+
         if (!CanControlPlayback)
         {
             return false;
@@ -1670,7 +1680,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        _isMuted = false;
+        if (Math.Round(safeVolume) > 0) _lastAudibleVolume = safeVolume;
         _audioEngine.Volume = (int)Math.Round(safeVolume);
+        NotifyMuteState();
 
         try
         {
@@ -1728,6 +1741,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Verification.PropertyChanged -= OnVerificationPropertyChanged;
         SaveCurrentProgress(force: true);
         _disposed = true;
+        OnPropertyChanged(nameof(CanToggleMute));
+        ToggleMuteCommand.NotifyCanExecuteChanged();
         _sleepTimer.Stop();
         _sleepTimer.Tick -= OnSleepTimerTick;
         _audioEngine.ProgressChanged -= OnProgressChanged;
