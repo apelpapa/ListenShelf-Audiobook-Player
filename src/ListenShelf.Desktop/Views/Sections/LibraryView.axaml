@@ -124,17 +124,20 @@
 
                 <Grid Grid.Row="1"
                       ColumnDefinitions="*,Auto"
-                      ColumnSpacing="8"
-                      IsVisible="{Binding HasLibraryBooks}">
-                    <TextBox Grid.Column="0"
+                      ColumnSpacing="8">
+                    <TextBox x:Name="LibrarySearchBox"
+                             Grid.Column="0"
                              MaxWidth="620"
                              HorizontalAlignment="Stretch"
                              PlaceholderText="Search by title, author, series, narrator, or filename"
+                             AutomationProperties.Name="Search library"
+                             ToolTip.Tip="Search library (Ctrl+F). Escape clears the search text."
                              Text="{Binding LibrarySearchText, Mode=TwoWay}" />
                     <Button Grid.Column="1"
                             Padding="12,6"
                             Command="{Binding ClearLibrarySearchCommand}"
                             Content="Clear"
+                            ToolTip.Tip="Clear search text (Escape while searching)"
                             IsVisible="{Binding HasLibrarySearchText}" />
                 </Grid>
 

@@ -102,6 +102,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Filter books that are in progress.
 - [x] Filter completed books.
 - [x] Remember sort/status choices and combine them with search, list/tile views, and group stacks.
+- [x] Add Ctrl+F to open/focus library search and select its text, plus Escape to clear only the focused search query while preserving browsing choices and playback.
 
 ### Diagnostics and support
 

@@ -8,4 +8,15 @@ public partial class LibraryView : UserControl
     {
         InitializeComponent();
     }
+
+    public bool IsSearchFocused => LibrarySearchBox.IsFocused;
+
+    public void FocusSearch()
+    {
+        if (LibrarySearchBox.IsEffectivelyVisible && LibrarySearchBox.IsEffectivelyEnabled
+            && (LibrarySearchBox.IsFocused || LibrarySearchBox.Focus()))
+        {
+            LibrarySearchBox.SelectAll();
+        }
+    }
 }

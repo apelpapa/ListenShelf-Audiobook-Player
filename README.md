@@ -65,6 +65,12 @@ previews use only matching books, and stacks follow the sort order of their firs
 matching book. Finished means the saved position has reached the known duration;
 rewinding back into a book makes it In progress again.
 
+Press **Ctrl+F** anywhere in the main window to open the Library and focus its
+search box, selecting any existing query for replacement. **Escape** clears the
+query while the search box is focused, without resetting sort, status, or
+grouping choices. These shortcuts do not change playback, and Escape elsewhere
+keeps its usual behavior. Dialogs keep their own keyboard controls.
+
 On startup, ListenShelf performs a read-only managed-storage integrity check.
 The same check can be run again from Storage Care to find catalog entries with
 missing files, unreferenced files or folders, unsafe catalog paths, and

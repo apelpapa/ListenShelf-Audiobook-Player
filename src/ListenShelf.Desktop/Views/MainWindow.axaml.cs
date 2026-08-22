@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Threading;
 using ListenShelf.Application.Playback;
 using ListenShelf.Desktop.Services;
 using ListenShelf.Desktop.ViewModels;
@@ -60,6 +61,30 @@ namespace ListenShelf.Desktop.Views
 
             if (e.Handled || _viewModel is null)
             {
+                return;
+            }
+
+            var searchAction = LibrarySearchKeyboardShortcuts.GetAction(
+                e.Key, e.KeyModifiers, _viewModel.IsLibrarySection && LibrarySection.IsSearchFocused);
+            if (searchAction == LibrarySearchKeyboardAction.FocusSearch)
+            {
+                var viewModel = _viewModel;
+                if (!viewModel.IsLibrarySection) viewModel.ShowLibraryCommand.Execute(null);
+                // Visibility bindings/layout must settle before focusing a
+                // section that was hidden. Never steal focus back from a dialog.
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (IsActive && ReferenceEquals(_viewModel, viewModel) && viewModel.IsLibrarySection)
+                        LibrarySection.FocusSearch();
+                }, DispatcherPriority.Loaded);
+                e.Handled = true;
+                return;
+            }
+
+            if (searchAction == LibrarySearchKeyboardAction.ClearSearch)
+            {
+                _viewModel.ClearLibrarySearchCommand.Execute(null);
+                e.Handled = true;
                 return;
             }
 

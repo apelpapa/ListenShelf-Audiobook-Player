@@ -13,6 +13,83 @@ namespace ListenShelf.Tests;
 
 public sealed class LibraryBrowsingViewModelTests
 {
+    [Theory]
+    [InlineData(AppSection.Library)]
+    [InlineData(AppSection.Player)]
+    [InlineData(AppSection.Settings)]
+    [InlineData(AppSection.StorageCare)]
+    public void SearchNavigationFromAnySection_PreservesQueryBrowsingChoicesAndPlayback(AppSection section)
+    {
+        using var workspace = new TestWorkspace();
+        SeedLibrary(workspace);
+        using var model = CreateViewModel(workspace);
+        model.SelectedLibrarySortOption = model.LibrarySortOptions.Single(option => option.Mode == LibrarySortMode.RecentlyPlayed);
+        model.SelectedLibraryStatusOption = model.LibraryStatusOptions.Single(option => option.Filter == LibraryStatusFilter.InProgress);
+        model.SelectedLibraryGroupOption = model.LibraryGroupOptions.Single(option => option.Mode == LibraryGroupMode.Series);
+        model.SelectedLibraryView = LibraryViewMode.Tiles;
+        model.LibrarySearchText = "Middle";
+        model.SelectedSection = section;
+        model.IsPlaying = true;
+
+        // Ctrl+F uses normal navigation only if the Library is not already open.
+        // The idle engine throws if navigation tries to play, pause, or seek.
+        if (!model.IsLibrarySection) model.ShowLibraryCommand.Execute(null);
+
+        Assert.True(model.IsLibrarySection);
+        Assert.Equal("Middle", model.LibrarySearchText);
+        Assert.Equal(["Middle"], Titles(model.FilteredLibraryBooks));
+        Assert.Equal(LibrarySortMode.RecentlyPlayed, model.SelectedLibrarySortOption.Mode);
+        Assert.Equal(LibraryStatusFilter.InProgress, model.SelectedLibraryStatusOption.Filter);
+        Assert.Equal(LibraryGroupMode.Series, model.SelectedLibraryGroupOption.Mode);
+        Assert.Equal(LibraryViewMode.Tiles, model.SelectedLibraryView);
+        Assert.True(model.IsPlaying);
+    }
+
+    [Theory]
+    [InlineData("Middle")]
+    [InlineData("no matching book")]
+    [InlineData("   ")]
+    [InlineData("")]
+    public void ClearingSearchOnly_RemovesQueryWithoutResettingBrowsingChoices(string query)
+    {
+        using var workspace = new TestWorkspace();
+        var library = SeedLibrary(workspace);
+        using var model = CreateViewModel(workspace);
+        model.SelectedLibrarySortOption = model.LibrarySortOptions.Single(option => option.Mode == LibrarySortMode.RecentlyPlayed);
+        model.SelectedLibraryStatusOption = model.LibraryStatusOptions.Single(option => option.Filter == LibraryStatusFilter.InProgress);
+        model.SelectedLibraryGroupOption = model.LibraryGroupOptions.Single(option => option.Mode == LibraryGroupMode.Series);
+        model.SelectedLibraryView = LibraryViewMode.Tiles;
+        model.LibrarySearchText = query;
+        model.IsPlaying = true;
+
+        model.ClearLibrarySearchCommand.Execute(null);
+
+        Assert.Empty(model.LibrarySearchText);
+        Assert.False(model.HasLibrarySearchText);
+        Assert.True(model.HasLibraryFilters); // The status filter is still active.
+        Assert.Equal(["Middle", "Alpha"], Titles(model.FilteredLibraryBooks));
+        Assert.Equal(LibrarySortMode.RecentlyPlayed, model.SelectedLibrarySortOption.Mode);
+        Assert.Equal(LibraryStatusFilter.InProgress, model.SelectedLibraryStatusOption.Filter);
+        Assert.Equal(LibraryGroupMode.Series, model.SelectedLibraryGroupOption.Mode);
+        Assert.Equal(LibraryViewMode.Tiles, model.SelectedLibraryView);
+        Assert.Equal(4, library.GetBooks().Count);
+        Assert.True(model.IsPlaying);
+    }
+
+    [Fact]
+    public void SearchNavigationAndClearing_AreSafeWithAnEmptyLibrary()
+    {
+        using var workspace = new TestWorkspace();
+        using var model = CreateViewModel(workspace);
+        model.SelectedSection = AppSection.Settings;
+        model.ShowLibraryCommand.Execute(null);
+        model.LibrarySearchText = "first book";
+        model.ClearLibrarySearchCommand.Execute(null);
+        Assert.True(model.IsLibrarySection);
+        Assert.True(model.IsLibraryEmpty);
+        Assert.Empty(model.LibrarySearchText);
+    }
+
     [Fact]
     public void FileVerificationAvailability_FollowsLibraryBackupAndStorageOperations()
     {

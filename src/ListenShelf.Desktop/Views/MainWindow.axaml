@@ -171,7 +171,7 @@
             </Border>
 
             <Grid Grid.Row="1" Margin="26">
-                <sections:LibraryView IsVisible="{Binding IsLibrarySection}" />
+                <sections:LibraryView x:Name="LibrarySection" IsVisible="{Binding IsLibrarySection}" />
                 <sections:PlayerView IsVisible="{Binding IsPlayerSection}" />
                 <sections:StorageCareView IsVisible="{Binding IsStorageCareSection}" />
                 <sections:SettingsView IsVisible="{Binding IsSettingsSection}" />
