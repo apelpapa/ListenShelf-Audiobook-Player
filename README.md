@@ -145,6 +145,12 @@ last audible level from this session (or the default 80% if none is available).
 Mute is temporary and is not restored after restarting the app. The shortcut
 does not run while typing in text fields or selecting combo-box values.
 
+Under **Settings**, expand **Keyboard shortcuts** below Playback for a compact
+reference covering playback, library search, the Jump to time dialog, and Windows
+media buttons. It explains focus exceptions and uses your configured skip
+intervals rather than assuming the defaults. The panel is read-only and starts
+collapsed; opening it does not change playback or settings.
+
 Click the elapsed timestamp beneath the seek bar to **Jump to time**. Enter
 `mm:ss` (including total minutes such as `90:00`) or `hh:mm:ss` such as
 `2:14:30`, then press Enter or click Jump. Escape or Cancel closes the dialog

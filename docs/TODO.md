@@ -213,6 +213,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 ### Playback and interface
 
+- [x] Add a collapsible keyboard-shortcut reference in Settings, covering implemented playback/search controls, Jump to time dialog keys, focus exceptions, and Windows media buttons.
 - [ ] Add A-B repeat.
 - [ ] Add a mini-player.
 - [ ] Add playback and listening statistics.

@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:shortcuts="using:ListenShelf.Desktop.Services"
+             x:Class="ListenShelf.Desktop.Views.Components.KeyboardShortcutsPanel">
+    <UserControl.Resources>
+        <DataTemplate x:Key="ShortcutRow" x:DataType="shortcuts:KeyboardShortcutReferenceEntry">
+            <Grid ColumnDefinitions="150,*" ColumnSpacing="16" Margin="0,6">
+                <Border Padding="10,7" CornerRadius="7"
+                        VerticalAlignment="Top"
+                        Background="{DynamicResource SurfaceRaisedBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                    <TextBlock FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource AccentTextBrush}"
+                               Text="{Binding Keys}" TextWrapping="Wrap" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                    <TextBlock FontSize="13" FontWeight="SemiBold"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
+                               Text="{Binding Description}" TextWrapping="Wrap" />
+                    <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                               Text="{Binding Context}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Border Padding="4" CornerRadius="15"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+        <Expander Header="Keyboard shortcuts" IsExpanded="False"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                  Foreground="{DynamicResource PrimaryTextBrush}"
+                  AutomationProperties.Name="Keyboard shortcuts reference">
+            <StackPanel Margin="14,0,14,14" Spacing="12">
+                <TextBlock FontSize="12" Foreground="{DynamicResource MutedTextBrush}"
+                           Text="A quick reference to existing controls. Opening this panel does not change playback."
+                           TextWrapping="Wrap" />
+                <TextBlock FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource SecondaryTextBrush}" Text="MAIN WINDOW" />
+                <ItemsControl ItemsSource="{x:Static shortcuts:KeyboardShortcutReference.MainWindow}"
+                              ItemTemplate="{StaticResource ShortcutRow}" />
+                <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                           Text="{x:Static shortcuts:KeyboardShortcutReference.FocusGuidance}" TextWrapping="Wrap" />
+
+                <Separator />
+                <TextBlock FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource SecondaryTextBrush}" Text="JUMP TO TIME DIALOG" />
+                <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                           Text="Open this dialog by clicking the elapsed timestamp beneath the player's seek bar."
+                           TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{x:Static shortcuts:KeyboardShortcutReference.JumpToTimeDialog}"
+                              ItemTemplate="{StaticResource ShortcutRow}" />
+
+                <Separator />
+                <TextBlock FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource SecondaryTextBrush}" Text="MEDIA BUTTONS" />
+                <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                           Text="{x:Static shortcuts:KeyboardShortcutReference.MediaKeyGuidance}" TextWrapping="Wrap" />
+            </StackPanel>
+        </Expander>
+    </Border>
+</UserControl>
