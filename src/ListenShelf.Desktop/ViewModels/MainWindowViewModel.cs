@@ -61,6 +61,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private readonly IBookMetadataEditorService _bookMetadataEditorService;
     private readonly IBookmarkEditorService _bookmarkEditorService;
     private readonly IJumpToTimeService _jumpToTimeService;
+    private readonly ISleepTimerDurationService _sleepTimerDurationService;
     private readonly IBookRemovalConfirmationService _bookRemovalConfirmationService;
     private readonly IManagedLibraryIntegrityChecker _managedLibraryIntegrityChecker;
     private readonly IManagedLibraryMaintenance _managedLibraryMaintenance;
@@ -96,7 +97,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         ILibraryBackupService libraryBackupService,
         IManagedFileVerifier managedFileVerifier,
         IManagedFileRepairer managedFileRepairer,
-        IJumpToTimeService jumpToTimeService)
+        IJumpToTimeService jumpToTimeService,
+        ISleepTimerDurationService sleepTimerDurationService)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
@@ -116,6 +118,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _bookMetadataEditorService = bookMetadataEditorService;
         _bookmarkEditorService = bookmarkEditorService;
         _jumpToTimeService = jumpToTimeService;
+        _sleepTimerDurationService = sleepTimerDurationService;
         _bookRemovalConfirmationService = bookRemovalConfirmationService;
         _managedLibraryIntegrityChecker = managedLibraryIntegrityChecker;
         _managedLibraryMaintenance = managedLibraryMaintenance;
@@ -542,6 +545,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyCanExecuteChangedFor(nameof(AddBookmarkCommand))]
     [NotifyPropertyChangedFor(nameof(CanJumpToTime))]
     [NotifyCanExecuteChangedFor(nameof(JumpToTimeCommand))]
+    [NotifyPropertyChangedFor(nameof(CanStartCustomSleepTimer))]
+    [NotifyCanExecuteChangedFor(nameof(StartCustomSleepTimerCommand))]
     private bool _isFileLoaded;
 
     [ObservableProperty]
@@ -558,6 +563,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyCanExecuteChangedFor(nameof(AddBookmarkCommand))]
     [NotifyPropertyChangedFor(nameof(CanJumpToTime))]
     [NotifyCanExecuteChangedFor(nameof(JumpToTimeCommand))]
+    [NotifyPropertyChangedFor(nameof(CanStartCustomSleepTimer))]
+    [NotifyCanExecuteChangedFor(nameof(StartCustomSleepTimerCommand))]
     private bool _isBusy;
 
     [ObservableProperty]
@@ -1743,6 +1750,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _disposed = true;
         OnPropertyChanged(nameof(CanToggleMute));
         ToggleMuteCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanStartCustomSleepTimer));
+        StartCustomSleepTimerCommand.NotifyCanExecuteChanged();
         _sleepTimer.Stop();
         _sleepTimer.Tick -= OnSleepTimerTick;
         _audioEngine.ProgressChanged -= OnProgressChanged;

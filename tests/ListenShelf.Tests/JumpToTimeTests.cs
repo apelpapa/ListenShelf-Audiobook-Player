@@ -255,7 +255,7 @@ public sealed class JumpToTimeTests
             audiobookLibrary: new SqliteAudiobookLibrary(database, workspace.ManagedLibraryPath),
             bookMetadataEditorService: null!, bookmarkEditorService: null!, bookRemovalConfirmationService: null!,
             managedLibraryIntegrityChecker: null!, managedLibraryMaintenance: null!, libraryBackupService: null!,
-            managedFileVerifier: null!, managedFileRepairer: null!, jumpToTimeService: dialog);
+            managedFileVerifier: null!, managedFileRepairer: null!, jumpToTimeService: dialog, sleepTimerDurationService: null!);
         model.DurationSeconds = engine.Duration.TotalSeconds;
         model.PositionSeconds = 300;
         model.IsFileLoaded = true;

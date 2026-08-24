@@ -20,6 +20,12 @@ public static class KeyboardShortcutReference
         new("Escape", "Cancel", "Closes Jump to time without seeking."),
     ]);
 
+    public static IReadOnlyList<KeyboardShortcutReferenceEntry> CustomSleepTimerDialog { get; } = Array.AsReadOnly<KeyboardShortcutReferenceEntry>(
+    [
+        new("Enter", "Start the custom timer", "Available only for a valid whole-minute duration; replaces the active timer."),
+        new("Escape", "Cancel", "Closes the custom timer dialog without changing an existing timer."),
+    ]);
+
     public static string FocusGuidance =>
         "Main-window playback shortcuts do not run while typing in text fields or choosing combo-box values. "
         + "Focused buttons keep Space; focused sliders keep the arrow keys. "

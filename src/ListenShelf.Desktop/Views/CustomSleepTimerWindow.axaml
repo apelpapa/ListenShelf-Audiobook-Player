@@ -1,0 +1,48 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+        x:Class="ListenShelf.Desktop.Views.CustomSleepTimerWindow"
+        x:DataType="vm:CustomSleepTimerViewModel"
+        Width="440"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        Background="{DynamicResource AppBackgroundBrush}"
+        Icon="/Assets/Branding/listenshelf.ico"
+        Title="Custom sleep timer"
+        WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="24" Spacing="14">
+        <TextBlock FontSize="22" FontWeight="SemiBold"
+                   Foreground="{DynamicResource PrimaryTextBrush}" Text="Custom sleep timer" />
+        <TextBlock FontSize="12" Foreground="{DynamicResource MutedTextBrush}"
+                   Text="Choose how many minutes from now to pause playback. The countdown begins when you press Start and continues even while playback is paused."
+                   TextWrapping="Wrap" />
+        <TextBlock FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
+                   Text="{Binding RangeText}" />
+        <TextBox x:Name="MinutesInput"
+                 MaxLength="12" FontSize="20"
+                 Background="{DynamicResource SurfaceRaisedBrush}"
+                 BorderBrush="{DynamicResource BorderBrush}"
+                 Foreground="{DynamicResource PrimaryTextBrush}"
+                 Text="{Binding MinutesText, Mode=TwoWay}"
+                 PlaceholderText="35"
+                 AutomationProperties.Name="Sleep timer duration in whole minutes" />
+        <TextBlock MinHeight="32" FontSize="12"
+                   Foreground="{DynamicResource AccentTextBrush}"
+                   Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
+        <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                   Text="Start replaces any active timer. Cancel leaves it running. This does not start or pause playback immediately."
+                   TextWrapping="Wrap" />
+        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Spacing="10">
+            <Button Padding="18,9"
+                    Background="{DynamicResource SurfaceRaisedBrush}"
+                    Foreground="{DynamicResource SecondaryTextBrush}"
+                    IsCancel="True" Click="Cancel_OnClick" Content="Cancel" />
+            <Button Padding="18,9"
+                    Background="{DynamicResource AccentBrush}"
+                    Foreground="{DynamicResource OnAccentBrush}" FontWeight="SemiBold"
+                    IsDefault="True" IsEnabled="{Binding CanStart}"
+                    Click="Start_OnClick" Content="Start" />
+        </StackPanel>
+    </StackPanel>
+</Window>

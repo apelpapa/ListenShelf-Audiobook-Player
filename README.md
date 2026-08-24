@@ -146,7 +146,7 @@ Mute is temporary and is not restored after restarting the app. The shortcut
 does not run while typing in text fields or selecting combo-box values.
 
 Under **Settings**, expand **Keyboard shortcuts** below Playback for a compact
-reference covering playback, library search, the Jump to time dialog, and Windows
+reference covering playback, library search, time-entry dialogs, and Windows
 media buttons. It explains focus exceptions and uses your configured skip
 intervals rather than assuming the defaults. The panel is read-only and starts
 collapsed; opening it does not change playback or settings.
@@ -159,6 +159,14 @@ speed; out-of-range or malformed input cannot be submitted. The jump saves your
 place without starting paused playback or pausing active playback, except when
 an armed end-of-chapter sleep timer reaches its target. Playback continues while
 the dialog is open. The action becomes available once the book length is known.
+
+Choose **Sleep timer → Custom minutes…** for any whole-minute duration from
+1–1440 minutes. Enter or Start replaces the active timer and begins a countdown
+from confirmation; Escape, Cancel, or closing the dialog leaves any existing
+timer alone. Playback and existing timers continue while you edit. Like the
+presets, the countdown runs even when playback is paused and is unaffected by
+playback speed. **Add 10 minutes** and **Cancel timer** work with custom timers
+too. This does not start playback, and no active timer is restored on app launch.
 
 The sleep-timer menu includes **Stop at end of chapter** when a usable chapter
 ending is known. It captures that chapter's media position, so changing speed

@@ -224,7 +224,7 @@ public sealed class PlaybackMuteTests
             audiobookLibrary: new SqliteAudiobookLibrary(new ListenShelfDatabase(workspace.DatabasePath), workspace.ManagedLibraryPath),
             bookMetadataEditorService: null!, bookmarkEditorService: null!, bookRemovalConfirmationService: null!,
             managedLibraryIntegrityChecker: null!, managedLibraryMaintenance: null!, libraryBackupService: null!,
-            managedFileVerifier: null!, managedFileRepairer: null!, jumpToTimeService: null!);
+            managedFileVerifier: null!, managedFileRepairer: null!, jumpToTimeService: null!, sleepTimerDurationService: null!);
 
     private sealed class NoOpThemeService : IThemeService
     {

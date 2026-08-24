@@ -41,7 +41,7 @@ public sealed class PlaybackSkipCommandTests
             managedLibraryIntegrityChecker: null!,
             managedLibraryMaintenance: null!,
             libraryBackupService: null!,
-            managedFileVerifier: null!, managedFileRepairer: null!, jumpToTimeService: null!);
+            managedFileVerifier: null!, managedFileRepairer: null!, jumpToTimeService: null!, sleepTimerDurationService: null!);
         viewModel.IsFileLoaded = true;
 
         Skip();

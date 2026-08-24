@@ -53,6 +53,15 @@
 
                 <Separator />
                 <TextBlock FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource SecondaryTextBrush}" Text="CUSTOM SLEEP TIMER DIALOG" />
+                <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                           Text="Open from Sleep timer → Custom minutes. An existing timer keeps running while you edit."
+                           TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{x:Static shortcuts:KeyboardShortcutReference.CustomSleepTimerDialog}"
+                              ItemTemplate="{StaticResource ShortcutRow}" />
+
+                <Separator />
+                <TextBlock FontSize="11" FontWeight="SemiBold"
                            Foreground="{DynamicResource SecondaryTextBrush}" Text="MEDIA BUTTONS" />
                 <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
                            Text="{x:Static shortcuts:KeyboardShortcutReference.MediaKeyGuidance}" TextWrapping="Wrap" />

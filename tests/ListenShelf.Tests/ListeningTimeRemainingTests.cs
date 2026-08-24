@@ -273,7 +273,7 @@ public sealed class ListeningTimeRemainingTests
             audiobookLibrary: new SqliteAudiobookLibrary(database, workspace.ManagedLibraryPath),
             bookMetadataEditorService: null!, bookmarkEditorService: null!, bookRemovalConfirmationService: null!,
             managedLibraryIntegrityChecker: null!, managedLibraryMaintenance: null!, libraryBackupService: null!,
-            managedFileVerifier: null!, managedFileRepairer: null!, jumpToTimeService: null!);
+            managedFileVerifier: null!, managedFileRepairer: null!, jumpToTimeService: null!, sleepTimerDurationService: null!);
     }
 
     private sealed class NoOpThemeService : IThemeService

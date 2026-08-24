@@ -41,7 +41,8 @@ public sealed class KeyboardShortcutReferenceTests
     {
         Assert.Equal(6, KeyboardShortcutReference.MainWindow.Count);
         Assert.Equal(2, KeyboardShortcutReference.JumpToTimeDialog.Count);
-        foreach (var entries in new[] { KeyboardShortcutReference.MainWindow, KeyboardShortcutReference.JumpToTimeDialog })
+        Assert.Equal(2, KeyboardShortcutReference.CustomSleepTimerDialog.Count);
+        foreach (var entries in new[] { KeyboardShortcutReference.MainWindow, KeyboardShortcutReference.JumpToTimeDialog, KeyboardShortcutReference.CustomSleepTimerDialog })
         {
             Assert.Equal(entries.Count, entries.Select(entry => entry.Keys).Distinct().Count());
             Assert.All(entries, entry =>
@@ -60,6 +61,8 @@ public sealed class KeyboardShortcutReferenceTests
         Assert.Contains("search box is focused", KeyboardShortcutReference.MainWindow.Single(entry => entry.Keys == "Escape").Context);
         Assert.Contains("without seeking", KeyboardShortcutReference.JumpToTimeDialog.Single(entry => entry.Keys == "Escape").Context);
         Assert.Contains("valid", KeyboardShortcutReference.JumpToTimeDialog.Single(entry => entry.Keys == "Enter").Context);
+        Assert.Contains("valid", KeyboardShortcutReference.CustomSleepTimerDialog.Single(entry => entry.Keys == "Enter").Context);
+        Assert.Contains("without changing", KeyboardShortcutReference.CustomSleepTimerDialog.Single(entry => entry.Keys == "Escape").Context);
         Assert.Null(LibrarySearchKeyboardShortcuts.GetAction(Key.Escape, KeyModifiers.None, false));
     }
 }

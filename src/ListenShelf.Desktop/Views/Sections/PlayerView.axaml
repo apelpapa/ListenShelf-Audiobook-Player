@@ -112,6 +112,8 @@
                                               Command="{Binding StartSleepTimer60Command}" />
                                     <MenuItem Header="90 minutes"
                                               Command="{Binding StartSleepTimer90Command}" />
+                                    <MenuItem Header="Custom minutes…"
+                                              Command="{Binding StartCustomSleepTimerCommand}" />
                                     <Separator />
                                     <MenuItem Header="Add 10 minutes"
                                               Command="{Binding AddTenMinutesToSleepTimerCommand}"

@@ -289,7 +289,7 @@ public sealed class LibraryBrowsingViewModelTests
             managedLibraryIntegrityChecker: null!, managedLibraryMaintenance: null!, libraryBackupService: null!,
             managedFileVerifier: new SqliteManagedFileVerifier(database, workspace.ManagedLibraryPath),
             managedFileRepairer: new SqliteAudiobookLibrary(database, workspace.ManagedLibraryPath),
-            jumpToTimeService: null!);
+            jumpToTimeService: null!, sleepTimerDurationService: null!);
     }
 
     private static string[] Titles(IEnumerable<LibraryBookItemViewModel> books) =>
