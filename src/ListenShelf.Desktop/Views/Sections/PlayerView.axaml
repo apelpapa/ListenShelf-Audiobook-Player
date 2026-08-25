@@ -99,6 +99,10 @@
                                     <MenuItem Header="{Binding SleepTimerStatusText}"
                                               IsEnabled="False" />
                                     <Separator />
+                                    <MenuItem Header="{Binding LastSleepTimerMenuText}"
+                                              Command="{Binding StartLastSleepTimerCommand}"
+                                              ToolTip.Tip="{Binding LastSleepTimerToolTip}" />
+                                    <Separator />
                                     <MenuItem Header="Stop at end of chapter"
                                               Command="{Binding StartChapterSleepTimerCommand}" />
                                     <Separator />

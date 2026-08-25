@@ -12,6 +12,166 @@ namespace ListenShelf.Tests;
 public sealed class CustomSleepTimerTests
 {
     [Theory]
+    [InlineData(15)]
+    [InlineData(30)]
+    [InlineData(45)]
+    [InlineData(60)]
+    [InlineData(90)]
+    public void EveryPreset_RemembersItsFullDuration_AndCanBeExplicitlyReused(int minutes)
+    {
+        using var workspace = new TestWorkspace();
+        using var model = Create(workspace, new TestDialog());
+        var command = minutes switch
+        {
+            15 => model.StartSleepTimer15Command,
+            30 => model.StartSleepTimer30Command,
+            45 => model.StartSleepTimer45Command,
+            60 => model.StartSleepTimer60Command,
+            _ => model.StartSleepTimer90Command,
+        };
+        command.Execute(null);
+        Assert.Equal(minutes, model.LastSleepTimerMinutes);
+        Assert.Equal(minutes, new SqliteAppSettingsStore(new ListenShelfDatabase(workspace.DatabasePath)).GetLastSleepTimerMinutes());
+        model.CancelSleepTimerCommand.Execute(null);
+        Assert.True(model.CanStartLastSleepTimer);
+        Assert.False(model.IsSleepTimerActive);
+        model.StartLastSleepTimerCommand.Execute(null);
+        Assert.Equal(TimeSpan.FromMinutes(minutes), model.SleepTimerRemaining);
+        Assert.True(model.IsSleepTimerActive);
+        Assert.False(model.IsPlaying);
+        Assert.Empty(model.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task ReuseRestartsFullCustomDuration_NotRemainingOrExtendedTime_AndReplacesChapterMode()
+    {
+        using var workspace = new TestWorkspace();
+        using var model = Create(workspace, new TestDialog { Result = 37 });
+        model.IsPlaying = true;
+        await model.StartCustomSleepTimerCommand.ExecuteAsync(null);
+        model.AddTenMinutesToSleepTimerCommand.Execute(null);
+        Assert.InRange(model.SleepTimerRemaining.TotalMinutes, 46.9, 47);
+        Assert.Equal(37, model.LastSleepTimerMinutes);
+        model.StartLastSleepTimerCommand.Execute(null);
+        Assert.Equal(TimeSpan.FromMinutes(37), model.SleepTimerRemaining);
+        model.StartChapterSleepTimerCommand.Execute(null);
+        Assert.True(model.IsChapterSleepActive);
+        Assert.Equal(37, model.LastSleepTimerMinutes);
+        model.StartLastSleepTimerCommand.Execute(null);
+        Assert.False(model.IsChapterSleepActive);
+        Assert.Equal(TimeSpan.FromMinutes(37), model.SleepTimerRemaining);
+        Assert.True(model.IsPlaying);
+        Assert.Empty(model.ErrorMessage);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0)]
+    [InlineData(1441)]
+    public async Task CustomDialogPrefillsLastDuration_ButCancelAndInvalidInputDoNotReplaceIt(int? result)
+    {
+        using var workspace = new TestWorkspace();
+        var store = new SqliteAppSettingsStore(new ListenShelfDatabase(workspace.DatabasePath));
+        store.SaveLastSleepTimerMinutes(37);
+        var dialog = new TestDialog { Result = result };
+        using var model = Create(workspace, dialog);
+        await model.StartCustomSleepTimerCommand.ExecuteAsync(null);
+        Assert.Equal(37, dialog.InitialMinutes);
+        Assert.Equal(37, model.LastSleepTimerMinutes);
+        Assert.Equal(37, store.GetLastSleepTimerMinutes());
+        Assert.False(model.IsSleepTimerActive);
+    }
+
+    [Theory]
+    [InlineData(null, "30")]
+    [InlineData(0, "30")]
+    [InlineData(1441, "30")]
+    [InlineData(1, "1")]
+    [InlineData(37, "37")]
+    [InlineData(1440, "1440")]
+    public void CustomDialogPrefillUsesValidPreferenceOrDefault(int? saved, string text)
+    {
+        var model = new CustomSleepTimerViewModel(saved);
+        Assert.Equal(text, model.MinutesText);
+        Assert.True(model.CanStart);
+    }
+
+    [Fact]
+    public void ReuseIsUnavailableWithoutSavedDuration_OrWithoutAReadyBook()
+    {
+        using var workspace = new TestWorkspace();
+        using var model = Create(workspace, new TestDialog());
+        Assert.Null(model.LastSleepTimerMinutes);
+        Assert.Equal("Start last timer", model.LastSleepTimerMenuText);
+        Assert.Contains("Choose a preset", model.LastSleepTimerToolTip);
+        AssertUnavailable();
+        model.StartChapterSleepTimerCommand.Execute(null);
+        Assert.Null(model.LastSleepTimerMinutes); // Chapter mode is not a duration.
+        model.CancelSleepTimerCommand.Execute(null);
+        model.StartSleepTimer15Command.Execute(null);
+        model.CancelSleepTimerCommand.Execute(null);
+        model.IsBusy = true;
+        AssertUnavailable();
+        model.IsBusy = false;
+        model.IsFileLoaded = false;
+        AssertUnavailable();
+        model.IsFileLoaded = true;
+        Assert.True(model.StartLastSleepTimerCommand.CanExecute(null));
+        model.Dispose();
+        AssertUnavailable();
+
+        void AssertUnavailable()
+        {
+            Assert.False(model.StartLastSleepTimerCommand.CanExecute(null));
+            model.StartLastSleepTimerCommand.Execute(null);
+            Assert.False(model.IsSleepTimerActive);
+        }
+    }
+
+    [Fact]
+    public async Task SavingDurationUpdatesMenuAndAvailabilityBindings()
+    {
+        using var workspace = new TestWorkspace();
+        using var model = Create(workspace, new TestDialog { Result = 1 });
+        var properties = new List<string?>();
+        var commandChanges = 0;
+        model.PropertyChanged += (_, args) => properties.Add(args.PropertyName);
+        model.StartLastSleepTimerCommand.CanExecuteChanged += (_, _) => commandChanges++;
+        await model.StartCustomSleepTimerCommand.ExecuteAsync(null);
+        Assert.Equal("Start last timer (1 minute)", model.LastSleepTimerMenuText);
+        Assert.Contains(nameof(model.LastSleepTimerMinutes), properties);
+        Assert.Contains(nameof(model.LastSleepTimerMenuText), properties);
+        Assert.Contains(nameof(model.LastSleepTimerToolTip), properties);
+        Assert.Contains(nameof(model.CanStartLastSleepTimer), properties);
+        Assert.True(commandChanges > 0);
+        model.StartSleepTimer30Command.Execute(null);
+        Assert.Equal("Start last timer (30 minutes)", model.LastSleepTimerMenuText);
+    }
+
+    [Fact]
+    public void SaveFailureLeavesTimerAndSessionReuseWorking_AndReportsTheProblem()
+    {
+        using var workspace = new TestWorkspace();
+        var database = new ListenShelfDatabase(workspace.DatabasePath);
+        var store = new SqliteAppSettingsStore(database);
+        store.SaveLastSleepTimerMinutes(15);
+        using var model = Create(workspace, new TestDialog());
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "CREATE TRIGGER reject_settings_insert BEFORE INSERT ON app_settings BEGIN SELECT RAISE(ABORT, 'Read-only test'); END;";
+        command.ExecuteNonQuery();
+        model.StartSleepTimer45Command.Execute(null);
+        Assert.True(model.IsSleepTimerActive);
+        Assert.Equal(45, model.LastSleepTimerMinutes);
+        Assert.Equal(TimeSpan.FromMinutes(45), model.SleepTimerRemaining);
+        Assert.Equal(15, store.GetLastSleepTimerMinutes());
+        Assert.Contains("could not be remembered", model.ErrorMessage);
+        model.CancelSleepTimerCommand.Execute(null);
+        model.StartLastSleepTimerCommand.Execute(null);
+        Assert.Equal(TimeSpan.FromMinutes(45), model.SleepTimerRemaining);
+    }
+
+    [Theory]
     [InlineData("1", 1)]
     [InlineData("35", 35)]
     [InlineData("1440", 1440)]
@@ -238,7 +398,8 @@ public sealed class CustomSleepTimerTests
         using var reopened = Create(workspace, new TestDialog());
         Assert.False(reopened.IsSleepTimerActive);
         Assert.Equal(TimeSpan.Zero, reopened.SleepTimerRemaining);
-        Assert.Equal("30", new CustomSleepTimerViewModel().MinutesText); // Remember/reuse is the next increment.
+        Assert.Equal(37, reopened.LastSleepTimerMinutes);
+        Assert.Equal("37", new CustomSleepTimerViewModel(reopened.LastSleepTimerMinutes).MinutesText);
     }
 
     private static MainWindowViewModel Create(TestWorkspace workspace, ISleepTimerDurationService dialog)
@@ -264,9 +425,11 @@ public sealed class CustomSleepTimerTests
         public Task<int?>? PendingResult { get; init; }
         public bool Fail { get; init; }
         public int ShowCount { get; private set; }
-        public Task<int?> ChooseMinutesAsync()
+        public int? InitialMinutes { get; private set; }
+        public Task<int?> ChooseMinutesAsync(int? initialMinutes)
         {
             ShowCount++;
+            InitialMinutes = initialMinutes;
             if (Fail) throw new InvalidOperationException("Test dialog failure");
             return PendingResult ?? Task.FromResult(Result);
         }

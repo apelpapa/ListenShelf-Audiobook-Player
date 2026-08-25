@@ -223,6 +223,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         _themeService.ApplyTheme(_selectedTheme);
+        LoadLastSleepTimerDuration();
 
         _audioEngine.ProgressChanged += OnProgressChanged;
         _audioEngine.StateChanged += OnStateChanged;
@@ -547,6 +548,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyCanExecuteChangedFor(nameof(JumpToTimeCommand))]
     [NotifyPropertyChangedFor(nameof(CanStartCustomSleepTimer))]
     [NotifyCanExecuteChangedFor(nameof(StartCustomSleepTimerCommand))]
+    [NotifyPropertyChangedFor(nameof(CanStartLastSleepTimer))]
+    [NotifyCanExecuteChangedFor(nameof(StartLastSleepTimerCommand))]
     private bool _isFileLoaded;
 
     [ObservableProperty]
@@ -565,6 +568,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyCanExecuteChangedFor(nameof(JumpToTimeCommand))]
     [NotifyPropertyChangedFor(nameof(CanStartCustomSleepTimer))]
     [NotifyCanExecuteChangedFor(nameof(StartCustomSleepTimerCommand))]
+    [NotifyPropertyChangedFor(nameof(CanStartLastSleepTimer))]
+    [NotifyCanExecuteChangedFor(nameof(StartLastSleepTimerCommand))]
     private bool _isBusy;
 
     [ObservableProperty]
@@ -1120,6 +1125,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private void ReloadPreferencesAfterRestore()
     {
         SkipSettings.Reload();
+        LoadLastSleepTimerDuration();
         SelectedTheme = _appSettingsStore.GetTheme();
         _themeService.ApplyTheme(SelectedTheme);
         AppearanceSettingsMessage = $"{SelectedTheme} appearance is active.";
@@ -1561,19 +1567,19 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     }
 
     [RelayCommand]
-    private void StartSleepTimer15() => StartSleepTimer(TimeSpan.FromMinutes(15));
+    private void StartSleepTimer15() => StartSleepTimer(15);
 
     [RelayCommand]
-    private void StartSleepTimer30() => StartSleepTimer(TimeSpan.FromMinutes(30));
+    private void StartSleepTimer30() => StartSleepTimer(30);
 
     [RelayCommand]
-    private void StartSleepTimer45() => StartSleepTimer(TimeSpan.FromMinutes(45));
+    private void StartSleepTimer45() => StartSleepTimer(45);
 
     [RelayCommand]
-    private void StartSleepTimer60() => StartSleepTimer(TimeSpan.FromMinutes(60));
+    private void StartSleepTimer60() => StartSleepTimer(60);
 
     [RelayCommand]
-    private void StartSleepTimer90() => StartSleepTimer(TimeSpan.FromMinutes(90));
+    private void StartSleepTimer90() => StartSleepTimer(90);
 
     [RelayCommand(CanExecute = nameof(CanAddTenMinutesToSleepTimer))]
     private void AddTenMinutesToSleepTimer()
@@ -1752,6 +1758,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         ToggleMuteCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(CanStartCustomSleepTimer));
         StartCustomSleepTimerCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanStartLastSleepTimer));
+        StartLastSleepTimerCommand.NotifyCanExecuteChanged();
         _sleepTimer.Stop();
         _sleepTimer.Tick -= OnSleepTimerTick;
         _audioEngine.ProgressChanged -= OnProgressChanged;
@@ -1999,19 +2007,22 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private void StartSleepTimer(TimeSpan duration)
+    private void StartSleepTimer(int minutes)
     {
-        if (!IsFileLoaded || duration <= TimeSpan.Zero)
+        if (_disposed || !CanControlPlayback || !SleepTimerDurations.IsValid(minutes))
         {
             return;
         }
 
+        var duration = TimeSpan.FromMinutes(minutes);
+        ErrorMessage = string.Empty;
         StopSleepTimer();
         _sleepTimerPausePending = false;
         _sleepTimerDeadlineUtc = DateTimeOffset.UtcNow + duration;
         SleepTimerRemaining = duration;
         IsSleepTimerActive = true;
         _sleepTimer.Start();
+        RememberSleepTimerDuration(minutes);
     }
 
     private void OnSleepTimerTick(object? sender, EventArgs e)

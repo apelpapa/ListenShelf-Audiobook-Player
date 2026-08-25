@@ -168,6 +168,14 @@ presets, the countdown runs even when playback is paused and is unaffected by
 playback speed. **Add 10 minutes** and **Cancel timer** work with custom timers
 too. This does not start playback, and no active timer is restored on app launch.
 
+**Sleep timer → Start last timer (… minutes)** starts a fresh countdown using
+the last preset or custom duration you confirmed. That duration is remembered
+between launches, included in local backups, and used to prefill the custom
+dialog. It is the original duration, not the time remaining: **Add 10 minutes**
+and **Stop at end of chapter** do not overwrite it. The reuse option is disabled
+until a valid duration has been chosen and a book is ready. Loading a saved
+duration never starts a timer or playback automatically.
+
 The sleep-timer menu includes **Stop at end of chapter** when a usable chapter
 ending is known. It captures that chapter's media position, so changing speed
 or pausing does not change the target. Rewinding keeps the original target;

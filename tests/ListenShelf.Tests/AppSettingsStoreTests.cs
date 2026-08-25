@@ -23,6 +23,7 @@ public sealed class AppSettingsStoreTests
         Assert.Equal(1d, store.GetPlaybackRate());
         Assert.Equal(15, store.GetRewindSeconds());
         Assert.Equal(30, store.GetForwardSeconds());
+        Assert.Null(store.GetLastSleepTimerMinutes());
     }
 
     [Fact]
@@ -42,6 +43,7 @@ public sealed class AppSettingsStoreTests
         store.SavePlaybackRate(1.5d);
         store.SaveRewindSeconds(10);
         store.SaveForwardSeconds(45);
+        store.SaveLastSleepTimerMinutes(37);
 
         var reloadedStore = new SqliteAppSettingsStore(
             new ListenShelfDatabase(workspace.DatabasePath));
@@ -56,6 +58,62 @@ public sealed class AppSettingsStoreTests
         Assert.Equal(1.5d, reloadedStore.GetPlaybackRate());
         Assert.Equal(10, reloadedStore.GetRewindSeconds());
         Assert.Equal(45, reloadedStore.GetForwardSeconds());
+        Assert.Equal(37, reloadedStore.GetLastSleepTimerMinutes());
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(37)]
+    [InlineData(1440)]
+    public void LastSleepTimerDuration_RoundTripsWithoutAnActiveDeadline(int minutes)
+    {
+        using var workspace = new TestWorkspace();
+        var database = new ListenShelfDatabase(workspace.DatabasePath);
+        new SqliteAppSettingsStore(database).SaveLastSleepTimerMinutes(minutes);
+        Assert.Equal(minutes, new SqliteAppSettingsStore(database).GetLastSleepTimerMinutes());
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT setting_key FROM app_settings;";
+        Assert.Equal("player.last_sleep_timer_minutes", command.ExecuteScalar());
+        command.CommandText = "SELECT COUNT(*) FROM app_settings;";
+        Assert.Equal(1L, command.ExecuteScalar());
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(0)]
+    [InlineData(1441)]
+    [InlineData(int.MaxValue)]
+    public void LastSleepTimerDuration_RejectsInvalidWritesWithoutReplacingGoodValue(int minutes)
+    {
+        using var workspace = new TestWorkspace();
+        var store = new SqliteAppSettingsStore(new ListenShelfDatabase(workspace.DatabasePath));
+        store.SaveLastSleepTimerMinutes(37);
+        Assert.Throws<ArgumentOutOfRangeException>(() => store.SaveLastSleepTimerMinutes(minutes));
+        Assert.Equal(37, store.GetLastSleepTimerMinutes());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("bad")]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("1441")]
+    [InlineData("2147483648")]
+    [InlineData("37.5")]
+    [InlineData("NaN")]
+    public void LastSleepTimerDuration_IgnoresMalformedStoredValueWithoutRewritingIt(string value)
+    {
+        using var workspace = new TestWorkspace();
+        var database = new ListenShelfDatabase(workspace.DatabasePath);
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "INSERT INTO app_settings VALUES ('player.last_sleep_timer_minutes', $value);";
+        command.Parameters.AddWithValue("$value", value);
+        command.ExecuteNonQuery();
+        Assert.Null(new SqliteAppSettingsStore(database).GetLastSleepTimerMinutes());
+        command.CommandText = "SELECT setting_value FROM app_settings WHERE setting_key = 'player.last_sleep_timer_minutes';";
+        Assert.Equal(value, command.ExecuteScalar());
     }
 
     [Theory]

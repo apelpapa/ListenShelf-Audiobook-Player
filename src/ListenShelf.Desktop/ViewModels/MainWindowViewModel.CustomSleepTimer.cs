@@ -15,7 +15,7 @@ public partial class MainWindowViewModel
         try
         {
             // Do not cancel or alter an existing timer while the user is editing.
-            var result = await _sleepTimerDurationService.ChooseMinutesAsync();
+            var result = await _sleepTimerDurationService.ChooseMinutesAsync(LastSleepTimerMinutes);
             if (result is not { } minutes || !CanStartCustomSleepTimer
                 || session != _playbackSessionVersion) return;
 
@@ -26,7 +26,7 @@ public partial class MainWindowViewModel
             }
 
             ErrorMessage = string.Empty;
-            StartSleepTimer(TimeSpan.FromMinutes(minutes));
+            StartSleepTimer(minutes);
         }
         catch (Exception exception)
         {

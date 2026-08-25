@@ -16,6 +16,7 @@ public sealed class SqliteAppSettingsStore(ListenShelfDatabase database) : IAppS
     private const string PlaybackRateKey = "player.playback_rate";
     private const string RewindSecondsKey = "player.rewind_seconds";
     private const string ForwardSecondsKey = "player.forward_seconds";
+    private const string LastSleepTimerMinutesKey = "player.last_sleep_timer_minutes";
     private const double DefaultLibraryTileWidth = 220d;
     private const double MinimumLibraryTileWidth = 180d;
     private const double MaximumLibraryTileWidth = 320d;
@@ -241,6 +242,21 @@ public sealed class SqliteAppSettingsStore(ListenShelfDatabase database) : IAppS
         GetSkipInterval(ForwardSecondsKey, PlaybackSkipIntervals.DefaultForwardSeconds);
 
     public void SaveForwardSeconds(int seconds) => SaveSkipInterval(ForwardSecondsKey, seconds);
+
+    public int? GetLastSleepTimerMinutes()
+    {
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT setting_value FROM app_settings WHERE setting_key = $key;";
+        command.Parameters.AddWithValue("$key", LastSleepTimerMinutesKey);
+        return int.TryParse(command.ExecuteScalar() as string, NumberStyles.Integer,
+            CultureInfo.InvariantCulture, out var minutes) && SleepTimerDurations.IsValid(minutes)
+            ? minutes : null;
+    }
+
+    public void SaveLastSleepTimerMinutes(int minutes) =>
+        SaveDoubleSetting(LastSleepTimerMinutesKey, minutes,
+            SleepTimerDurations.MinimumMinutes, SleepTimerDurations.MaximumMinutes, nameof(minutes));
 
     private int GetSkipInterval(string key, int defaultValue)
     {

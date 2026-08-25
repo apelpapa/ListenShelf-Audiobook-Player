@@ -41,4 +41,8 @@ public interface IAppSettingsStore
     int GetForwardSeconds();
 
     void SaveForwardSeconds(int seconds);
+
+    int? GetLastSleepTimerMinutes();
+
+    void SaveLastSleepTimerMinutes(int minutes);
 }
