@@ -544,6 +544,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddBookmarkCommand))]
+    [NotifyCanExecuteChangedFor(nameof(QuickBookmarkCommand))]
     [NotifyPropertyChangedFor(nameof(CanJumpToTime))]
     [NotifyCanExecuteChangedFor(nameof(JumpToTimeCommand))]
     [NotifyPropertyChangedFor(nameof(CanStartCustomSleepTimer))]
@@ -564,6 +565,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddBookmarkCommand))]
+    [NotifyCanExecuteChangedFor(nameof(QuickBookmarkCommand))]
     [NotifyPropertyChangedFor(nameof(CanJumpToTime))]
     [NotifyCanExecuteChangedFor(nameof(JumpToTimeCommand))]
     [NotifyPropertyChangedFor(nameof(CanStartCustomSleepTimer))]
@@ -632,7 +634,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool CanControlPlayback => IsFileLoaded && !IsBusy;
 
-    public bool CanCreateBookmark => CanControlPlayback;
+    public bool CanCreateBookmark => !_disposed && CanControlPlayback;
 
     public bool CanDisplayBookmarkPanel => IsFileLoaded;
 
@@ -1754,6 +1756,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Verification.PropertyChanged -= OnVerificationPropertyChanged;
         SaveCurrentProgress(force: true);
         _disposed = true;
+        OnPropertyChanged(nameof(CanCreateBookmark));
+        AddBookmarkCommand.NotifyCanExecuteChanged();
+        QuickBookmarkCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(CanToggleMute));
         ToggleMuteCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(CanStartCustomSleepTimer));

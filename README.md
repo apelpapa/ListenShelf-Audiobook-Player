@@ -160,6 +160,13 @@ place without starting paused playback or pausing active playback, except when
 an armed end-of-chapter sleep timer reaches its target. Playback continues while
 the dialog is open. The action becomes available once the book length is known.
 
+**Quick bookmark** in the Player saves the current position immediately, without
+opening a dialog or changing playback. It appears as **Bookmark at …** with its
+timestamp and chapter context when available. Use **Edit** afterward to add a
+name or note, or **Add with note…** to use the original editor-first workflow.
+Quick bookmarks also work while paused, including at a restored saved position
+before pressing Play, and are saved in the same local database as other bookmarks.
+
 Choose **Sleep timer → Custom minutes…** for any whole-minute duration from
 1–1440 minutes. Enter or Start replaces the active timer and begins a countdown
 from confirmation; Escape, Cancel, or closing the dialog leaves any existing

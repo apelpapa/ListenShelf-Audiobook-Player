@@ -243,26 +243,35 @@
                             IsVisible="{Binding CanDisplayBookmarkPanel}">
                         <Grid RowDefinitions="Auto,*" RowSpacing="7">
                             <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                                <TextBlock FontSize="10"
-                                           FontWeight="SemiBold"
-                                           Foreground="{DynamicResource SubtleTextBrush}"
-                                           Text="BOOKMARKS" />
-                                <TextBlock Grid.Column="1"
-                                           VerticalAlignment="Center"
-                                           FontSize="10"
-                                           Foreground="{DynamicResource MutedTextBrush}"
-                                           IsVisible="{Binding HasBookmarks}"
-                                           Text="{Binding BookmarkCountText}" />
+                                <StackPanel VerticalAlignment="Center" Spacing="2">
+                                    <TextBlock FontSize="10"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource SubtleTextBrush}"
+                                               Text="BOOKMARKS" />
+                                    <TextBlock FontSize="10"
+                                               Foreground="{DynamicResource MutedTextBrush}"
+                                               IsVisible="{Binding HasBookmarks}"
+                                               Text="{Binding BookmarkCountText}" />
+                                </StackPanel>
 
-                                <Button Grid.Column="2"
+                                <Button Grid.Column="1"
                                         Padding="9,5"
                                         Background="{DynamicResource AccentBrush}"
                                         Foreground="{DynamicResource OnAccentBrush}"
                                         FontSize="10"
-                                        Command="{Binding AddBookmarkCommand}"
-                                        Content="+ Add bookmark"
+                                        Command="{Binding QuickBookmarkCommand}"
+                                        Content="+ Quick bookmark"
                                         IsEnabled="{Binding CanCreateBookmark}"
-                                        ToolTip.Tip="Save the current listening position" />
+                                        ToolTip.Tip="Save this position immediately without a dialog. Use Edit afterward to add a name or note." />
+                                <Button Grid.Column="2"
+                                        Padding="9,5"
+                                        Background="{DynamicResource SurfaceAltBrush}"
+                                        Foreground="{DynamicResource SecondaryTextBrush}"
+                                        FontSize="10"
+                                        Command="{Binding AddBookmarkCommand}"
+                                        Content="Add with note…"
+                                        IsEnabled="{Binding CanCreateBookmark}"
+                                        ToolTip.Tip="Open the bookmark editor to add a name or note before saving this position" />
                             </Grid>
 
                             <Grid Grid.Row="1">
