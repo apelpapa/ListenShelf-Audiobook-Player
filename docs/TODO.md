@@ -59,6 +59,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Test global playback-settings persistence.
 - [x] Test bookmark creation, editing, ordering, and deletion.
 - [x] Test quick bookmarks while playing/paused, at pending resume positions and chapter boundaries, with editor compatibility, per-book persistence, availability guards, and save-failure feedback.
+- [x] Test bookmark search matching, empty/no-result states, clear/count notifications, filtered add/edit/delete/jump commands, and book-switch/unload resets without search-driven data or playback changes.
 - [x] Test managed-book removal, related-data cleanup, path safety, and interrupted-removal recovery.
 - [x] Test managed-storage checks for missing files, orphaned paths, stale imports, unsafe catalog paths, and journaled removals.
 - [x] Test orphaned audiobook recovery, stale-import cleanup, confirmed folder cleanup, and refusal to delete cataloged audiobooks.
@@ -150,6 +151,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Add Jump to time from the elapsed timestamp, with mm:ss/hh:mm:ss validation, book-length bounds, keyboard confirmation/cancel, and no automatic play/pause change.
 - [x] Add a mute/unmute speaker button and M shortcut that preserve the selected/saved volume, restore the last audible level from zero, and leave system volume and playback state unchanged.
 - [x] Add one-click quick bookmarks without a dialog, preserving the current/restored position and available chapter context, with optional names and notes editable afterward and no playback interruption.
+- [x] Add live, case-insensitive current-book bookmark search by name/note, with matching counts, clear/no-results states, timestamp ordering, and a reset when loading or unloading a book.
 - [ ] Add smart rewind after longer pauses.
 
 ### Cross-platform architecture

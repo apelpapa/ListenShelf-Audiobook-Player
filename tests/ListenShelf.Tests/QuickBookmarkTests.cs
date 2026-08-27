@@ -12,7 +12,7 @@ using ListenShelf.Infrastructure.Storage;
 
 namespace ListenShelf.Tests;
 
-public sealed class QuickBookmarkTests
+public sealed partial class QuickBookmarkTests
 {
     [Theory]
     [InlineData(false, 0d, "0:00")]
@@ -251,7 +251,7 @@ public sealed class QuickBookmarkTests
         public MainWindowViewModel Model { get; }
         public string FilePath { get; }
 
-        public PlayerSession(TimeSpan? savedPosition = null)
+        public PlayerSession(TimeSpan? savedPosition = null, IBookRemovalConfirmationService? removalService = null)
         {
             Database = new ListenShelfDatabase(Workspace.DatabasePath);
             Store = new SqlitePlaybackBookmarkStore(Database);
@@ -266,7 +266,7 @@ public sealed class QuickBookmarkTests
                 Engine, filePickerService: null!, progressStore, bookmarkStore: Store,
                 appSettingsStore: new SqliteAppSettingsStore(Database), themeService: new NoOpThemeService(),
                 audiobookLibrary: Library, bookMetadataEditorService: null!, bookmarkEditorService: Editor,
-                bookRemovalConfirmationService: null!, managedLibraryIntegrityChecker: null!,
+                bookRemovalConfirmationService: removalService!, managedLibraryIntegrityChecker: null!,
                 managedLibraryMaintenance: null!, libraryBackupService: null!, managedFileVerifier: null!,
                 managedFileRepairer: null!, jumpToTimeService: null!, sleepTimerDurationService: null!);
         }

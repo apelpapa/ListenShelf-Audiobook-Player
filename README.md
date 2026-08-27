@@ -167,6 +167,14 @@ name or note, or **Add with note…** to use the original editor-first workflow.
 Quick bookmarks also work while paused, including at a restored saved position
 before pressing Play, and are saved in the same local database as other bookmarks.
 
+The bookmark search box filters the current book's bookmarks as you type by
+name or note, ignoring capitalization and surrounding spaces. Unnamed quick
+bookmarks can be found by their displayed timestamp name. Results keep timestamp
+order, show a matching/total count, and retain Jump, Edit, and Delete. **Clear**
+shows all bookmarks again. The search stays active when bookmarks are added,
+edited, or deleted, but resets when a book is loaded or unloaded; it is not saved
+between launches and does not change playback or the stored bookmarks.
+
 Choose **Sleep timer → Custom minutes…** for any whole-minute duration from
 1–1440 minutes. Enter or Start replaces the active timer and begins a countdown
 from confirmation; Escape, Cancel, or closing the dialog leaves any existing

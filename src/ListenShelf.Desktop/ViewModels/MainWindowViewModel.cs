@@ -644,9 +644,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     public bool HasNoBookmarks => !HasBookmarks;
 
-    public string BookmarkCountText => Bookmarks.Count == 1
-        ? "1 bookmark"
-        : $"{Bookmarks.Count} bookmarks";
+    public string BookmarkCountText => HasBookmarkSearchText
+        ? $"{FilteredBookmarks.Count} of {Bookmarks.Count} {(Bookmarks.Count == 1 ? "bookmark" : "bookmarks")}"
+        : Bookmarks.Count == 1 ? "1 bookmark" : $"{Bookmarks.Count} bookmarks";
 
     public string SleepTimerButtonText => IsSleepTimerActive
         ? _chapterSleepTarget is { } chapter
@@ -1299,7 +1299,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             _currentFilePath = null;
             _pendingResumePosition = null;
             ClearChapters();
-            ClearBookmarks();
+            ClearBookmarks(resetSearch: true);
             SetCurrentCover(null);
 
             await _audioEngine.LoadAsync(filePath);
@@ -1944,9 +1944,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private void ClearBookmarks()
+    private void ClearBookmarks(bool resetSearch = false)
     {
         Bookmarks.Clear();
+        if (resetSearch) BookmarkSearchText = string.Empty;
         NotifyBookmarkCollectionChanged();
     }
 
@@ -1954,7 +1955,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     {
         OnPropertyChanged(nameof(HasBookmarks));
         OnPropertyChanged(nameof(HasNoBookmarks));
-        OnPropertyChanged(nameof(BookmarkCountText));
+        ApplyBookmarkSearch();
     }
 
     private void JumpToBookmark(PlaybackBookmark bookmark)
@@ -2322,7 +2323,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             ErrorMessage = string.Empty;
             StopSleepTimer();
             ClearChapters();
-            ClearBookmarks();
+            ClearBookmarks(resetSearch: true);
             SetCurrentCover(null);
         }
         finally
