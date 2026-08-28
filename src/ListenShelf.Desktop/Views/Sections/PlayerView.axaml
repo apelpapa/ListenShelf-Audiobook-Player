@@ -234,14 +234,14 @@
                         </Grid>
                     </Border>
 
-                    <Border MaxHeight="220"
+                    <Border MaxHeight="260"
                             Padding="11,9"
                             CornerRadius="11"
                             Background="{DynamicResource SurfaceRaisedBrush}"
                             BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1"
                             IsVisible="{Binding CanDisplayBookmarkPanel}">
-                        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="7">
+                        <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="7">
                             <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                                 <StackPanel VerticalAlignment="Center" Spacing="2">
                                     <TextBlock FontSize="10"
@@ -293,7 +293,40 @@
                                         ToolTip.Tip="Show all bookmarks for this audiobook" />
                             </Grid>
 
-                            <Grid Grid.Row="2">
+                            <Border Grid.Row="2"
+                                    Padding="8,5"
+                                    CornerRadius="8"
+                                    Background="{DynamicResource AccentSoftBrush}"
+                                    IsVisible="{Binding HasDeletedBookmark}">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                                    <TextBlock VerticalAlignment="Center"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource AccentSoftTextBrush}"
+                                               Text="{Binding DeletedBookmarkText}"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip.Tip="{Binding DeletedBookmarkText}" />
+                                    <Button Grid.Column="1"
+                                            Padding="8,4"
+                                            FontSize="10"
+                                            Background="{DynamicResource AccentBrush}"
+                                            Foreground="{DynamicResource OnAccentBrush}"
+                                            Content="Undo"
+                                            Command="{Binding UndoBookmarkDeletionCommand}"
+                                            AutomationProperties.Name="Undo bookmark deletion"
+                                            ToolTip.Tip="Restore the most recently deleted bookmark with its name, note, and position" />
+                                    <Button Grid.Column="2"
+                                            Padding="8,4"
+                                            FontSize="10"
+                                            Background="{DynamicResource SurfaceAltBrush}"
+                                            Foreground="{DynamicResource SecondaryTextBrush}"
+                                            Content="Dismiss"
+                                            Command="{Binding DismissBookmarkUndoCommand}"
+                                            AutomationProperties.Name="Dismiss bookmark undo"
+                                            ToolTip.Tip="Dismiss this Undo option; the bookmark stays deleted" />
+                                </Grid>
+                            </Border>
+
+                            <Grid Grid.Row="3">
                                 <TextBlock HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
                                            FontSize="11"

@@ -175,6 +175,14 @@ shows all bookmarks again. The search stays active when bookmarks are added,
 edited, or deleted, but resets when a book is loaded or unloaded; it is not saved
 between launches and does not change playback or the stored bookmarks.
 
+Deleting a bookmark shows an inline **Undo** option, including when the list is
+empty or filtered. Undo restores the most recently deleted bookmark with its
+original name, note, chapter, timestamp, and identity, without moving the playhead.
+There is no countdown: the option remains until you undo it, dismiss it, delete
+another bookmark successfully, load/unload a book, or close ListenShelf. This is
+one-level, session-only undo, not a recycle bin. A failed restore keeps Undo
+available for retry, and restoring a bookmark preserves the current search.
+
 Choose **Sleep timer → Custom minutes…** for any whole-minute duration from
 1–1440 minutes. Enter or Start replaces the active timer and begins a countdown
 from confirmation; Escape, Cancel, or closing the dialog leaves any existing

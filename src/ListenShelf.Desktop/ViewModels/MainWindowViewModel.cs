@@ -545,6 +545,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddBookmarkCommand))]
     [NotifyCanExecuteChangedFor(nameof(QuickBookmarkCommand))]
+    [NotifyPropertyChangedFor(nameof(CanUndoBookmarkDeletion))]
+    [NotifyCanExecuteChangedFor(nameof(UndoBookmarkDeletionCommand))]
     [NotifyPropertyChangedFor(nameof(CanJumpToTime))]
     [NotifyCanExecuteChangedFor(nameof(JumpToTimeCommand))]
     [NotifyPropertyChangedFor(nameof(CanStartCustomSleepTimer))]
@@ -566,6 +568,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(AddBookmarkCommand))]
     [NotifyCanExecuteChangedFor(nameof(QuickBookmarkCommand))]
+    [NotifyPropertyChangedFor(nameof(CanUndoBookmarkDeletion))]
+    [NotifyCanExecuteChangedFor(nameof(UndoBookmarkDeletionCommand))]
     [NotifyPropertyChangedFor(nameof(CanJumpToTime))]
     [NotifyCanExecuteChangedFor(nameof(JumpToTimeCommand))]
     [NotifyPropertyChangedFor(nameof(CanStartCustomSleepTimer))]
@@ -1299,7 +1303,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             _currentFilePath = null;
             _pendingResumePosition = null;
             ClearChapters();
-            ClearBookmarks(resetSearch: true);
+            ClearBookmarks(resetSession: true);
             SetCurrentCover(null);
 
             await _audioEngine.LoadAsync(filePath);
@@ -1756,6 +1760,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Verification.PropertyChanged -= OnVerificationPropertyChanged;
         SaveCurrentProgress(force: true);
         _disposed = true;
+        SetDeletedBookmark(null);
         OnPropertyChanged(nameof(CanCreateBookmark));
         AddBookmarkCommand.NotifyCanExecuteChanged();
         QuickBookmarkCommand.NotifyCanExecuteChanged();
@@ -1944,10 +1949,14 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    private void ClearBookmarks(bool resetSearch = false)
+    private void ClearBookmarks(bool resetSession = false)
     {
         Bookmarks.Clear();
-        if (resetSearch) BookmarkSearchText = string.Empty;
+        if (resetSession)
+        {
+            BookmarkSearchText = string.Empty;
+            SetDeletedBookmark(null);
+        }
         NotifyBookmarkCollectionChanged();
     }
 
@@ -1996,20 +2005,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         catch (Exception exception)
         {
             ErrorMessage = $"The bookmark could not be updated: {exception.Message}";
-        }
-    }
-
-    private void DeleteBookmark(PlaybackBookmark bookmark)
-    {
-        try
-        {
-            _bookmarkStore.Delete(bookmark.Id);
-            RefreshBookmarks();
-            ProgressText = "Bookmark deleted.";
-        }
-        catch (Exception exception)
-        {
-            ErrorMessage = $"The bookmark could not be deleted: {exception.Message}";
         }
     }
 
@@ -2323,7 +2318,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             ErrorMessage = string.Empty;
             StopSleepTimer();
             ClearChapters();
-            ClearBookmarks(resetSearch: true);
+            ClearBookmarks(resetSession: true);
             SetCurrentCover(null);
         }
         finally
