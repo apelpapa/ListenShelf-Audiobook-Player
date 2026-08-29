@@ -160,6 +160,13 @@ place without starting paused playback or pausing active playback, except when
 an armed end-of-chapter sleep timer reaches its target. Playback continues while
 the dialog is open. The action becomes available once the book length is known.
 
+Expand **Chapters → Find a chapter** to filter chapter titles or displayed chapter
+numbers as you type. Matching is partial and case-insensitive, results stay in
+book order, and **Clear** shows every chapter again. Typing never changes the
+current chapter: choose a result to use the same navigation as the chapter
+selector. Previous/Next still follow the full chapter list. Search is local to
+the current book and resets and collapses when a book is loaded or unloaded.
+
 **Quick bookmark** in the Player saves the current position immediately, without
 opening a dialog or changing playback. It appears as **Bookmark at …** with its
 timestamp and chapter context when available. Use **Edit** afterward to add a

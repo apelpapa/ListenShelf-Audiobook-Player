@@ -182,7 +182,7 @@
                             BorderBrush="{DynamicResource BorderBrush}"
                             BorderThickness="1"
                             IsVisible="{Binding HasChapters}">
-                        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="7">
+                        <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="7">
                             <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
                                 <TextBlock FontSize="10"
                                            FontWeight="SemiBold"
@@ -223,7 +223,69 @@
                                         Command="{Binding NextChapterCommand}"
                                         Content="Next →" />
                             </Grid>
-                            <TextBlock Grid.Row="2"
+                            <Expander Grid.Row="2"
+                                      Header="Find a chapter"
+                                      HorizontalAlignment="Stretch"
+                                      HorizontalContentAlignment="Stretch"
+                                      IsExpanded="{Binding IsChapterSearchExpanded, Mode=TwoWay}">
+                                <Grid RowDefinitions="Auto,Auto,*"
+                                      RowSpacing="7"
+                                      IsEnabled="{Binding CanUseChapterSearch}">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                                        <TextBox MinHeight="28"
+                                                 Padding="8,4"
+                                                 FontSize="11"
+                                                 PlaceholderText="Search by chapter title or number…"
+                                                 AutomationProperties.Name="Search chapters by title or number"
+                                                 Text="{Binding ChapterSearchText, Mode=TwoWay}" />
+                                        <Button Grid.Column="1"
+                                                Padding="8,4"
+                                                FontSize="10"
+                                                Content="Clear"
+                                                IsVisible="{Binding HasChapterSearchText}"
+                                                Background="{DynamicResource SurfaceAltBrush}"
+                                                Foreground="{DynamicResource SecondaryTextBrush}"
+                                                Command="{Binding ClearChapterSearchCommand}"
+                                                AutomationProperties.Name="Clear chapter search" />
+                                    </Grid>
+                                    <TextBlock Grid.Row="1"
+                                               FontSize="10"
+                                               Foreground="{DynamicResource MutedTextBrush}"
+                                               Text="{Binding ChapterSearchCountText}" />
+                                    <Grid Grid.Row="2">
+                                        <TextBlock FontSize="11"
+                                                   Foreground="{DynamicResource MutedTextBrush}"
+                                                   Text="No matching chapters. Try a title or number."
+                                                   TextWrapping="Wrap"
+                                                   IsVisible="{Binding HasNoChapterSearchResults}" />
+                                        <ScrollViewer MaxHeight="160"
+                                                      HorizontalScrollBarVisibility="Disabled"
+                                                      VerticalScrollBarVisibility="Auto"
+                                                      IsVisible="{Binding HasChapterSearchResults}">
+                                            <ItemsControl ItemsSource="{Binding ChapterSearchResults}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:ChapterSearchResultViewModel">
+                                                        <Button Margin="0,0,0,4"
+                                                                Padding="8,7"
+                                                                FontSize="11"
+                                                                HorizontalAlignment="Stretch"
+                                                                HorizontalContentAlignment="Left"
+                                                                Background="{DynamicResource SurfaceAltBrush}"
+                                                                Foreground="{DynamicResource SecondaryTextBrush}"
+                                                                Command="{Binding GoToCommand}"
+                                                                ToolTip.Tip="{Binding DisplayText}"
+                                                                AutomationProperties.Name="{Binding DisplayText}">
+                                                            <TextBlock Text="{Binding DisplayText}"
+                                                                       TextTrimming="CharacterEllipsis" />
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Grid>
+                                </Grid>
+                            </Expander>
+                            <TextBlock Grid.Row="3"
                                        HorizontalAlignment="Right"
                                        FontSize="11"
                                        Foreground="{DynamicResource MutedTextBrush}"

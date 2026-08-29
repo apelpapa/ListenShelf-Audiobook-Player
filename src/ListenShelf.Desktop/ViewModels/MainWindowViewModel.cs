@@ -229,6 +229,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _audioEngine.StateChanged += OnStateChanged;
         _audioEngine.ChaptersChanged += OnChaptersChanged;
         Chapters.CollectionChanged += OnChapterTimingCollectionChanged;
+        Chapters.CollectionChanged += OnChapterSearchCollectionChanged;
         _audioEngine.Volume = (int)Math.Round(Volume);
         if (Math.Round(Volume) > 0) _lastAudibleVolume = Volume;
         _audioEngine.TrySetPlaybackRate(SelectedPlaybackRate);
@@ -537,6 +538,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(CanControlPlayback))]
     [NotifyPropertyChangedFor(nameof(CanCreateBookmark))]
     [NotifyPropertyChangedFor(nameof(CanDisplayBookmarkPanel))]
+    [NotifyPropertyChangedFor(nameof(CanUseChapterSearch))]
     [NotifyPropertyChangedFor(nameof(CanStopAtChapterEnd))]
     [NotifyCanExecuteChangedFor(nameof(StartChapterSleepTimerCommand))]
     [NotifyPropertyChangedFor(nameof(HasChapterListeningTimeEstimate))]
@@ -563,6 +565,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(CanControlPlayback))]
     [NotifyPropertyChangedFor(nameof(CanCreateBookmark))]
     [NotifyPropertyChangedFor(nameof(CanStopAtChapterEnd))]
+    [NotifyPropertyChangedFor(nameof(CanUseChapterSearch))]
     [NotifyCanExecuteChangedFor(nameof(StartChapterSleepTimerCommand))]
     [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
     [NotifyCanExecuteChangedFor(nameof(NextChapterCommand))]
@@ -1760,6 +1763,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Verification.PropertyChanged -= OnVerificationPropertyChanged;
         SaveCurrentProgress(force: true);
         _disposed = true;
+        OnPropertyChanged(nameof(CanUseChapterSearch));
         SetDeletedBookmark(null);
         OnPropertyChanged(nameof(CanCreateBookmark));
         AddBookmarkCommand.NotifyCanExecuteChanged();
@@ -1776,6 +1780,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _audioEngine.StateChanged -= OnStateChanged;
         _audioEngine.ChaptersChanged -= OnChaptersChanged;
         Chapters.CollectionChanged -= OnChapterTimingCollectionChanged;
+        Chapters.CollectionChanged -= OnChapterSearchCollectionChanged;
         _audioEngine.Dispose();
         SetCurrentCover(null);
         DisposeLibraryItems();
@@ -1894,6 +1899,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 : null;
             _isUpdatingChapterFromEngine = false;
 
+            ApplyChapterSearch();
             OnPropertyChanged(nameof(HasChapters));
             OnPropertyChanged(nameof(ChapterPositionText));
             PreviousChapterCommand.NotifyCanExecuteChanged();
@@ -1915,6 +1921,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Chapters.Clear();
         SelectedChapter = null;
         _isUpdatingChapterFromEngine = false;
+        ResetChapterSearch();
         OnPropertyChanged(nameof(HasChapters));
         OnPropertyChanged(nameof(ChapterPositionText));
         PreviousChapterCommand.NotifyCanExecuteChanged();

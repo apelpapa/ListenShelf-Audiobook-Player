@@ -61,6 +61,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Test quick bookmarks while playing/paused, at pending resume positions and chapter boundaries, with editor compatibility, per-book persistence, availability guards, and save-failure feedback.
 - [x] Test bookmark search matching, empty/no-result states, clear/count notifications, filtered add/edit/delete/jump commands, and book-switch/unload resets without search-driven data or playback changes.
 - [x] Test bookmark deletion undo for full-data restoration, filtered/empty lists, latest-deletion-only behavior, dismissal, failed delete/restore retry, stale callbacks, existing-version protection, and book/disposal cleanup without playback changes.
+- [x] Test chapter title/number filtering, counts/clear, original-index navigation, unaffected Previous/Next, metadata refresh, stale-result rejection, navigation failures, and book/unload resets.
 - [x] Test managed-book removal, related-data cleanup, path safety, and interrupted-removal recovery.
 - [x] Test managed-storage checks for missing files, orphaned paths, stale imports, unsafe catalog paths, and journaled removals.
 - [x] Test orphaned audiobook recovery, stale-import cleanup, confirmed folder cleanup, and refusal to delete cataloged audiobooks.
@@ -154,6 +155,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Add one-click quick bookmarks without a dialog, preserving the current/restored position and available chapter context, with optional names and notes editable afterward and no playback interruption.
 - [x] Add live, case-insensitive current-book bookmark search by name/note, with matching counts, clear/no-results states, timestamp ordering, and a reset when loading or unloading a book.
 - [x] Add inline, one-level bookmark deletion undo with full bookmark restoration, retry on failure, explicit dismissal, no timer, and no carryover across book loads or app sessions.
+- [x] Add collapsible current-book chapter search by title or displayed number, with ordered results, clear/no-match states, explicit chapter navigation, and no changes to selection or playback while typing.
 - [ ] Add smart rewind after longer pauses.
 
 ### Cross-platform architecture
