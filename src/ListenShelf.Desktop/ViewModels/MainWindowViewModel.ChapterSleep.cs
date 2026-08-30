@@ -49,6 +49,7 @@ public partial class MainWindowViewModel
 
     partial void OnIsFileLoadedChanged(bool value)
     {
+        UpdateLibraryPlaybackIndicators();
         // Loading another book (including repair/restore) cannot carry a media
         // position from the old book into the new one.
         if (!value && IsChapterSleepActive)

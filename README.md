@@ -167,6 +167,13 @@ current chapter: choose a result to use the same navigation as the chapter
 selector. Previous/Next still follow the full chapter list. Search is local to
 the current book and resets and collapses when a book is loaded or unloaded.
 
+The loaded book is marked **Current · Playing** or **Current · Paused** on its
+library list card and tile, including inside opened groups. A restored book that
+has not started shows **Current · Ready**; finished, stopped, and error states
+are labeled separately. The badge updates with playback and survives library
+refreshes, sorting, and filtering without changing card sizes or starting audio.
+Loading another book transfers the badge; unloading the book removes it.
+
 **Quick bookmark** in the Player saves the current position immediately, without
 opening a dialog or changing playback. It appears as **Bookmark at …** with its
 timestamp and chapter context when available. Use **Edit** afterward to add a

@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+             x:Class="ListenShelf.Desktop.Views.Components.LibraryPlaybackBadge"
+             x:DataType="vm:LibraryBookItemViewModel">
+    <Border Padding="7,4"
+            CornerRadius="7"
+            Background="{DynamicResource AccentSoftBrush}"
+            BorderBrush="{DynamicResource AccentBrush}"
+            BorderThickness="1"
+            IsVisible="{Binding IsCurrentBook}"
+            ToolTip.Tip="{Binding PlaybackIndicatorToolTip}"
+            AutomationProperties.Name="{Binding PlaybackIndicatorText}">
+        <TextBlock FontSize="10"
+                   FontWeight="SemiBold"
+                   Foreground="{DynamicResource AccentSoftTextBrush}"
+                   Text="{Binding PlaybackIndicatorText}" />
+    </Border>
+</UserControl>

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+             xmlns:components="using:ListenShelf.Desktop.Views.Components"
              x:Class="ListenShelf.Desktop.Views.Components.LibraryBookTileCard"
              x:DataType="vm:LibraryBookItemViewModel">
     <Border Width="{Binding TileWidth}"
@@ -39,6 +40,10 @@
                                    Foreground="{DynamicResource MutedTextBrush}"
                                    Text="{Binding AvailabilityText}" />
                     </Border>
+                    <components:LibraryPlaybackBadge Margin="8"
+                                                     HorizontalAlignment="Left"
+                                                     VerticalAlignment="Bottom"
+                                                     IsVisible="{Binding IsCurrentBook}" />
                 </Grid>
             </Border>
 

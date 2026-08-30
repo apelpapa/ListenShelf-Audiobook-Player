@@ -62,6 +62,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Test bookmark search matching, empty/no-result states, clear/count notifications, filtered add/edit/delete/jump commands, and book-switch/unload resets without search-driven data or playback changes.
 - [x] Test bookmark deletion undo for full-data restoration, filtered/empty lists, latest-deletion-only behavior, dismissal, failed delete/restore retry, stale callbacks, existing-version protection, and book/disposal cleanup without playback changes.
 - [x] Test chapter title/number filtering, counts/clear, original-index navigation, unaffected Previous/Next, metadata refresh, stale-result rejection, navigation failures, and book/unload resets.
+- [x] Test current-book indicator state labels, live play/pause updates, duplicate titles, refresh/filter/group behavior, loading failures, badge transfer/removal, stable card sizing, and disposal without indicator-driven playback or progress changes.
 - [x] Test managed-book removal, related-data cleanup, path safety, and interrupted-removal recovery.
 - [x] Test managed-storage checks for missing files, orphaned paths, stale imports, unsafe catalog paths, and journaled removals.
 - [x] Test orphaned audiobook recovery, stale-import cleanup, confirmed folder cleanup, and refusal to delete cataloged audiobooks.
@@ -224,6 +225,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 ### Playback and interface
 
 - [x] Add a collapsible keyboard-shortcut reference in Settings, covering implemented playback/search controls, Jump to time dialog keys, focus exceptions, and Windows media buttons.
+- [x] Mark the currently loaded book in library list/tile cards with live playing/paused/ready status, retain the indicator through library refreshes and opened groups, and clear/transfer it on unload or book changes without changing card sizes.
 - [ ] Add A-B repeat.
 - [ ] Add a mini-player.
 - [ ] Add playback and listening statistics.

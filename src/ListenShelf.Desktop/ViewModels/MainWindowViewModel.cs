@@ -1303,6 +1303,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             SaveCurrentProgress(force: true);
             _isLoadingFile = true;
             IsFileLoaded = false;
+            _libraryPlaybackState = PlaybackState.Ready;
             _currentFilePath = null;
             _pendingResumePosition = null;
             ClearChapters();
@@ -1338,6 +1339,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 if (!_audioEngine.Play())
                 {
                     _isLoadingFile = false;
+                    _libraryPlaybackState = PlaybackState.Error;
+                    UpdateLibraryPlaybackIndicators();
                     ErrorMessage = "The audiobook could not be started.";
                     return false;
                 }
@@ -1763,6 +1766,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Verification.PropertyChanged -= OnVerificationPropertyChanged;
         SaveCurrentProgress(force: true);
         _disposed = true;
+        UpdateLibraryPlaybackIndicators();
         OnPropertyChanged(nameof(CanUseChapterSearch));
         SetDeletedBookmark(null);
         OnPropertyChanged(nameof(CanCreateBookmark));
@@ -1818,6 +1822,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
         Dispatcher.UIThread.Post(() =>
         {
+            _libraryPlaybackState = e.State;
             switch (e.State)
             {
                 case PlaybackState.Loading:
@@ -1876,6 +1881,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                     _isLoadingFile = false;
                     break;
             }
+            UpdateLibraryPlaybackIndicators();
         });
     }
 
@@ -2290,6 +2296,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                     progressAvailable));
             }
 
+            UpdateLibraryPlaybackIndicators();
             ApplyLibraryQuery();
 
             OnPropertyChanged(nameof(HasLibraryBooks));
