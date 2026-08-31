@@ -12,7 +12,7 @@ using ListenShelf.Infrastructure.Storage;
 
 namespace ListenShelf.Tests;
 
-public sealed class LibraryPlaybackIndicatorTests
+public sealed partial class LibraryPlaybackIndicatorTests
 {
     [Theory]
     [InlineData(PlaybackState.Ready, "Current · Ready")]
@@ -265,6 +265,8 @@ public sealed class LibraryPlaybackIndicatorTests
             Assert.True(Model.IsFileLoaded);
             Assert.Empty(Model.ErrorMessage);
             Engine.PlaybackChanges = 0;
+            Engine.PlayCalls = 0;
+            Engine.PauseCalls = 0;
         }
 
         public void Dispose() { Model.Dispose(); Workspace.Dispose(); }
@@ -293,19 +295,36 @@ public sealed class LibraryPlaybackIndicatorTests
         public IReadOnlyList<AudioChapter> Chapters => [];
         public int CurrentChapterIndex => -1;
         public int PlaybackChanges { get; set; }
+        public int PlayCalls { get; set; }
+        public int PauseCalls { get; set; }
+        public int LoadCalls { get; private set; }
         public bool FailLoad { get; set; }
         public bool RejectPlay { get; set; }
+        public bool ThrowOnPlay { get; set; }
+        public bool ThrowOnPause { get; set; }
         public Action? DuringLoad { get; set; }
         public Task LoadAsync(string filePath, CancellationToken cancellationToken = default)
         {
+            LoadCalls++;
             DuringLoad?.Invoke();
             if (FailLoad) throw new InvalidOperationException("Test load failure");
             CurrentFilePath = filePath;
             return Task.CompletedTask;
         }
         public void Unload() => PlaybackChanges++;
-        public bool Play() { PlaybackChanges++; return !RejectPlay; }
-        public void Pause() => PlaybackChanges++;
+        public bool Play()
+        {
+            PlaybackChanges++;
+            PlayCalls++;
+            if (ThrowOnPlay) throw new InvalidOperationException("Test play failure");
+            return !RejectPlay;
+        }
+        public void Pause()
+        {
+            PlaybackChanges++;
+            PauseCalls++;
+            if (ThrowOnPause) throw new InvalidOperationException("Test pause failure");
+        }
         public void Stop() => PlaybackChanges++;
         public void Seek(TimeSpan position) => PlaybackChanges++;
         public bool TrySetPlaybackRate(double rate) => true;

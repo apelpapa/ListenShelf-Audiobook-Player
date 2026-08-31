@@ -174,6 +174,14 @@ are labeled separately. The badge updates with playback and survives library
 refreshes, sorting, and filtering without changing card sizes or starting audio.
 Loading another book transfers the badge; unloading the book removes it.
 
+When a book is loaded, a compact **Current book** panel at the bottom of the
+sidebar shows its title, status, and the same Play/Pause control as the Player.
+It remains available in Library, Settings, and Storage care without changing
+pages or reloading the book. Click the title to open Player without starting
+audio. Long titles have a full-title tooltip, playback errors appear inline,
+and controls are disabled while playback is busy. The panel hides on unload;
+simply showing it never starts playback.
+
 **Quick bookmark** in the Player saves the current position immediately, without
 opening a dialog or changing playback. It appears as **Bookmark at …** with its
 timestamp and chapter context when available. Use **Edit** afterward to add a

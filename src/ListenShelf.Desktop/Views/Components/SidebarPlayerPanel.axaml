@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+             x:Class="ListenShelf.Desktop.Views.Components.SidebarPlayerPanel"
+             x:DataType="vm:MainWindowViewModel">
+    <Border Padding="11"
+            CornerRadius="12"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1">
+        <StackPanel Spacing="7">
+            <TextBlock FontSize="10"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource SubtleTextBrush}"
+                       Text="CURRENT BOOK" />
+            <Button Padding="0"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Left"
+                    Background="Transparent"
+                    Command="{Binding ShowPlayerCommand}"
+                    ToolTip.Tip="{Binding BookTitle, StringFormat='Open Player: {0}'}"
+                    AutomationProperties.Name="{Binding BookTitle, StringFormat='Open Player: {0}'}">
+                <TextBlock MaxHeight="38"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           Text="{Binding BookTitle}"
+                           TextWrapping="Wrap"
+                           TextTrimming="CharacterEllipsis" />
+            </Button>
+            <TextBlock FontSize="10"
+                       Foreground="{DynamicResource MutedTextBrush}"
+                       Text="{Binding StatusText}"
+                       TextTrimming="CharacterEllipsis"
+                       ToolTip.Tip="{Binding StatusText}" />
+            <Button Height="34"
+                    Padding="10,6"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Background="{DynamicResource AccentBrush}"
+                    Foreground="{DynamicResource OnAccentBrush}"
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Content="{Binding PlayPauseLabel}"
+                    Command="{Binding TogglePlaybackCommand}"
+                    AutomationProperties.Name="{Binding PlayPauseLabel}"
+                    ToolTip.Tip="Play or pause the loaded book without leaving this page" />
+            <TextBlock MaxHeight="40"
+                       FontSize="10"
+                       Foreground="{DynamicResource DangerTextBrush}"
+                       Text="{Binding ErrorMessage}"
+                       TextWrapping="Wrap"
+                       TextTrimming="CharacterEllipsis"
+                       IsVisible="{Binding HasSidebarPlayerError}"
+                       ToolTip.Tip="{Binding ErrorMessage}" />
+        </StackPanel>
+    </Border>
+</UserControl>

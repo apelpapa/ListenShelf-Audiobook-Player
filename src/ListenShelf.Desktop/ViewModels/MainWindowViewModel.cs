@@ -529,6 +529,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private string _statusText = "Ready";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSidebarPlayerError))]
     private string _errorMessage = string.Empty;
 
     [ObservableProperty]
@@ -538,6 +539,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(CanControlPlayback))]
     [NotifyPropertyChangedFor(nameof(CanCreateBookmark))]
     [NotifyPropertyChangedFor(nameof(CanDisplayBookmarkPanel))]
+    [NotifyPropertyChangedFor(nameof(HasSidebarPlayer))]
+    [NotifyPropertyChangedFor(nameof(HasSidebarPlayerError))]
+    [NotifyPropertyChangedFor(nameof(CanTogglePlayback))]
+    [NotifyCanExecuteChangedFor(nameof(TogglePlaybackCommand))]
     [NotifyPropertyChangedFor(nameof(CanUseChapterSearch))]
     [NotifyPropertyChangedFor(nameof(CanStopAtChapterEnd))]
     [NotifyCanExecuteChangedFor(nameof(StartChapterSleepTimerCommand))]
@@ -565,6 +570,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(CanControlPlayback))]
     [NotifyPropertyChangedFor(nameof(CanCreateBookmark))]
     [NotifyPropertyChangedFor(nameof(CanStopAtChapterEnd))]
+    [NotifyPropertyChangedFor(nameof(CanTogglePlayback))]
+    [NotifyCanExecuteChangedFor(nameof(TogglePlaybackCommand))]
     [NotifyPropertyChangedFor(nameof(CanUseChapterSearch))]
     [NotifyCanExecuteChangedFor(nameof(StartChapterSleepTimerCommand))]
     [NotifyCanExecuteChangedFor(nameof(PreviousChapterCommand))]
@@ -1528,35 +1535,43 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanTogglePlayback))]
     private void TogglePlayback()
     {
-        if (!CanControlPlayback)
+        if (!CanTogglePlayback)
         {
             return;
         }
 
-        if (IsPlaying)
+        try
         {
-            _audioEngine.Pause();
-        }
-        else
-        {
-            if (_hasPlaybackEnded)
+            ErrorMessage = string.Empty;
+            if (IsPlaying)
             {
-                var replayPosition = _audioEngine.Position;
-                var duration = _audioEngine.Duration;
-                _pendingResumePosition =
-                    replayPosition + TimeSpan.FromSeconds(1) < duration
-                        ? replayPosition
-                        : null;
+                _audioEngine.Pause();
             }
+            else
+            {
+                if (_hasPlaybackEnded)
+                {
+                    var replayPosition = _audioEngine.Position;
+                    var duration = _audioEngine.Duration;
+                    _pendingResumePosition =
+                        replayPosition + TimeSpan.FromSeconds(1) < duration
+                            ? replayPosition
+                            : null;
+                }
 
-            if (!_audioEngine.Play())
-            {
-                _pendingResumePosition = null;
-                ErrorMessage = "Playback could not be started.";
+                if (!_audioEngine.Play())
+                {
+                    _pendingResumePosition = null;
+                    ErrorMessage = "Playback could not be started.";
+                }
             }
+        }
+        catch (Exception exception)
+        {
+            ErrorMessage = $"Playback could not be changed: {exception.Message}";
         }
     }
 
@@ -1766,6 +1781,10 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Verification.PropertyChanged -= OnVerificationPropertyChanged;
         SaveCurrentProgress(force: true);
         _disposed = true;
+        OnPropertyChanged(nameof(HasSidebarPlayer));
+        OnPropertyChanged(nameof(HasSidebarPlayerError));
+        OnPropertyChanged(nameof(CanTogglePlayback));
+        TogglePlaybackCommand.NotifyCanExecuteChanged();
         UpdateLibraryPlaybackIndicators();
         OnPropertyChanged(nameof(CanUseChapterSearch));
         SetDeletedBookmark(null);

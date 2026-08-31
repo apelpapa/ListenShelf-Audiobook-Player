@@ -63,6 +63,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Test bookmark deletion undo for full-data restoration, filtered/empty lists, latest-deletion-only behavior, dismissal, failed delete/restore retry, stale callbacks, existing-version protection, and book/disposal cleanup without playback changes.
 - [x] Test chapter title/number filtering, counts/clear, original-index navigation, unaffected Previous/Next, metadata refresh, stale-result rejection, navigation failures, and book/unload resets.
 - [x] Test current-book indicator state labels, live play/pause updates, duplicate titles, refresh/filter/group behavior, loading failures, badge transfer/removal, stable card sizing, and disposal without indicator-driven playback or progress changes.
+- [x] Test sidebar playback across every page, live title/status/labels, navigation without autoplay, busy/disposal guards, book switching/removal/load failure, and inline playback failure/retry without reloads or browsing changes.
 - [x] Test managed-book removal, related-data cleanup, path safety, and interrupted-removal recovery.
 - [x] Test managed-storage checks for missing files, orphaned paths, stale imports, unsafe catalog paths, and journaled removals.
 - [x] Test orphaned audiobook recovery, stale-import cleanup, confirmed folder cleanup, and refusal to delete cataloged audiobooks.
@@ -226,6 +227,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 - [x] Add a collapsible keyboard-shortcut reference in Settings, covering implemented playback/search controls, Jump to time dialog keys, focus exceptions, and Windows media buttons.
 - [x] Mark the currently loaded book in library list/tile cards with live playing/paused/ready status, retain the indicator through library refreshes and opened groups, and clear/transfer it on unload or book changes without changing card sizes.
+- [x] Add a compact current-book sidebar panel with live title/status, shared Play/Pause, title navigation to Player, inline error feedback, and no automatic playback or page changes when controlling audio.
 - [ ] Add A-B repeat.
 - [ ] Add a mini-player.
 - [ ] Add playback and listening statistics.
