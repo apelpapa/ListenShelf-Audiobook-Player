@@ -156,6 +156,12 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
+                        <ToggleButton Padding="10,6"
+                                      FontSize="11"
+                                      Content="⇅ Reverse"
+                                      IsChecked="{Binding IsLibrarySortReversed, Mode=TwoWay}"
+                                      AutomationProperties.Name="Reverse library sort order"
+                                      ToolTip.Tip="{Binding LibrarySortDirectionToolTip}" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="7" Margin="0,0,16,0">
                         <TextBlock VerticalAlignment="Center" FontSize="10"

@@ -36,7 +36,8 @@ public static class LibraryBookQuery
         Func<T, PlaybackProgress?> progressSelector,
         string? searchText,
         LibraryStatusFilter statusFilter,
-        LibrarySortMode sortMode)
+        LibrarySortMode sortMode,
+        bool reverseSort = false)
     {
         var matches = items
             .Select(item => new Entry<T>(item, bookSelector(item), progressSelector(item)))
@@ -63,11 +64,16 @@ public static class LibraryBookQuery
             _ => matches.OrderBy(entry => entry.Book.Title.Trim(), StringComparer.OrdinalIgnoreCase),
         };
 
-        return ordered
+        var result = ordered
             .ThenBy(entry => entry.Book.Title.Trim(), StringComparer.OrdinalIgnoreCase)
             .ThenBy(entry => entry.Book.Id)
             .Select(entry => entry.Item)
             .ToArray();
+
+        // Reverse the complete deterministic order, including tie-breakers and
+        // missing values, without changing the source collection or its items.
+        if (reverseSort) Array.Reverse(result);
+        return result;
     }
 
     private static string? Author(LibraryBook book) =>

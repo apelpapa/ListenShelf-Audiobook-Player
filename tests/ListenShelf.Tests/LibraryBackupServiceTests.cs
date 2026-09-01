@@ -92,6 +92,7 @@ public sealed class LibraryBackupServiceTests
         sourceSettings.SaveForwardSeconds(90);
         sourceSettings.SaveLastSleepTimerMinutes(37);
         sourceSettings.SaveLibrarySortMode(LibrarySortMode.SeriesOrder);
+        sourceSettings.SaveLibrarySortReversed(true);
         sourceSettings.SaveLibraryStatusFilter(LibraryStatusFilter.InProgress);
         var backupPath = Path.Combine(
             GetWorkspaceRoot(sourceWorkspace),
@@ -145,6 +146,7 @@ public sealed class LibraryBackupServiceTests
         Assert.Equal(90, new SqliteAppSettingsStore(target.Database).GetForwardSeconds());
         Assert.Equal(37, new SqliteAppSettingsStore(target.Database).GetLastSleepTimerMinutes());
         Assert.Equal(LibrarySortMode.SeriesOrder, new SqliteAppSettingsStore(target.Database).GetLibrarySortMode());
+        Assert.True(new SqliteAppSettingsStore(target.Database).GetLibrarySortReversed());
         Assert.Equal(LibraryStatusFilter.InProgress, new SqliteAppSettingsStore(target.Database).GetLibraryStatusFilter());
         Assert.True(target.Checker.Check().IsHealthy);
         using var restoredConnection = target.Database.OpenConnection();

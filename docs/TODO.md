@@ -63,6 +63,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Test bookmark deletion undo for full-data restoration, filtered/empty lists, latest-deletion-only behavior, dismissal, failed delete/restore retry, stale callbacks, existing-version protection, and book/disposal cleanup without playback changes.
 - [x] Test chapter title/number filtering, counts/clear, original-index navigation, unaffected Previous/Next, metadata refresh, stale-result rejection, navigation failures, and book/unload resets.
 - [x] Test current-book indicator state labels, live play/pause updates, duplicate titles, refresh/filter/group behavior, loading failures, badge transfer/removal, stable card sizing, and disposal without indicator-driven playback or progress changes.
+- [x] Test reverse sorting for all six orders, deterministic ties/missing values, unchanged input, filtered/grouped views, preference reload and malformed defaults, save-failure feedback, and local backup round-tripping without playback changes.
 - [x] Test sidebar playback across every page, live title/status/labels, navigation without autoplay, busy/disposal guards, book switching/removal/load failure, and inline playback failure/retry without reloads or browsing changes.
 - [x] Test managed-book removal, related-data cleanup, path safety, and interrupted-removal recovery.
 - [x] Test managed-storage checks for missing files, orphaned paths, stale imports, unsafe catalog paths, and journaled removals.
@@ -108,6 +109,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Filter books that are in progress.
 - [x] Filter completed books.
 - [x] Remember sort/status choices and combine them with search, list/tile views, and group stacks.
+- [x] Add a remembered Reverse toggle for the selected library sort, keeping filters and open groups intact and reversing the complete order consistently in lists, tiles, and group stacks.
 - [x] Add Ctrl+F to open/focus library search and select its text, plus Escape to clear only the focused search query while preserving browsing choices and playback.
 
 ### Diagnostics and support

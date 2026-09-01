@@ -11,7 +11,7 @@ using ListenShelf.Infrastructure.Storage;
 
 namespace ListenShelf.Tests;
 
-public sealed class LibraryBrowsingViewModelTests
+public sealed partial class LibraryBrowsingViewModelTests
 {
     [Theory]
     [InlineData(AppSection.Library)]

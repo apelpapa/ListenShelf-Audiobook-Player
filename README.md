@@ -59,8 +59,12 @@ filenames. Multiple words can match different fields, and the filtered results
 flow through list, tile, and grouped views without sending library data anywhere.
 Library controls can sort by title, author, numeric series/book order, recently
 played, date added, or listening progress, and filter to All, Not started,
-In progress, or Finished. Sort and status choices are remembered between launches
-and included in local backups. Filters combine with search; group counts and
+In progress, or Finished. The **Reverse** toggle beside Sort by flips the whole
+selected order, last to first (for example, title Z–A or oldest additions first).
+Toggle it off to restore the default order. Tied entries and missing-metadata
+positions reverse too. Sort, reverse-order, and status choices are remembered
+between launches and included in local backups. Changing the sort field keeps
+the Reverse choice; clearing search or filters does not reset it. Filters combine with search; group counts and
 previews use only matching books, and stacks follow the sort order of their first
 matching book. Finished means the saved position has reached the known duration;
 rewinding back into a book makes it In progress again.

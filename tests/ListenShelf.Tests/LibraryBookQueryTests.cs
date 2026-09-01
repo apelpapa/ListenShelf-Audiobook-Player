@@ -4,7 +4,7 @@ using ListenShelf.Application.Settings;
 
 namespace ListenShelf.Tests;
 
-public sealed class LibraryBookQueryTests
+public sealed partial class LibraryBookQueryTests
 {
     [Theory]
     [InlineData(0, 100, LibraryStatusFilter.NotStarted)]
@@ -136,8 +136,9 @@ public sealed class LibraryBookQueryTests
         IEnumerable<TestEntry> entries,
         LibrarySortMode sort,
         LibraryStatusFilter filter = LibraryStatusFilter.All,
-        string? search = null) => LibraryBookQuery.Apply(
-            entries, entry => entry.Book, entry => entry.Progress, search, filter, sort);
+        string? search = null,
+        bool reverse = false) => LibraryBookQuery.Apply(
+            entries, entry => entry.Book, entry => entry.Progress, search, filter, sort, reverse);
 
     private static string[] Titles(IEnumerable<TestEntry> entries) =>
         entries.Select(entry => entry.Book.Title).ToArray();

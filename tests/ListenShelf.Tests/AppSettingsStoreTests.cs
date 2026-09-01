@@ -17,6 +17,7 @@ public sealed class AppSettingsStoreTests
         Assert.Equal(LibraryViewMode.List, store.GetLibraryViewMode());
         Assert.Equal(LibraryGroupMode.None, store.GetLibraryGroupMode());
         Assert.Equal(LibrarySortMode.Title, store.GetLibrarySortMode());
+        Assert.False(store.GetLibrarySortReversed());
         Assert.Equal(LibraryStatusFilter.All, store.GetLibraryStatusFilter());
         Assert.Equal(220d, store.GetLibraryTileWidth());
         Assert.Equal(80d, store.GetPlaybackVolume());
@@ -37,6 +38,7 @@ public sealed class AppSettingsStoreTests
         store.SaveLibraryViewMode(LibraryViewMode.Tiles);
         store.SaveLibraryGroupMode(LibraryGroupMode.Author);
         store.SaveLibrarySortMode(LibrarySortMode.RecentlyPlayed);
+        store.SaveLibrarySortReversed(true);
         store.SaveLibraryStatusFilter(LibraryStatusFilter.InProgress);
         store.SaveLibraryTileWidth(275d);
         store.SavePlaybackVolume(64d);
@@ -52,6 +54,7 @@ public sealed class AppSettingsStoreTests
         Assert.Equal(LibraryViewMode.Tiles, reloadedStore.GetLibraryViewMode());
         Assert.Equal(LibraryGroupMode.Author, reloadedStore.GetLibraryGroupMode());
         Assert.Equal(LibrarySortMode.RecentlyPlayed, reloadedStore.GetLibrarySortMode());
+        Assert.True(reloadedStore.GetLibrarySortReversed());
         Assert.Equal(LibraryStatusFilter.InProgress, reloadedStore.GetLibraryStatusFilter());
         Assert.Equal(275d, reloadedStore.GetLibraryTileWidth());
         Assert.Equal(64d, reloadedStore.GetPlaybackVolume());
@@ -59,6 +62,47 @@ public sealed class AppSettingsStoreTests
         Assert.Equal(10, reloadedStore.GetRewindSeconds());
         Assert.Equal(45, reloadedStore.GetForwardSeconds());
         Assert.Equal(37, reloadedStore.GetLastSleepTimerMinutes());
+    }
+
+    [Theory]
+    [InlineData("True", true)]
+    [InlineData("tRuE", true)]
+    [InlineData("False", false)]
+    [InlineData("", false)]
+    [InlineData("1", false)]
+    [InlineData("invalid", false)]
+    public void SortDirection_ParsesStoredBooleansAndDoesNotRewriteInvalidValues(string stored, bool expected)
+    {
+        using var workspace = new TestWorkspace();
+        var database = new ListenShelfDatabase(workspace.DatabasePath);
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "INSERT INTO app_settings VALUES ('library.sort_reversed', $value);";
+        command.Parameters.AddWithValue("$value", stored);
+        command.ExecuteNonQuery();
+
+        Assert.Equal(expected, new SqliteAppSettingsStore(database).GetLibrarySortReversed());
+        command.CommandText = "SELECT setting_value FROM app_settings WHERE setting_key = 'library.sort_reversed';";
+        Assert.Equal(stored, command.ExecuteScalar());
+    }
+
+    [Fact]
+    public void SortDirection_DefaultIsReadOnlyAndCanBeSavedBackToNormal()
+    {
+        using var workspace = new TestWorkspace();
+        var database = new ListenShelfDatabase(workspace.DatabasePath);
+        var store = new SqliteAppSettingsStore(database);
+        Assert.False(store.GetLibrarySortReversed());
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM app_settings WHERE setting_key = 'library.sort_reversed';";
+        Assert.Equal(0L, command.ExecuteScalar());
+
+        store.SaveLibrarySortReversed(true);
+        store.SaveLibrarySortReversed(false);
+
+        Assert.False(new SqliteAppSettingsStore(database).GetLibrarySortReversed());
+        Assert.Equal(1L, command.ExecuteScalar());
     }
 
     [Theory]

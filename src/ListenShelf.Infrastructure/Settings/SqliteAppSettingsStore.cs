@@ -10,6 +10,7 @@ public sealed class SqliteAppSettingsStore(ListenShelfDatabase database) : IAppS
     private const string LibraryViewModeKey = "library.view_mode";
     private const string LibraryGroupModeKey = "library.group_mode";
     private const string LibrarySortModeKey = "library.sort_mode";
+    private const string LibrarySortReversedKey = "library.sort_reversed";
     private const string LibraryStatusFilterKey = "library.status_filter";
     private const string LibraryTileWidthKey = "library.tile_width";
     private const string PlaybackVolumeKey = "player.volume";
@@ -152,6 +153,29 @@ public sealed class SqliteAppSettingsStore(ListenShelfDatabase database) : IAppS
 
     public void SaveLibrarySortMode(LibrarySortMode sortMode) =>
         SaveEnumSetting(LibrarySortModeKey, sortMode);
+
+    public bool GetLibrarySortReversed()
+    {
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT setting_value FROM app_settings WHERE setting_key = $key;";
+        command.Parameters.AddWithValue("$key", LibrarySortReversedKey);
+        return bool.TryParse(command.ExecuteScalar() as string, out var reversed) && reversed;
+    }
+
+    public void SaveLibrarySortReversed(bool reversed)
+    {
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            INSERT INTO app_settings (setting_key, setting_value) VALUES ($key, $value)
+            ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value;
+            """;
+        command.Parameters.AddWithValue("$key", LibrarySortReversedKey);
+        command.Parameters.AddWithValue("$value", reversed.ToString());
+        command.ExecuteNonQuery();
+    }
 
     public LibraryStatusFilter GetLibraryStatusFilter() =>
         GetEnumSetting(LibraryStatusFilterKey, LibraryStatusFilter.All);

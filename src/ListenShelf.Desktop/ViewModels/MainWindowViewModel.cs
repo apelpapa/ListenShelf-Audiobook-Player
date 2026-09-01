@@ -26,12 +26,12 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private const double DefaultPlaybackRate = 1d;
     private static readonly LibrarySortOptionViewModel[] SortOptions =
     [
-        new(LibrarySortMode.Title, "Title (A–Z)"),
-        new(LibrarySortMode.Author, "Author (A–Z)"),
+        new(LibrarySortMode.Title, "Title"),
+        new(LibrarySortMode.Author, "Author"),
         new(LibrarySortMode.SeriesOrder, "Series / book order"),
         new(LibrarySortMode.RecentlyPlayed, "Recently played"),
-        new(LibrarySortMode.DateAdded, "Date added (newest)"),
-        new(LibrarySortMode.Progress, "Progress (most first)"),
+        new(LibrarySortMode.DateAdded, "Date added"),
+        new(LibrarySortMode.Progress, "Progress"),
     ];
     private static readonly LibraryStatusOptionViewModel[] StatusOptions =
     [
@@ -209,6 +209,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         catch
         {
             _selectedLibrarySortOption = SortOptions[0];
+        }
+
+        try
+        {
+            _isLibrarySortReversed = _appSettingsStore.GetLibrarySortReversed();
+        }
+        catch
+        {
+            _isLibrarySortReversed = false;
         }
 
         try
@@ -415,6 +424,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private LibraryViewMode _selectedLibraryView = LibraryViewMode.List;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(LibrarySortDirectionToolTip))]
     private LibrarySortOptionViewModel _selectedLibrarySortOption = SortOptions[0];
 
     [ObservableProperty]
@@ -1153,6 +1163,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         var restoredSortMode = _appSettingsStore.GetLibrarySortMode();
         SelectedLibrarySortOption = SortOptions.FirstOrDefault(option =>
             option.Mode == restoredSortMode) ?? SortOptions[0];
+        IsLibrarySortReversed = _appSettingsStore.GetLibrarySortReversed();
         var restoredStatusFilter = _appSettingsStore.GetLibraryStatusFilter();
         SelectedLibraryStatusOption = StatusOptions.FirstOrDefault(option =>
             option.Filter == restoredStatusFilter) ?? StatusOptions[0];
@@ -2405,7 +2416,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             statusFilter == LibraryStatusFilter.All || book.IsProgressAvailable);
         foreach (var book in LibraryBookQuery.Apply(
                      candidates, book => book.Book, book => book.Progress,
-                     LibrarySearchText, statusFilter, SelectedLibrarySortOption.Mode))
+                     LibrarySearchText, statusFilter, SelectedLibrarySortOption.Mode, IsLibrarySortReversed))
         {
             FilteredLibraryBooks.Add(book);
         }

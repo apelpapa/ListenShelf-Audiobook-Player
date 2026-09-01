@@ -18,6 +18,10 @@ public interface IAppSettingsStore
 
     void SaveLibrarySortMode(LibrarySortMode sortMode);
 
+    bool GetLibrarySortReversed();
+
+    void SaveLibrarySortReversed(bool reversed);
+
     LibraryStatusFilter GetLibraryStatusFilter();
 
     void SaveLibraryStatusFilter(LibraryStatusFilter statusFilter);
