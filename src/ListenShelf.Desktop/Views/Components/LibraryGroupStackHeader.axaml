@@ -87,11 +87,19 @@
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource PrimaryTextBrush}"
                            Text="{Binding Name}"
-                           TextTrimming="CharacterEllipsis" />
+                           TextTrimming="CharacterEllipsis">
+                    <ToolTip.Tip>
+                        <TextBlock MaxWidth="420" TextWrapping="Wrap" Text="{Binding Name}" />
+                    </ToolTip.Tip>
+                </TextBlock>
                 <TextBlock FontSize="11"
                            Foreground="{DynamicResource SecondaryTextBrush}"
                            Text="{Binding PreviewTitle}"
-                           TextTrimming="CharacterEllipsis" />
+                           TextTrimming="CharacterEllipsis">
+                    <ToolTip.Tip>
+                        <TextBlock MaxWidth="420" TextWrapping="Wrap" Text="{Binding PreviewTitle}" />
+                    </ToolTip.Tip>
+                </TextBlock>
                 <TextBlock FontSize="10"
                            Foreground="{DynamicResource AccentTextBrush}"
                            Text="{Binding InteractionHint}" />

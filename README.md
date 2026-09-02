@@ -69,6 +69,11 @@ previews use only matching books, and stacks follow the sort order of their firs
 matching book. Finished means the saved position has reached the known duration;
 rewinding back into a book makes it In progress again.
 
+Hover over a book's title, authors, or series in list or tile view to read the
+full text in a wrapping tooltip. Group names, stack preview titles, the Player's
+book title and filename, and the sidebar title also have full-text tooltips.
+Cards keep their existing sizes; long metadata is not shortened in the tooltip.
+
 Press **Ctrl+F** anywhere in the main window to open the Library and focus its
 search box, selecting any existing query for replacement. **Escape** clears the
 query while the search box is focused, without resetting sort, status, or

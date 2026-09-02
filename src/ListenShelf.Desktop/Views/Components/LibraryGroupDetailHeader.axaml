@@ -25,7 +25,11 @@
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource PrimaryTextBrush}"
                            Text="{Binding ActiveLibraryGroupName}"
-                           TextTrimming="CharacterEllipsis" />
+                           TextTrimming="CharacterEllipsis">
+                    <ToolTip.Tip>
+                        <TextBlock MaxWidth="420" TextWrapping="Wrap" Text="{Binding ActiveLibraryGroupName}" />
+                    </ToolTip.Tip>
+                </TextBlock>
                 <TextBlock FontSize="10"
                            Foreground="{DynamicResource MutedTextBrush}"
                            Text="Viewing this stack" />

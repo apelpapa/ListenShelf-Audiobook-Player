@@ -41,11 +41,19 @@
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource PrimaryTextBrush}"
                                Text="{Binding BookTitle}"
-                               TextTrimming="CharacterEllipsis" />
+                               TextTrimming="CharacterEllipsis">
+                        <ToolTip.Tip>
+                            <TextBlock MaxWidth="420" TextWrapping="Wrap" Text="{Binding BookTitle}" />
+                        </ToolTip.Tip>
+                    </TextBlock>
                     <TextBlock FontSize="13"
                                Foreground="{DynamicResource MutedTextBrush}"
                                Text="{Binding FileName}"
-                               TextTrimming="CharacterEllipsis" />
+                               TextTrimming="CharacterEllipsis">
+                        <ToolTip.Tip>
+                            <TextBlock MaxWidth="420" TextWrapping="Wrap" Text="{Binding FileName}" />
+                        </ToolTip.Tip>
+                    </TextBlock>
                     <TextBlock Margin="0,5,0,0"
                                FontSize="12"
                                Foreground="{DynamicResource AccentTextBrush}"

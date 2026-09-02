@@ -86,7 +86,11 @@
                        Foreground="{DynamicResource PrimaryTextBrush}"
                        Text="{Binding Name}"
                        TextTrimming="CharacterEllipsis"
-                       TextWrapping="Wrap" />
+                       TextWrapping="Wrap">
+                <ToolTip.Tip>
+                    <TextBlock MaxWidth="420" TextWrapping="Wrap" Text="{Binding Name}" />
+                </ToolTip.Tip>
+            </TextBlock>
 
             <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="8">
                 <TextBlock Grid.Column="0"

@@ -41,16 +41,28 @@
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource PrimaryTextBrush}"
                            Text="{Binding Title}"
-                           TextTrimming="CharacterEllipsis" />
+                           TextTrimming="CharacterEllipsis">
+                    <ToolTip.Tip>
+                        <TextBlock MaxWidth="420" TextWrapping="Wrap" Text="{Binding Title}" />
+                    </ToolTip.Tip>
+                </TextBlock>
                 <TextBlock FontSize="11"
                            Foreground="{DynamicResource SecondaryTextBrush}"
                            Text="{Binding AuthorText}"
-                           TextTrimming="CharacterEllipsis" />
+                           TextTrimming="CharacterEllipsis">
+                    <ToolTip.Tip>
+                        <TextBlock MaxWidth="420" TextWrapping="Wrap" Text="{Binding AuthorText}" />
+                    </ToolTip.Tip>
+                </TextBlock>
                 <TextBlock FontSize="10"
                            Foreground="{DynamicResource AccentTextBrush}"
                            IsVisible="{Binding HasSeries}"
                            Text="{Binding SeriesText}"
-                           TextTrimming="CharacterEllipsis" />
+                           TextTrimming="CharacterEllipsis">
+                    <ToolTip.Tip>
+                        <TextBlock MaxWidth="420" TextWrapping="Wrap" Text="{Binding SeriesText}" />
+                    </ToolTip.Tip>
+                </TextBlock>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBlock VerticalAlignment="Center"
                                FontSize="11"

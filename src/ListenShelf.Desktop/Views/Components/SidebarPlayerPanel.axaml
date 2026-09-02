@@ -18,8 +18,11 @@
                     HorizontalContentAlignment="Left"
                     Background="Transparent"
                     Command="{Binding ShowPlayerCommand}"
-                    ToolTip.Tip="{Binding BookTitle, StringFormat='Open Player: {0}'}"
                     AutomationProperties.Name="{Binding BookTitle, StringFormat='Open Player: {0}'}">
+                <ToolTip.Tip>
+                    <TextBlock MaxWidth="420" TextWrapping="Wrap"
+                               Text="{Binding BookTitle, StringFormat='Open Player: {0}'}" />
+                </ToolTip.Tip>
                 <TextBlock MaxHeight="38"
                            FontSize="13"
                            FontWeight="SemiBold"
