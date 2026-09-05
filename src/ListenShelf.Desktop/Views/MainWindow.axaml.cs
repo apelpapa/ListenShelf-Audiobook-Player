@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
 using ListenShelf.Application.Playback;
+using ListenShelf.Application.Settings;
 using ListenShelf.Desktop.Services;
 using ListenShelf.Desktop.ViewModels;
 
@@ -14,6 +15,7 @@ namespace ListenShelf.Desktop.Views
             GlobalMediaKeyServiceFactory.Create();
         private MainWindowViewModel? _viewModel;
         private bool _waitingForWorkToClose;
+        private WindowPlacementController? _windowPlacement;
 
         public MainWindow()
         {
@@ -23,11 +25,19 @@ namespace ListenShelf.Desktop.Views
             Closed += OnClosed;
         }
 
+        public void ConfigureWindowPlacement(IAppSettingsStore settings, Action<string, Exception> logError)
+        {
+            _windowPlacement?.Dispose();
+            _windowPlacement = new WindowPlacementController(this, settings, logError);
+        }
+
         protected override async void OnClosing(WindowClosingEventArgs e)
         {
             base.OnClosing(e);
-            if (e.Cancel || _viewModel is null || (!_viewModel.Imports.IsRunning && !_viewModel.Verification.IsRunning && !_viewModel.Repair.IsRunning))
+            if (e.Cancel) return;
+            if (_viewModel is null || (!_viewModel.Imports.IsRunning && !_viewModel.Verification.IsRunning && !_viewModel.Repair.IsRunning))
             {
+                _windowPlacement?.Save();
                 return;
             }
 
@@ -130,6 +140,7 @@ namespace ListenShelf.Desktop.Views
             }
 
             _mediaKeyService.Dispose();
+            _windowPlacement?.Dispose();
         }
 
         private void OnViewModelPropertyChanged(

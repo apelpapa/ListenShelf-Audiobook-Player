@@ -2,6 +2,10 @@ namespace ListenShelf.Application.Settings;
 
 public interface IAppSettingsStore
 {
+    WindowPlacement? GetWindowPlacement();
+
+    void SaveWindowPlacement(WindowPlacement placement);
+
     AppTheme GetTheme();
 
     void SaveTheme(AppTheme theme);

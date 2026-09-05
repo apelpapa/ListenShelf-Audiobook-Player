@@ -83,6 +83,7 @@ namespace ListenShelf.Desktop
         {
             var mainWindow = new MainWindow();
             var database = new ListenShelfDatabase();
+            var settings = new SqliteAppSettingsStore(database);
             var themeService = new AvaloniaThemeService();
             var metadataProvider = new OpenLibraryBookMetadataProvider();
             var audiobookLibrary = new SqliteAudiobookLibrary(database);
@@ -103,7 +104,7 @@ namespace ListenShelf.Desktop
                 new AvaloniaFilePickerService(mainWindow),
                 new SqlitePlaybackProgressStore(database),
                 new SqlitePlaybackBookmarkStore(database),
-                new SqliteAppSettingsStore(database),
+                settings,
                 themeService,
                 audiobookLibrary,
                 new AvaloniaBookMetadataEditorService(mainWindow, metadataProvider),
@@ -118,6 +119,7 @@ namespace ListenShelf.Desktop
                 new AvaloniaSleepTimerDurationService(mainWindow));
 
             mainWindow.DataContext = viewModel;
+            mainWindow.ConfigureWindowPlacement(settings, _diagnosticLog.WriteError);
             mainWindow.Opened += async (_, _) =>
             {
                 await viewModel.InitializeAsync();

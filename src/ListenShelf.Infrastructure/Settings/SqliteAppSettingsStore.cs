@@ -1,11 +1,13 @@
 using ListenShelf.Application.Settings;
 using ListenShelf.Infrastructure.Storage;
 using System.Globalization;
+using System.Text.Json;
 
 namespace ListenShelf.Infrastructure.Settings;
 
 public sealed class SqliteAppSettingsStore(ListenShelfDatabase database) : IAppSettingsStore
 {
+    private const string WindowPlacementKey = "window.placement";
     private const string ThemeKey = "appearance.theme";
     private const string LibraryViewModeKey = "library.view_mode";
     private const string LibraryGroupModeKey = "library.group_mode";
@@ -27,6 +29,44 @@ public sealed class SqliteAppSettingsStore(ListenShelfDatabase database) : IAppS
     private const double DefaultPlaybackRate = 1d;
     private const double MinimumPlaybackRate = 0.5d;
     private const double MaximumPlaybackRate = 3d;
+
+    public WindowPlacement? GetWindowPlacement()
+    {
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT setting_value FROM app_settings WHERE setting_key = $key;";
+        command.Parameters.AddWithValue("$key", WindowPlacementKey);
+        if (command.ExecuteScalar() is not string json || json.Length > 4096) return null;
+        try
+        {
+            var saved = JsonSerializer.Deserialize<StoredWindowPlacement>(json);
+            return saved is { Version: 1, Placement: { } placement } && placement.IsValid() ? placement : null;
+        }
+        catch (JsonException)
+        {
+            // A damaged or newer preference must not prevent the app from opening.
+            return null;
+        }
+    }
+
+    public void SaveWindowPlacement(WindowPlacement placement)
+    {
+        ArgumentNullException.ThrowIfNull(placement);
+        if (!placement.IsValid()) throw new ArgumentOutOfRangeException(nameof(placement));
+        using var connection = database.OpenConnection();
+        using var command = connection.CreateCommand();
+        // One setting makes size, position, and state an atomic snapshot.
+        command.CommandText =
+            """
+            INSERT INTO app_settings (setting_key, setting_value) VALUES ($key, $value)
+            ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value;
+            """;
+        command.Parameters.AddWithValue("$key", WindowPlacementKey);
+        command.Parameters.AddWithValue("$value", JsonSerializer.Serialize(new StoredWindowPlacement(1, placement)));
+        command.ExecuteNonQuery();
+    }
+
+    private sealed record StoredWindowPlacement(int Version, WindowPlacement? Placement);
 
     public AppTheme GetTheme()
     {

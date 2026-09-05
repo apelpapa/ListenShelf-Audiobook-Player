@@ -74,6 +74,14 @@ full text in a wrapping tooltip. Group names, stack preview titles, the Player's
 book title and filename, and the sidebar title also have full-text tooltips.
 Cards keep their existing sizes; long metadata is not shortened in the tooltip.
 
+On a normal close, ListenShelf remembers the main window's size, position, and
+maximized state. It keeps normal restore bounds separately, so closing while
+maximized or minimized does not lose your preferred window size, and reopening
+never leaves the app minimized. Saved positions are checked against current
+monitors, display scaling, and working areas; disconnected-monitor positions are
+recentered and oversized windows are adjusted to fit. Invalid window preferences
+fall back safely, and a failure to save this preference does not block closing.
+
 Press **Ctrl+F** anywhere in the main window to open the Library and focus its
 search box, selecting any existing query for replacement. **Escape** clears the
 query while the search box is focused, without resetting sort, status, or
