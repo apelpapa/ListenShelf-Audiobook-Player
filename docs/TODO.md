@@ -66,6 +66,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Test reverse sorting for all six orders, deterministic ties/missing values, unchanged input, filtered/grouped views, preference reload and malformed defaults, save-failure feedback, and local backup round-tripping without playback changes.
 - [x] Add regression checks for full-text tooltip bindings and wrapping across book cards, group labels, Player, and sidebar, including preservation of long Unicode titles, all authors, and series/book numbers.
 - [x] Test versioned window-placement persistence and backup round-tripping, corrupt/default/write-failure paths, normal/maximized/minimized transitions, negative/disconnected-monitor positions, working-area clamping, and mixed-DPI screen selection.
+- [x] Test About build-version display and prerelease/fallback handling, fixed HTTPS project links, explicit-click-only browser launching, concurrent-click guards, and copyable failure/retry feedback without exposing exception details.
 - [x] Test sidebar playback across every page, live title/status/labels, navigation without autoplay, busy/disposal guards, book switching/removal/load failure, and inline playback failure/retry without reloads or browsing changes.
 - [x] Test managed-book removal, related-data cleanup, path safety, and interrupted-removal recovery.
 - [x] Test managed-storage checks for missing files, orphaned paths, stale imports, unsafe catalog paths, and journaled removals.
@@ -121,7 +122,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [ ] Add an option to export a diagnostic report.
 - [x] Document where ListenShelf stores its database, managed books, covers, logs, and settings on each desktop platform.
 - [ ] Document backup, restore, export, relink, confirmed removal, and orphan-recovery behavior.
-- [ ] Add a clear GitHub issue and feedback path.
+- [x] Add a clear GitHub issue and feedback path through Settings → About ListenShelf.
 - [ ] Add issue templates for bug reports and feature requests.
 
 ### Project and release policy
@@ -234,6 +235,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Add a compact current-book sidebar panel with live title/status, shared Play/Pause, title navigation to Player, inline error feedback, and no automatic playback or page changes when controlling audio.
 - [x] Show wrapping full-text hover tooltips for truncated titles, authors, series, group names, and Player/sidebar book labels without enlarging cards or changing playback.
 - [x] Remember the main window's normal size/position and maximized state on close, restore safely against available monitors/DPI, avoid minimized startup, and handle preference failures without blocking startup or close.
+- [x] Add an About section in Settings with the running build version, copyright, GPL-3.0-only license, and explicit repository/issue/license links, including a copyable address if browser launch fails and no automatic network requests.
 - [ ] Manually smoke-test Windows window restoration: resize/move and reopen, maximize/minimize and reopen, Restore Down after a maximized launch, and disconnect/change scaling or move between mixed-DPI monitors.
 - [ ] Add A-B repeat.
 - [ ] Add a mini-player.

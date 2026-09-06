@@ -352,6 +352,7 @@
                     </StackPanel>
                 </Border>
             </StackPanel>
+            <components:AboutPanel DataContext="{Binding About}" />
         </StackPanel>
     </ScrollViewer>
 </UserControl>

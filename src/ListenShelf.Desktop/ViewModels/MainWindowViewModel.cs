@@ -98,7 +98,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IManagedFileVerifier managedFileVerifier,
         IManagedFileRepairer managedFileRepairer,
         IJumpToTimeService jumpToTimeService,
-        ISleepTimerDurationService sleepTimerDurationService)
+        ISleepTimerDurationService sleepTimerDurationService,
+        IExternalLinkService? externalLinkService = null)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
@@ -106,6 +107,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _bookmarkStore = bookmarkStore;
         _appSettingsStore = appSettingsStore;
         SkipSettings = new PlaybackSkipSettingsViewModel(appSettingsStore);
+        About = new AboutViewModel(externalLinkService);
         _themeService = themeService;
         _audiobookLibrary = audiobookLibrary;
         Imports = new LibraryImportViewModel(audiobookLibrary);
@@ -250,6 +252,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         [0.75d, 1d, 1.25d, 1.5d, 1.75d, 2d];
 
     public PlaybackSkipSettingsViewModel SkipSettings { get; }
+
+    public AboutViewModel About { get; }
 
     public LibraryImportViewModel Imports { get; }
 

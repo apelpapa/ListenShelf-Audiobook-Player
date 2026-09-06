@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ListenShelf.Desktop.ViewModels"
+             x:Class="ListenShelf.Desktop.Views.Components.AboutPanel"
+             x:DataType="vm:AboutViewModel">
+    <StackPanel Spacing="10">
+        <TextBlock FontSize="19" FontWeight="SemiBold"
+                   Foreground="{DynamicResource PrimaryTextBrush}" Text="About ListenShelf" />
+        <Border Padding="18" CornerRadius="15"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+            <StackPanel Spacing="12">
+                <Grid ColumnDefinitions="48,*" ColumnSpacing="14">
+                    <Image Width="48" Height="48" VerticalAlignment="Top"
+                           Source="/Assets/Branding/listenshelf-1024.png"
+                           AutomationProperties.Name="ListenShelf logo" />
+                    <StackPanel Grid.Column="1" Spacing="4">
+                        <TextBlock FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                   Text="{Binding Info.ProductName}" TextWrapping="Wrap" />
+                        <SelectableTextBlock FontSize="12"
+                                             Foreground="{DynamicResource AccentTextBrush}"
+                                             Text="{Binding VersionText}"
+                                             ToolTip.Tip="{Binding Info.FullVersion}" />
+                        <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                                   Text="{Binding Info.Copyright}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Grid>
+                <TextBlock FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
+                           Text="{Binding Info.Description}" TextWrapping="Wrap" />
+                <TextBlock FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
+                           Text="{Binding LicenseText}" TextWrapping="Wrap" />
+                <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                           Text="Third-party license notices and the separate ListenShelf brand policy are available in the repository."
+                           TextWrapping="Wrap" />
+                <WrapPanel Orientation="Horizontal">
+                    <Button Padding="13,8" Margin="0,0,8,8"
+                            Content="GitHub repository" Command="{Binding OpenRepositoryCommand}"
+                            AutomationProperties.Name="Open ListenShelf repository in browser"
+                            ToolTip.Tip="{Binding RepositoryUrl}" />
+                    <Button Padding="13,8" Margin="0,0,8,8"
+                            Content="Report an issue" Command="{Binding OpenIssuesCommand}"
+                            AutomationProperties.Name="Open ListenShelf issue tracker in browser"
+                            ToolTip.Tip="{Binding IssuesUrl}" />
+                    <Button Padding="13,8" Margin="0,0,8,8"
+                            Content="View license" Command="{Binding OpenLicenseCommand}"
+                            AutomationProperties.Name="Open ListenShelf license in browser"
+                            ToolTip.Tip="{Binding LicenseUrl}" />
+                </WrapPanel>
+                <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                           Text="Links open in your default browser. No library or diagnostic data is attached."
+                           TextWrapping="Wrap" />
+                <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                           Text="Opening your browser…" IsVisible="{Binding IsOpeningLink}" />
+                <StackPanel Spacing="5" IsVisible="{Binding HasLinkError}">
+                    <TextBlock FontSize="11" Foreground="{DynamicResource DangerTextBrush}"
+                               Text="{Binding LinkError}" TextWrapping="Wrap" />
+                    <SelectableTextBlock FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"
+                                         Text="{Binding FailedLinkUrl}" TextWrapping="Wrap" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

@@ -82,6 +82,13 @@ monitors, display scaling, and working areas; disconnected-monitor positions are
 recentered and oversized windows are adjusted to fit. Invalid window preferences
 fall back safely, and a failure to save this preference does not block closing.
 
+**Settings → About ListenShelf** shows the running build's version (including
+alpha/beta labels), copyright, and GPL-3.0-only source-code license. Buttons open
+the GitHub repository, issue tracker, or license in your default browser only
+when clicked; no library or diagnostic data is attached. If the browser cannot
+be opened, a selectable address is shown for copying. Reading About works
+offline and does not check for updates.
+
 Press **Ctrl+F** anywhere in the main window to open the Library and focus its
 search box, selecting any existing query for replacement. **Escape** clears the
 query while the search box is focused, without resetting sort, status, or

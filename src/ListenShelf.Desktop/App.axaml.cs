@@ -116,7 +116,8 @@ namespace ListenShelf.Desktop
                 new SqliteManagedFileVerifier(database, audiobookLibrary.ManagedLibraryPath),
                 audiobookLibrary,
                 new AvaloniaJumpToTimeService(mainWindow),
-                new AvaloniaSleepTimerDurationService(mainWindow));
+                new AvaloniaSleepTimerDurationService(mainWindow),
+                new AvaloniaExternalLinkService(mainWindow));
 
             mainWindow.DataContext = viewModel;
             mainWindow.ConfigureWindowPlacement(settings, _diagnosticLog.WriteError);
