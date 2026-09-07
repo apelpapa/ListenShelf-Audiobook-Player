@@ -67,6 +67,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Add regression checks for full-text tooltip bindings and wrapping across book cards, group labels, Player, and sidebar, including preservation of long Unicode titles, all authors, and series/book numbers.
 - [x] Test versioned window-placement persistence and backup round-tripping, corrupt/default/write-failure paths, normal/maximized/minimized transitions, negative/disconnected-monitor positions, working-area clamping, and mixed-DPI screen selection.
 - [x] Test About build-version display and prerelease/fallback handling, fixed HTTPS project links, explicit-click-only browser launching, concurrent-click guards, and copyable failure/retry feedback without exposing exception details.
+- [x] Test the allowlisted troubleshooting report, runtime-version capture/fallback, exclusion of paths/custom build metadata/exception text, exact preview-to-copy matching, clipboard failure/retry and duplicate-click guards, and selectable preview bindings without accessing the real clipboard.
 - [x] Test sidebar playback across every page, live title/status/labels, navigation without autoplay, busy/disposal guards, book switching/removal/load failure, and inline playback failure/retry without reloads or browsing changes.
 - [x] Test managed-book removal, related-data cleanup, path safety, and interrupted-removal recovery.
 - [x] Test managed-storage checks for missing files, orphaned paths, stale imports, unsafe catalog paths, and journaled removals.
@@ -119,6 +120,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 - [x] Add a local, privacy-respecting startup and native-runtime log with bounded rotation.
 - [ ] Expand local logging to capture playback, import, backup, and recovery failures.
+- [x] Add Copy troubleshooting details in About with a preview of app/OS/architecture/.NET/Avalonia/LibVLCSharp/loaded-LibVLC versions, no library data or logs, and an explicit clipboard action with manual-copy fallback.
 - [ ] Add an option to export a diagnostic report.
 - [x] Document where ListenShelf stores its database, managed books, covers, logs, and settings on each desktop platform.
 - [ ] Document backup, restore, export, relink, confirmed removal, and orphan-recovery behavior.
@@ -236,6 +238,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Show wrapping full-text hover tooltips for truncated titles, authors, series, group names, and Player/sidebar book labels without enlarging cards or changing playback.
 - [x] Remember the main window's normal size/position and maximized state on close, restore safely against available monitors/DPI, avoid minimized startup, and handle preference failures without blocking startup or close.
 - [x] Add an About section in Settings with the running build version, copyright, GPL-3.0-only license, and explicit repository/issue/license links, including a copyable address if browser launch fails and no automatic network requests.
+- [ ] Manually smoke-test Windows troubleshooting copy: compare the preview with pasted text, verify the loaded engine version, and paste after closing ListenShelf.
 - [ ] Manually smoke-test Windows window restoration: resize/move and reopen, maximize/minimize and reopen, Restore Down after a maximized launch, and disconnect/change scaling or move between mixed-DPI monitors.
 - [ ] Add A-B repeat.
 - [ ] Add a mini-player.

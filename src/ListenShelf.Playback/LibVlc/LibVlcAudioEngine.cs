@@ -69,6 +69,8 @@ public sealed class LibVlcAudioEngine : IAudioEngine
 
     public string? CurrentFilePath { get; private set; }
 
+    public string RuntimeVersion => _libVlc.Version;
+
     public TimeSpan Position =>
         _restartPosition ?? (_hasReachedEnd
             ? Duration

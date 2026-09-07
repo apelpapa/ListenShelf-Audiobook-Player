@@ -9,6 +9,7 @@ using ListenShelf.Application.Library;
 using ListenShelf.Application.Playback;
 using ListenShelf.Application.Progress;
 using ListenShelf.Application.Settings;
+using ListenShelf.Desktop.Diagnostics;
 using ListenShelf.Desktop.Services;
 
 namespace ListenShelf.Desktop.ViewModels;
@@ -99,7 +100,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         IManagedFileRepairer managedFileRepairer,
         IJumpToTimeService jumpToTimeService,
         ISleepTimerDurationService sleepTimerDurationService,
-        IExternalLinkService? externalLinkService = null)
+        IExternalLinkService? externalLinkService = null,
+        IClipboardTextService? clipboardTextService = null,
+        TroubleshootingInfo? troubleshootingInfo = null)
     {
         _audioEngine = audioEngine;
         _filePickerService = filePickerService;
@@ -107,7 +110,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _bookmarkStore = bookmarkStore;
         _appSettingsStore = appSettingsStore;
         SkipSettings = new PlaybackSkipSettingsViewModel(appSettingsStore);
-        About = new AboutViewModel(externalLinkService);
+        About = new AboutViewModel(externalLinkService, clipboardTextService, troubleshootingInfo);
         _themeService = themeService;
         _audiobookLibrary = audiobookLibrary;
         Imports = new LibraryImportViewModel(audiobookLibrary);

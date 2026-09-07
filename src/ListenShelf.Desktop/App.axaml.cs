@@ -117,7 +117,9 @@ namespace ListenShelf.Desktop
                 audiobookLibrary,
                 new AvaloniaJumpToTimeService(mainWindow),
                 new AvaloniaSleepTimerDurationService(mainWindow),
-                new AvaloniaExternalLinkService(mainWindow));
+                new AvaloniaExternalLinkService(mainWindow),
+                new AvaloniaClipboardTextService(() => mainWindow.Clipboard),
+                TroubleshootingInfo.Capture(() => audioEngine.RuntimeVersion));
 
             mainWindow.DataContext = viewModel;
             mainWindow.ConfigureWindowPlacement(settings, _diagnosticLog.WriteError);

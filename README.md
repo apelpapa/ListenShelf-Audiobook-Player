@@ -89,6 +89,15 @@ when clicked; no library or diagnostic data is attached. If the browser cannot
 be opened, a selectable address is shown for copying. Reading About works
 offline and does not check for updates.
 
+About also has **Copy troubleshooting details**, with an expandable, selectable
+preview of the exact text. It includes the app version, operating-system build,
+OS/app architectures, .NET, Avalonia, LibVLCSharp, and the loaded LibVLC runtime
+version. It excludes book names, file paths, usernames, listening history, logs,
+and custom build metadata. Nothing is uploaded by ListenShelf; paste the details
+into an issue yourself when ready. Clipboard failures open the preview for
+manual copying or retry, and an unavailable engine version does not prevent
+copying the other details.
+
 Press **Ctrl+F** anywhere in the main window to open the Library and focus its
 search box, selecting any existing query for replacement. **Escape** clears the
 query while the search box is focused, without resetting sort, status, or

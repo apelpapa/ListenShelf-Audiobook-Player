@@ -58,6 +58,27 @@
                     <SelectableTextBlock FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"
                                          Text="{Binding FailedLinkUrl}" TextWrapping="Wrap" />
                 </StackPanel>
+                <Border Height="1" Background="{DynamicResource BorderBrush}" />
+                <TextBlock FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryTextBrush}" Text="Troubleshooting" />
+                <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                           Text="Copy app, operating-system, and playback-engine versions for a bug report. No book names, file paths, usernames, listening history, or logs are included. Nothing is uploaded by ListenShelf."
+                           TextWrapping="Wrap" />
+                <Button Padding="13,8" HorizontalAlignment="Left"
+                        Content="Copy troubleshooting details"
+                        Command="{Binding CopyTroubleshootingDetailsCommand}"
+                        AutomationProperties.Name="Copy privacy-safe troubleshooting details" />
+                <TextBlock FontSize="11" Foreground="{DynamicResource MutedTextBrush}"
+                           Text="Copying…" IsVisible="{Binding IsCopyingDetails}" />
+                <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}"
+                           Text="{Binding CopyStatus}" IsVisible="{Binding HasCopyStatus}"
+                           TextWrapping="Wrap" />
+                <Expander Header="Preview troubleshooting details" HorizontalAlignment="Stretch"
+                          IsExpanded="{Binding IsTroubleshootingPreviewExpanded, Mode=TwoWay}">
+                    <SelectableTextBlock FontSize="12" Margin="0,10,0,0"
+                                         Foreground="{DynamicResource SecondaryTextBrush}"
+                                         Text="{Binding TroubleshootingDetails}" TextWrapping="Wrap" />
+                </Expander>
             </StackPanel>
         </Border>
     </StackPanel>

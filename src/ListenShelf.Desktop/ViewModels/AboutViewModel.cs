@@ -1,11 +1,16 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ListenShelf.Desktop.Diagnostics;
 using ListenShelf.Desktop.Services;
 
 namespace ListenShelf.Desktop.ViewModels;
 
-public sealed partial class AboutViewModel(IExternalLinkService? linkService) : ViewModelBase
+public sealed partial class AboutViewModel(
+    IExternalLinkService? linkService,
+    IClipboardTextService? clipboardService = null,
+    TroubleshootingInfo? troubleshootingInfo = null) : ViewModelBase
 {
+    public string TroubleshootingDetails { get; } = (troubleshootingInfo ?? TroubleshootingInfo.Capture()).ToReport();
     public ApplicationAboutInfo Info { get; } = ApplicationAboutInfo.Current;
     public string VersionText => $"Version {Info.Version}";
     public string LicenseText => "Source-code license: GNU GPL v3 only (GPL-3.0-only).";
