@@ -22,10 +22,17 @@ public sealed class LibVlcAudioEngine : IAudioEngine
     private bool _disposed;
 
     public LibVlcAudioEngine()
+        : this(LibVlcRuntimeLocator.Initialize)
     {
+    }
+
+    // Mobile hosts initialize LibVLC with their platform context before creating the player.
+    public LibVlcAudioEngine(Action initializeRuntime)
+    {
+        ArgumentNullException.ThrowIfNull(initializeRuntime);
         try
         {
-            LibVlcRuntimeLocator.Initialize();
+            initializeRuntime();
             _libVlc = new LibVLC("--no-video", "--no-video-title-show");
             _mediaPlayer = new MediaPlayer(_libVlc);
         }

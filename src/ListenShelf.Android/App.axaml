@@ -1,0 +1,15 @@
+<Application xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ListenShelf.Android.App" RequestedThemeVariant="Dark">
+  <Application.Styles>
+    <FluentTheme />
+    <Style Selector="TextBlock"><Setter Property="Foreground" Value="#F2F4F8" /></Style>
+    <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="#9EA9BC" /></Style>
+    <Style Selector="Button">
+      <Setter Property="MinHeight" Value="48" /><Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="16,12" /><Setter Property="Background" Value="#242B3C" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.primary"><Setter Property="Background" Value="#7567F8" /><Setter Property="Foreground" Value="White" /></Style>
+    <Style Selector="Button.quiet"><Setter Property="Background" Value="Transparent" /><Setter Property="Foreground" Value="#B9B1FF" /></Style>
+  </Application.Styles>
+</Application>

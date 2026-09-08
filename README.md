@@ -6,6 +6,10 @@ ListenShelf is a free and open-source, privacy-first audiobook library and playe
 
 > **Alpha:** ListenShelf is early software. Windows preview downloads are available from [GitHub Releases](https://github.com/apelpapa/ListenShelf-Audiobook-Player/releases).
 
+An initial Android client is available in this repository for local building and
+testing. See the [Android preview guide](docs/ANDROID_PREVIEW.md) for features,
+build commands, and current limitations.
+
 ## Repository layout
 
 ```text

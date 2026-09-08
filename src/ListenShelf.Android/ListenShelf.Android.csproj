@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
+    <ApplicationId>org.listenshelf.android</ApplicationId>
+    <ApplicationTitle>ListenShelf</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>0.1.0-preview.1</ApplicationDisplayVersion>
+    <AndroidPackageFormats>apk</AndroidPackageFormats>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <RuntimeIdentifiers Condition="'$(RuntimeIdentifier)' == ''">android-arm64;android-x64</RuntimeIdentifiers>
+    <!-- VideoLAN's native-library targets inspect the plural property at evaluation time. -->
+    <RuntimeIdentifiers Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</RuntimeIdentifiers>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Android" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="LibVLCSharp" />
+    <PackageReference Include="VideoLAN.LibVLC.Android" />
+    <ProjectReference Include="../ListenShelf.Infrastructure/ListenShelf.Infrastructure.csproj" />
+    <ProjectReference Include="../ListenShelf.Playback/ListenShelf.Playback.csproj" />
+    <AvaloniaResource Include="../ListenShelf.Desktop/Assets/Branding/listenshelf-1024.png" Link="Assets/listenshelf.png" />
+    <AndroidAsset Include="../../LICENSE" Link="LICENSE.txt" />
+    <AndroidAsset Include="../../THIRD-PARTY-NOTICES.txt" Link="THIRD-PARTY-NOTICES.txt" />
+  </ItemGroup>
+</Project>
