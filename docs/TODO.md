@@ -2,10 +2,15 @@
 
 This is the general backlog for ListenShelf. Add new work here, place it under the most appropriate priority, and move it when priorities change.
 
+The main build and desktop backlog currently target Windows. Android remains in
+its separate solution and preview guide. macOS/Linux port work will be planned
+and implemented separately; their former packaging and implementation are no
+longer part of this build (the previous work remains in Git history).
+
 ## Priority guide
 
 - **P0 — Critical:** Data safety, core correctness, and problems that can make ListenShelf unusable.
-- **P1 — Essential:** High-value work expected before a broad beta or cross-platform release.
+- **P1 — Essential:** High-value work expected before a broad Windows beta.
 - **P2 — Important:** Meaningful improvements that should follow the essential foundation.
 - **P3 — Enhancement:** Valuable features and polish that are not release blockers.
 - **P4 — Future:** Long-term expansion and ideas that are intentionally deferred.
@@ -68,6 +73,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Test versioned window-placement persistence and backup round-tripping, corrupt/default/write-failure paths, normal/maximized/minimized transitions, negative/disconnected-monitor positions, working-area clamping, and mixed-DPI screen selection.
 - [x] Test About build-version display and prerelease/fallback handling, fixed HTTPS project links, explicit-click-only browser launching, concurrent-click guards, and copyable failure/retry feedback without exposing exception details.
 - [x] Test the allowlisted troubleshooting report, runtime-version capture/fallback, exclusion of paths/custom build metadata/exception text, exact preview-to-copy matching, clipboard failure/retry and duplicate-click guards, and selectable preview bindings without accessing the real clipboard.
+- [x] Test Windows-only desktop backend/package configuration, manual Windows CI, runtime-folder selection, unchanged Windows data paths, and separation of the Android project/runtime.
 - [x] Test sidebar playback across every page, live title/status/labels, navigation without autoplay, busy/disposal guards, book switching/removal/load failure, and inline playback failure/retry without reloads or browsing changes.
 - [x] Test managed-book removal, related-data cleanup, path safety, and interrupted-removal recovery.
 - [x] Test managed-storage checks for missing files, orphaned paths, stale imports, unsafe catalog paths, and journaled removals.
@@ -122,7 +128,7 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [ ] Expand local logging to capture playback, import, backup, and recovery failures.
 - [x] Add Copy troubleshooting details in About with a preview of app/OS/architecture/.NET/Avalonia/LibVLCSharp/loaded-LibVLC versions, no library data or logs, and an explicit clipboard action with manual-copy fallback.
 - [ ] Add an option to export a diagnostic report.
-- [x] Document where ListenShelf stores its database, managed books, covers, logs, and settings on each desktop platform.
+- [x] Document Windows database, managed-book, cover, log, and settings locations, with Android storage documented separately.
 - [ ] Document backup, restore, export, relink, confirmed removal, and orphan-recovery behavior.
 - [x] Add a clear GitHub issue and feedback path through Settings → About ListenShelf.
 - [ ] Add issue templates for bug reports and feature requests.
@@ -140,11 +146,10 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 ### Continuous integration
 
-- [x] Add GitHub Actions builds and tests for Windows, macOS, and Linux (currently manual-only).
-- [x] Add a manual GitHub Actions matrix that compiles, tests, and packages macOS and Linux test builds on native runners.
+- [x] Keep GitHub Actions builds and tests Windows-only and manual-only.
 - [x] Generate checksums for every packaged artifact.
 - [ ] Keep published source tags synchronized with downloadable builds.
-- [x] Add reproducible native test-build and synthetic-media instructions.
+- [x] Add Windows build/runtime verification and synthetic-media instructions.
 
 ## P2 — Important
 
@@ -167,29 +172,24 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [x] Add collapsible current-book chapter search by title or displayed number, with ordered results, clear/no-match states, explicit chapter navigation, and no changes to selection or playback while typing.
 - [ ] Add smart rewind after longer pauses.
 
-### Cross-platform architecture
+### Windows build and shared architecture
 
 - [x] Move the current Windows-specific desktop behavior behind platform interfaces.
 - [x] Move Windows media-key registration behind a platform media-control interface.
-- [ ] Add macOS media-control integration.
-- [ ] Add Linux media-control integration.
-- [x] Make the Windows native LibVLC dependency conditional so it is excluded from macOS and Linux builds.
-- [x] Replace Windows-only icon and manifest assumptions with platform-specific packaging assets.
-- [x] Keep storage locations behind cross-platform path services.
+- [x] Use the Windows Avalonia backend, Windows icon/manifest, and bundled Windows LibVLC in the main desktop project.
+- [x] Remove macOS/Linux-specific runtime lookup, packaging scripts/assets, and build workflows from the main build.
+- [x] Keep Android's separate solution, initializer, app-private storage, and shared-library dependencies intact.
+- [x] Keep Windows storage paths behind a path service without changing existing library locations.
 - [ ] Verify case-sensitive and case-insensitive path handling.
-- [ ] Verify filesystem permissions and managed-copy behavior on each platform.
-- [ ] Validate the private bundled LibVLC runtime on clean macOS Apple Silicon and Intel machines with no VLC installation.
-- [ ] Validate the private bundled LibVLC runtime on clean Ubuntu and Linux Mint machines with no VLC installation.
+- [ ] Verify Windows filesystem permissions and managed-copy behavior.
+- [ ] Validate the bundled Windows LibVLC runtime on a clean machine with no VLC installation.
 - [ ] Ensure normal users can install and run ListenShelf without troubleshooting native libraries in a terminal; the ZIP test packages are not the final installer experience.
 
-### Cross-platform acceptance
+### Windows acceptance
 
 - [ ] Launch successfully on Windows x64.
-- [ ] Launch successfully on macOS Apple Silicon.
-- [ ] Launch successfully on macOS Intel where supported.
-- [ ] Launch successfully on Linux x64.
-- [ ] Import audiobooks into the managed library on every supported platform.
-- [ ] Play M4B, M4A, and MP3 files on every supported platform.
+- [ ] Import audiobooks into the managed library on Windows.
+- [ ] Play M4B, M4A, and MP3 files on Windows.
 - [ ] Discover embedded chapters before Play.
 - [ ] Seek, pause, resume, and replay completed books.
 - [ ] Restore the previous audiobook and position without autoplay.
@@ -201,32 +201,21 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 - [ ] Verify offline behavior apart from optional metadata searches.
 - [ ] Verify light and dark themes.
 - [ ] Verify layouts at supported scaling levels and display sizes.
-- [ ] Complete real-machine testing on every supported operating system.
+- [ ] Complete the Windows real-machine checklist in `WINDOWS_TESTING.md`.
 
 ### Packaging
 
 - [ ] Maintain the Windows portable single-file executable.
 - [ ] Maintain the Windows portable ZIP package.
 - [ ] Maintain the Windows installer.
-- [x] Add native-runner packaging for unsigned macOS Apple Silicon test bundles.
-- [x] Add native-runner packaging for unsigned macOS Intel test bundles.
-- [ ] Package the unsigned macOS alpha in a DMG.
-- [x] Provide ZIP packaging for unsigned macOS test bundles.
-- [x] Document the one-time macOS Gatekeeper **Open Anyway** process.
-- [x] Never instruct users to disable Gatekeeper globally.
-- [ ] Consider a universal macOS application bundle after separate builds are reliable.
-- [x] Add native-runner packaging for a Linux x64 portable test ZIP.
-- [ ] Create a Debian/Ubuntu `.deb` package.
-- [ ] Consider an RPM package after Debian-family packaging is reliable.
-- [ ] Revisit AppImage when the packaging path is sufficiently mature.
-- [ ] Produce separate artifacts for each operating system and processor architecture.
+- [ ] Verify each Windows distribution format from its final packaged artifact.
 - [ ] Test clean installation.
 - [ ] Test upgrades from existing alpha data.
 - [ ] Test uninstallation without deleting user data.
 
 ### Build automation
 
-- [ ] Re-enable automatic GitHub Actions build-and-test checks on pushes to `main` and pull requests for Windows, macOS, and Linux; the workflow is currently manual-only.
+- [ ] Re-enable automatic Windows GitHub Actions build-and-test checks on pushes to `main` and pull requests; the workflow is currently manual-only.
 
 ## P3 — Enhancements
 
@@ -250,16 +239,13 @@ This is the general backlog for ListenShelf. Add new work here, place it under t
 
 ### Distribution polish
 
-- [ ] Add macOS Developer ID signing if paid Apple Developer membership becomes worthwhile.
-- [ ] Add macOS notarization if paid Apple Developer membership becomes worthwhile.
-- [ ] Create a signed and notarized macOS DMG.
 - [ ] Evaluate Windows code signing.
-- [ ] Improve installer presentation and platform-native branding.
+- [ ] Improve Windows installer presentation and branding.
 
 ## P4 — Future
 
 - [ ] Add automatic application updates.
-- [ ] Build mobile applications.
+- [ ] Continue the separate Android preview; other ports are managed outside the Windows build work.
 - [ ] Add advanced statistics and listening insights.
 - [ ] Add advanced audio processing.
 - [ ] Evaluate cloud synchronization as an optional feature without making it required.

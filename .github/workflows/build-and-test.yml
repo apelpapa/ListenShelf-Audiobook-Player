@@ -1,4 +1,4 @@
-name: Build and test
+name: Windows build and test
 
 on:
   # Automatic push/PR checks are paused; keep the workflow available on demand.
@@ -9,15 +9,8 @@ permissions:
 
 jobs:
   build-and-test:
-    name: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - windows-latest
-          - ubuntu-latest
-          - macos-15
-    runs-on: ${{ matrix.os }}
+    name: Windows
+    runs-on: windows-latest
     steps:
       - name: Check out source
         uses: actions/checkout@v4

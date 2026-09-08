@@ -26,7 +26,6 @@ public sealed class LibVlcRuntimeLocatorTests
 
         var selectedPath = LibVlcRuntimeLocator.FindBundledRuntimePath(
             baseDirectory,
-            DesktopRuntimePlatform.Windows,
             architecture);
 
         Assert.Equal(architectureDirectory, selectedPath);
@@ -44,55 +43,42 @@ public sealed class LibVlcRuntimeLocatorTests
 
         var selectedPath = LibVlcRuntimeLocator.FindBundledRuntimePath(
             baseDirectory,
-            DesktopRuntimePlatform.Windows,
             Architecture.X64);
 
         Assert.Null(selectedPath);
     }
 
     [Fact]
-    public void Linux_SelectsPrivateRuntimeBesideApplication()
+    public void Windows_SelectsFlatRuntimeBesideApplication()
     {
         using var workspace = new TestWorkspace();
         var baseDirectory = workspace.ManagedLibraryPath;
         var runtimeDirectory = Path.Combine(baseDirectory, "libvlc");
         Directory.CreateDirectory(runtimeDirectory);
         File.WriteAllBytes(
-            Path.Combine(runtimeDirectory, "libvlc.so.5"),
-            [0x7F, 0x45, 0x4C, 0x46]);
+            Path.Combine(runtimeDirectory, "libvlc.dll"),
+            [0x4D, 0x5A]);
 
         var selectedPath = LibVlcRuntimeLocator.FindBundledRuntimePath(
             baseDirectory,
-            DesktopRuntimePlatform.Linux,
             Architecture.X64);
 
         Assert.Equal(runtimeDirectory, selectedPath);
     }
 
     [Fact]
-    public void MacOS_SelectsPrivateRuntimeInsideAppFrameworks()
+    public void Windows_PrefersMatchingArchitectureOverFlatRuntime()
     {
         using var workspace = new TestWorkspace();
-        var contentsDirectory = Path.Combine(
-            workspace.ManagedLibraryPath,
-            "ListenShelf.app",
-            "Contents");
-        var baseDirectory = Path.Combine(contentsDirectory, "MacOS");
-        var runtimeDirectory = Path.Combine(
-            contentsDirectory,
-            "Frameworks",
-            "libvlc",
-            "lib");
-        Directory.CreateDirectory(baseDirectory);
+        var baseDirectory = workspace.ManagedLibraryPath;
+        var runtimeDirectory = Path.Combine(baseDirectory, "libvlc", "win-x64");
         Directory.CreateDirectory(runtimeDirectory);
-        File.WriteAllBytes(
-            Path.Combine(runtimeDirectory, "libvlc.dylib"),
-            [0xCF, 0xFA, 0xED, 0xFE]);
+        File.WriteAllBytes(Path.Combine(runtimeDirectory, "libvlc.dll"), [0x4D, 0x5A]);
+        File.WriteAllBytes(Path.Combine(baseDirectory, "libvlc", "libvlc.dll"), [0x4D, 0x5A]);
 
         var selectedPath = LibVlcRuntimeLocator.FindBundledRuntimePath(
             baseDirectory,
-            DesktopRuntimePlatform.MacOS,
-            Architecture.Arm64);
+            Architecture.X64);
 
         Assert.Equal(runtimeDirectory, selectedPath);
     }

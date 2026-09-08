@@ -1,19 +1,15 @@
-# Cross-platform test builds
+# Windows build and testing
 
-macOS and Linux support is provisional. These packages exist to expose technical
-risks and gather real-machine results; they are not yet supported releases.
+`ListenShelf.slnx` is the main Windows solution. The desktop project defaults to
+`win-x64` and uses Avalonia's Win32 backend with Skia rendering and HarfBuzz text
+shaping. Android stays in `ListenShelf.Android.slnx`; see `ANDROID_PREVIEW.md`.
 
 ## Current runtime strategy
 
-- The Avalonia desktop application and LibVLCSharp managed binding are shared.
+- Core, application, storage, and playback logic remain reusable by Android.
 - Every package carries its own architecture-matched .NET and LibVLC runtimes.
-- Windows continues to use the official VideoLAN Windows native package.
-- Linux packaging copies LibVLC, its playback plugins, and non-system dynamic
-  dependencies into a private directory reached through the included launcher.
-- macOS packaging copies the official VideoLAN runtime into
-  `ListenShelf.app/Contents/Frameworks/libvlc`.
-- Packaging runs a native-runtime probe and fails instead of producing an
-  artifact when LibVLC cannot initialize from the completed package.
+- Windows uses the official VideoLAN Windows native package, including plugins.
+- Run the native-runtime probe against the completed package before testing.
 - ListenShelf shows a diagnostic startup screen when the native runtime cannot
   be loaded. It does not replace or delete the library after this failure.
 
@@ -22,45 +18,58 @@ only after installing VLC is a failed package, even if playback then succeeds.
 
 ## Data and logs
 
-| Platform | ListenShelf data root |
-| --- | --- |
-| Windows | `%LocalAppData%\ListenShelf` |
-| macOS | `~/Library/Application Support/ListenShelf` |
-| Linux | `$XDG_DATA_HOME/ListenShelf`, or `~/.local/share/ListenShelf` |
+The Windows data root is `%LocalAppData%\ListenShelf`. It contains `listenshelf.db`,
+managed audiobook copies in `Library`, cached artwork in `Covers`, and `Logs`.
+This location is unchanged by the Windows-only build cleanup. Do not delete it
+when cleaning build outputs or reinstalling the app.
 
 The `Logs` child directory contains `listenshelf.log` and, after rotation,
 `listenshelf.previous.log`. Logs are local and best-effort.
 
 ## Native packaging
 
-Run the packaging script on the target operating system:
+Run from the repository root on Windows:
 
 ```powershell
-./build/Publish-CrossPlatformTestBuild.ps1 -RuntimeIdentifier linux-x64
-./build/Publish-CrossPlatformTestBuild.ps1 -RuntimeIdentifier osx-arm64
-./build/Publish-CrossPlatformTestBuild.ps1 -RuntimeIdentifier osx-x64
+dotnet restore ListenShelf.slnx
+dotnet build ListenShelf.slnx --configuration Release --no-restore
+dotnet test ListenShelf.slnx --configuration Release --no-build --no-restore
+./build/Test-WindowsInstallerDataSafety.ps1
+
+# Only when local release assets are wanted:
+./build/Publish-WindowsRelease.ps1
 ```
 
-It produces a self-contained .NET and LibVLC portable ZIP plus SHA-256 checksum
-beneath `artifacts/test-builds`. Linux packaging uses `zip` so executable
-permissions survive extraction. macOS packaging creates a normal `.app` bundle
-and uses `ditto` so its metadata, symbolic links, and executable bit survive.
+The release script produces a self-contained portable ZIP, single-file EXE,
+and MSI plus SHA-256 checksums beneath `artifacts/release/v<version>/assets`.
+It creates local files only; it does not commit, push, or publish a GitHub release.
+The single-file app extracts native libraries internally at runtime.
 
-The GitHub Actions workflow is manual-only. It compiles, tests, and packages on
-native macOS and Linux runners, then stores workflow artifacts. It does not
-publish a GitHub Release.
+The GitHub Actions build-and-test workflow remains manual-only and runs on
+Windows. It does not package or publish releases. Normal desktop builds require
+the .NET 10 SDK but do not require Android/iOS workloads.
+
+For a local Release build, the runtime probe is:
+
+```powershell
+& './src/ListenShelf.Desktop/bin/Release/net10.0/win-x64/ListenShelf.exe' --verify-native-runtime
+```
+
+Also run the probe against the EXE inside the actual extracted ZIP or single-file
+package. Exit code 0 verifies native initialization, not audible playback or UI
+behavior; complete the manual checks below too.
 
 ## Exact real-machine pass gate
 
-Test each operating-system and processor package separately. A platform passes
-only when every **required** check below passes on a machine where VLC is not
-installed. One required failure means that platform build remains experimental.
+Test the exact Windows x64 package, preferably in a clean VM with no VLC or .NET
+installation. A package passes only when every **required** check below passes.
+One required failure means that build is not ready to distribute.
 
 Record this header before testing:
 
 ```text
 Operating system and version:
-Processor: Intel x64 / Apple Silicon:
+Processor architecture: x64:
 ListenShelf package filename:
 Package SHA-256 matches: yes / no
 VLC is not installed: yes / no
@@ -70,7 +79,7 @@ VLC is not installed: yes / no
 ### 1. Package and startup — required
 
 - Verify the supplied SHA-256 before extraction.
-- Confirm VLC/VLC.app is absent, then extract the package and launch ListenShelf.
+- Confirm VLC is absent, then extract the package and launch ListenShelf.
 - **Pass:** the normal Library or Player opens without the startup-diagnostics
   window, a terminal command, an environment variable, or any additional install.
 - Close and reopen ListenShelf three times.
@@ -135,27 +144,16 @@ pause, resume, and let it reach the end.
 - Set a one-minute sleep timer and let it expire.
 - **Pass:** playback pauses when the timer expires.
 
-### 7. Platform integration — provisional, report separately
+### 7. Windows integration — required
 
 - Test keyboard media keys and any available headset Play/Pause, Previous, and
   Next controls while ListenShelf is focused and minimized.
-- A failure here does not invalidate the bundled playback runtime, but it blocks
-  claiming full media-control support on that platform.
+- **Pass:** the supported media commands control playback while focused and
+  minimized, without registering keys while media controls are disabled.
+- Test window restoration and About's troubleshooting-copy button, including
+  pasting after closing ListenShelf. Compare the copy with its preview.
 
 Use `build/Generate-SmokeTestMedia.ps1` to regenerate the deterministic media
 set when needed. For any failure, include the failed step, whether sound was
-heard, a screenshot, and `listenshelf.log` from the platform data directory.
-
-## macOS first launch
-
-The current test bundle is unsigned and unnotarized. Control-click the app and
-choose **Open**. If it remains blocked, use **System Settings > Privacy &
-Security > Open Anyway**. Never disable Gatekeeper globally.
-
-## Technical references
-
-- [Avalonia macOS deployment](https://docs.avaloniaui.net/docs/deployment/macos/)
-- [Avalonia Linux deployment](https://docs.avaloniaui.net/docs/deployment/linux)
-- [LibVLCSharp getting started](https://docs.videolan.me/libvlcsharp/docs/getting_started.html)
-- [LibVLCSharp Linux setup](https://docs.videolan.me/libvlcsharp/docs/linux-setup.html)
-- [.NET 10 supported operating systems](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)
+heard, and the privacy-safe details from Settings → About. Review screenshots
+and logs before sharing: they can contain book names and local file paths.

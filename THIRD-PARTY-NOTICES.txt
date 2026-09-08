@@ -22,11 +22,9 @@ License: GNU Lesser General Public License v2.1 or later; individual bundled
 modules and dependencies may carry additional compatible licenses.
 Source: https://code.videolan.org/videolan/vlc
 License text: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
-The exact native runtime version and architecture are recorded in the
-BUNDLED-RUNTIME.txt file shipped with each platform package. Windows currently
-uses VideoLAN.LibVLC.Windows 3.0.23.1. macOS test packages use the official
-VideoLAN VLC.app runtime, and Linux test packages use the Ubuntu-packaged
-LibVLC runtime and playback modules named in that platform manifest.
+The Windows app uses VideoLAN.LibVLC.Windows 3.0.23.1. The separate Android
+preview uses VideoLAN.LibVLC.Android 3.7.0-beta. Exact dependency versions are
+pinned in Directory.Packages.props; each app uses its own platform runtime.
 
 Microsoft.Data.Sqlite.Core 10.0.10 and the self-contained .NET runtime
 License: MIT

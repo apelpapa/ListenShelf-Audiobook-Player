@@ -5,61 +5,36 @@ namespace ListenShelf.Tests;
 public sealed class ListenShelfPathsTests
 {
     [Fact]
-    public void Windows_UsesLocalApplicationData()
+    public void Windows_UsesUnchangedLocalApplicationDataLayout()
     {
         var localData = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "windows-local"));
-
-        var paths = ListenShelfPaths.CreateForPlatform(
-            DesktopPlatformKind.Windows,
-            localData,
-            userProfilePath: null);
+        var paths = ListenShelfPaths.CreateForWindows(localData);
 
         Assert.Equal(Path.Combine(localData, "ListenShelf"), paths.DataRootPath);
         Assert.Equal(Path.Combine(paths.DataRootPath, "listenshelf.db"), paths.DatabasePath);
+        Assert.Equal(Path.Combine(paths.DataRootPath, "Library"), paths.ManagedLibraryPath);
+        Assert.Equal(Path.Combine(paths.DataRootPath, "Covers"), paths.CoverCachePath);
+        Assert.Equal(Path.Combine(paths.DataRootPath, "Logs"), paths.LogDirectoryPath);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("relative/data")]
+    public void Windows_RejectsMissingOrRelativeDataRoot(string? localData)
+    {
+        Assert.Throws<InvalidOperationException>(() => ListenShelfPaths.CreateForWindows(localData));
     }
 
     [Fact]
-    public void MacOS_UsesApplicationSupport()
+    public void ExplicitDatabasePath_RemainsIndependentOfDesktopDefaults()
     {
-        var userProfile = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "mac-user"));
-
-        var paths = ListenShelfPaths.CreateForPlatform(
-            DesktopPlatformKind.MacOS,
-            localApplicationDataPath: null,
-            userProfile);
-
-        Assert.Equal(
-            Path.Combine(userProfile, "Library", "Application Support", "ListenShelf"),
-            paths.DataRootPath);
-    }
-
-    [Fact]
-    public void Linux_UsesAbsoluteXdgDataHomeWhenProvided()
-    {
-        var xdgDataHome = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "xdg-data"));
-
-        var paths = ListenShelfPaths.CreateForPlatform(
-            DesktopPlatformKind.Linux,
-            localApplicationDataPath: null,
-            userProfilePath: null,
-            xdgDataHome);
-
-        Assert.Equal(Path.Combine(xdgDataHome, "ListenShelf"), paths.DataRootPath);
-    }
-
-    [Fact]
-    public void Linux_FallsBackToUserLocalShareForRelativeXdgValue()
-    {
-        var userProfile = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "linux-user"));
-
-        var paths = ListenShelfPaths.CreateForPlatform(
-            DesktopPlatformKind.Linux,
-            localApplicationDataPath: null,
-            userProfile,
-            xdgDataHome: "relative/path");
-
-        Assert.Equal(
-            Path.Combine(userProfile, ".local", "share", "ListenShelf"),
-            paths.DataRootPath);
+        using var workspace = new TestWorkspace();
+        var mobileStylePath = Path.Combine(workspace.ManagedLibraryPath, "app-private", "listenshelf.db");
+        var database = new ListenShelfDatabase(mobileStylePath);
+        Assert.Equal(mobileStylePath, database.DatabasePath);
+        Assert.Equal(Path.GetDirectoryName(mobileStylePath), database.DataRootPath);
+        Assert.Equal(ListenShelfDatabase.CurrentSchemaVersion, database.SchemaVersion);
     }
 }

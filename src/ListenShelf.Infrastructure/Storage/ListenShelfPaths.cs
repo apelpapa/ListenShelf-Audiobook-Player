@@ -23,74 +23,23 @@ public sealed record ListenShelfPaths
 
     public static ListenShelfPaths CreateDefault()
     {
-        var platform = OperatingSystem.IsWindows()
-            ? DesktopPlatformKind.Windows
-            : OperatingSystem.IsMacOS()
-                ? DesktopPlatformKind.MacOS
-                : OperatingSystem.IsLinux()
-                    ? DesktopPlatformKind.Linux
-                    : throw new PlatformNotSupportedException(
-                        "ListenShelf currently supports Windows, macOS, and Linux desktop systems.");
+        // Android supplies its app-private database path explicitly; this is the Windows default.
+        if (!OperatingSystem.IsWindows())
+            throw new PlatformNotSupportedException("The default ListenShelf data directory is Windows-only. Other hosts must supply their own database path.");
 
-        return CreateForPlatform(
-            platform,
+        return CreateForWindows(
             Environment.GetFolderPath(
                 Environment.SpecialFolder.LocalApplicationData,
-                Environment.SpecialFolderOption.Create),
-            Environment.GetFolderPath(
-                Environment.SpecialFolder.UserProfile,
-                Environment.SpecialFolderOption.DoNotVerify),
-            Environment.GetEnvironmentVariable("XDG_DATA_HOME"));
+                Environment.SpecialFolderOption.Create));
     }
 
-    public static ListenShelfPaths CreateForPlatform(
-        DesktopPlatformKind platform,
-        string? localApplicationDataPath,
-        string? userProfilePath,
-        string? xdgDataHome = null)
+    public static ListenShelfPaths CreateForWindows(string? localApplicationDataPath)
     {
-        var dataRoot = platform switch
-        {
-            DesktopPlatformKind.Windows => Path.Combine(
-                RequireAbsolutePath(
-                    localApplicationDataPath,
-                    "The local application-data directory is unavailable."),
-                "ListenShelf"),
-            DesktopPlatformKind.MacOS => Path.Combine(
-                RequireAbsolutePath(
-                    userProfilePath,
-                    "The user profile directory is unavailable."),
-                "Library",
-                "Application Support",
-                "ListenShelf"),
-            DesktopPlatformKind.Linux => Path.Combine(
-                GetLinuxDataHome(xdgDataHome, userProfilePath),
-                "ListenShelf"),
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(platform),
-                platform,
-                "Unsupported desktop platform."),
-        };
-
-        return new ListenShelfPaths(dataRoot);
-    }
-
-    private static string GetLinuxDataHome(
-        string? xdgDataHome,
-        string? userProfilePath)
-    {
-        if (!string.IsNullOrWhiteSpace(xdgDataHome)
-            && Path.IsPathFullyQualified(xdgDataHome))
-        {
-            return Path.GetFullPath(xdgDataHome);
-        }
-
-        return Path.Combine(
+        return new ListenShelfPaths(Path.Combine(
             RequireAbsolutePath(
-                userProfilePath,
-                "The user profile directory is unavailable."),
-            ".local",
-            "share");
+                localApplicationDataPath,
+                "The local application-data directory is unavailable."),
+            "ListenShelf"));
     }
 
     private static string RequireAbsolutePath(string? path, string errorMessage)

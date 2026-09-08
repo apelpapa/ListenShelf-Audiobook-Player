@@ -63,7 +63,7 @@ The Windows replacement uses the platform operation exposed by
 [.NET File.Replace](https://learn.microsoft.com/en-us/dotnet/api/system.io.file.replace?view=net-10.0).
 Filesystem, permission, disk, and external-program failures are still possible;
 repair does not claim that a matching fingerprint proves audio is playable.
-Keep an independent backup. Cross-platform validation remains deferred.
+Keep an independent backup. The main desktop build and this checklist target Windows.
 
 ## Windows manual pass checklist
 

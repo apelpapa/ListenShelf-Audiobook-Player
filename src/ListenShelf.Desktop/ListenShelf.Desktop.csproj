@@ -4,14 +4,18 @@
     <AssemblyName>ListenShelf</AssemblyName>
     <AssemblyTitle>ListenShelf — Audiobook Player</AssemblyTitle>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <PropertyGroup>
-    <ListenShelfTargetWindows Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">true</ListenShelfTargetWindows>
-    <ListenShelfTargetWindows Condition="$([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win-'))">true</ListenShelfTargetWindows>
-    <ApplicationManifest Condition="'$(ListenShelfTargetWindows)' == 'true'">app.manifest</ApplicationManifest>
-    <ApplicationIcon Condition="'$(ListenShelfTargetWindows)' == 'true'">Assets\Branding\listenshelf.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\Branding\listenshelf.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <Target Name="ValidateWindowsRuntimeIdentifier" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(RuntimeIdentifier)' != 'win-x64' and '$(RuntimeIdentifier)' != 'win-x86' and '$(RuntimeIdentifier)' != 'win-arm64'"
+           Text="ListenShelf.Desktop is the Windows app. Use a Windows runtime identifier; Android has its own project and solution." />
+  </Target>
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
@@ -31,7 +35,9 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />
-    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Win32" />
+    <PackageReference Include="Avalonia.Skia" />
+    <PackageReference Include="Avalonia.HarfBuzz" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport">
@@ -39,8 +45,7 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" />
-    <PackageReference Include="VideoLAN.LibVLC.Windows"
-                      Condition="'$(ListenShelfTargetWindows)' == 'true'" />
+    <PackageReference Include="VideoLAN.LibVLC.Windows" />
   </ItemGroup>
 
   <ItemGroup>

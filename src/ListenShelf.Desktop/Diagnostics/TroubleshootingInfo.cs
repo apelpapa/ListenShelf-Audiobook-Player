@@ -35,8 +35,6 @@ public sealed partial record TroubleshootingInfo(
         return new TroubleshootingInfo(
             ApplicationAboutInfo.Current.Version,
             OperatingSystem.IsWindows() ? TroubleshootingPlatform.Windows
-                : OperatingSystem.IsMacOS() ? TroubleshootingPlatform.MacOS
-                : OperatingSystem.IsLinux() ? TroubleshootingPlatform.Linux
                 : TroubleshootingPlatform.Other,
             Environment.OSVersion.Version,
             RuntimeInformation.OSArchitecture,
@@ -61,8 +59,6 @@ public sealed partial record TroubleshootingInfo(
     private string PlatformName => Platform switch
     {
         TroubleshootingPlatform.Windows => "Windows",
-        TroubleshootingPlatform.MacOS => "macOS",
-        TroubleshootingPlatform.Linux => "Linux",
         _ => "Other",
     };
 
@@ -100,6 +96,4 @@ public enum TroubleshootingPlatform
 {
     Other,
     Windows,
-    MacOS,
-    Linux,
 }

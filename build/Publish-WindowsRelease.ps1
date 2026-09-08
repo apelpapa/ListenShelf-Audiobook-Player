@@ -132,7 +132,7 @@ $checksumLines = foreach ($asset in $releaseAssets)
 $checksumPath = Join-Path $outputRoot 'SHA256SUMS.txt'
 $checksumLines | Set-Content -LiteralPath $checksumPath -Encoding ascii
 Copy-Item `
-    -LiteralPath (Join-Path $repoRoot 'docs\CROSS_PLATFORM_TEST_BUILDS.md') `
+    -LiteralPath (Join-Path $repoRoot 'docs\WINDOWS_TESTING.md') `
     -Destination (Join-Path $outputRoot 'TESTING-INSTRUCTIONS.md')
 
 Write-Host ''

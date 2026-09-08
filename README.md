@@ -2,7 +2,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-ListenShelf is a free and open-source, privacy-first audiobook library and player. It began as a focused Windows M4B playback slice built with Avalonia and .NET 10; the architecture keeps macOS, Linux, and possible future mobile clients open.
+ListenShelf is a free and open-source, privacy-first audiobook library and player built with Avalonia and .NET 10. The main build in this repository is Windows; Android remains a separate preview. macOS and Linux ports will be handled separately and are not part of the current main build.
 
 > **Alpha:** ListenShelf is early software. Windows preview downloads are available from [GitHub Releases](https://github.com/apelpapa/ListenShelf-Audiobook-Player/releases).
 
@@ -18,11 +18,16 @@ src/
   ListenShelf.Application/     Use cases and application-owned interfaces
   ListenShelf.Playback/        Audio-engine implementations
   ListenShelf.Infrastructure/  Persistence, metadata, and filesystem services
-  ListenShelf.Desktop/         Shared Avalonia desktop application
+  ListenShelf.Desktop/         Windows Avalonia application
+  ListenShelf.Android/         Separate Android preview
 tests/                         Test projects, added alongside behavior
 ```
 
-`ListenShelf.slnx` is the solution entry point. Package versions and common .NET settings are managed at the repository root.
+`ListenShelf.slnx` is the Windows solution entry point; it does not build Android.
+`ListenShelf.Android.slnx` is the separate Android solution. Package versions and
+shared .NET settings are managed at the repository root. The desktop project
+defaults to `win-x64`, using Avalonia's Win32 backend with Skia/HarfBuzz; shared
+projects remain platform-neutral for Android reuse.
 
 ## Current preview
 
@@ -292,9 +297,8 @@ database policy and recovery behavior are documented in
 
 ListenShelf stores its database, managed audiobook copies, covers, settings,
 bookmarks, listening progress, and local diagnostic logs outside the installed
-application. The data root is `%LocalAppData%\ListenShelf` on Windows,
-`~/Library/Application Support/ListenShelf` on macOS, and
-`$XDG_DATA_HOME/ListenShelf` (or `~/.local/share/ListenShelf`) on Linux.
+application. The Windows data root remains `%LocalAppData%\ListenShelf`.
+Android uses its own app-private storage, as described in the Android guide.
 The installer owns only the application files under `Program Files`, so upgrading
 or uninstalling ListenShelf leaves the library and listening data in place. The
 release build performs a packaging safety check and stops if the Windows
@@ -321,13 +325,11 @@ Create all Windows x64 release assets from the repository root:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build\Publish-WindowsRelease.ps1
 ```
 
-Early macOS and Linux work is kept separate from releases. The repository now
-has native-runner test-build packaging, a manual GitHub Actions workflow, and a
-synthetic M4B/M4A/MP3 smoke-media generator. The macOS and Linux test packages
-carry private architecture-matched LibVLC runtimes; testers do not install VLC
-or .NET separately. The current limitations, commands, data locations, and
-real-machine pass criteria are in
-[`docs/CROSS_PLATFORM_TEST_BUILDS.md`](docs/CROSS_PLATFORM_TEST_BUILDS.md).
+The Windows build-and-test workflow remains manual-only. Windows packages include
+their .NET and LibVLC runtimes; testers should not install VLC or .NET separately.
+Build commands, data locations, native-runtime checks, and the real-machine
+acceptance checklist are in [`docs/WINDOWS_TESTING.md`](docs/WINDOWS_TESTING.md).
+The synthetic M4B/M4A/MP3 generator remains available for playback tests.
 
 ## Free software and optional skins
 

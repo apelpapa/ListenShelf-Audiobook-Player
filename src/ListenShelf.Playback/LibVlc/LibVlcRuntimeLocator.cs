@@ -15,6 +15,10 @@ public static class LibVlcRuntimeLocator
 
     public static void Initialize()
     {
+        // Android passes its own initializer to LibVlcAudioEngine and never uses this locator.
+        if (!OperatingSystem.IsWindows())
+            throw new PlatformNotSupportedException("The default LibVLC locator supports the Windows desktop app only.");
+
         var customPath = Environment.GetEnvironmentVariable(
             CustomRuntimePathEnvironmentVariable);
         if (!string.IsNullOrWhiteSpace(customPath))
@@ -33,23 +37,12 @@ public static class LibVlcRuntimeLocator
 
         var bundledPath = FindBundledRuntimePath(
             AppContext.BaseDirectory,
-            GetPlatform(),
             RuntimeInformation.ProcessArchitecture);
         if (bundledPath is not null)
         {
             ConfigureBundledPluginPath(bundledPath);
             InitializeFromPath(bundledPath);
             return;
-        }
-
-        if (OperatingSystem.IsMacOS())
-        {
-            const string installedVlcPath = "/Applications/VLC.app/Contents/MacOS/lib";
-            if (Directory.Exists(installedVlcPath))
-            {
-                InitializeFromPath(installedVlcPath);
-                return;
-            }
         }
 
         try
@@ -66,28 +59,13 @@ public static class LibVlcRuntimeLocator
 
     public static string GetPlatformHelp() => OperatingSystem.IsWindows()
         ? "The Windows build should contain its own LibVLC runtime. Reinstall or extract the complete ListenShelf package."
-        : OperatingSystem.IsMacOS()
-            ? "The macOS build should contain its own LibVLC runtime. Reinstall or extract the complete ListenShelf package."
-            : OperatingSystem.IsLinux()
-                ? "The Linux build should contain its own LibVLC runtime. Reinstall or extract the complete ListenShelf package."
-                : "Install a compatible LibVLC 3 runtime or provide its directory through LISTENSHELF_LIBVLC_PATH.";
+        : "The host application must supply and initialize a compatible LibVLC runtime. Android includes its runtime in the APK.";
 
     private static void InitializeFromPath(string runtimePath)
     {
         try
         {
-            // LibVLCSharp does not support an explicit directory on Linux. The
-            // packaged launcher places this directory on LD_LIBRARY_PATH before
-            // the process starts; the path is still validated above so broken
-            // packages fail with a useful ListenShelf diagnostic.
-            if (OperatingSystem.IsLinux())
-            {
-                Core.Initialize();
-            }
-            else
-            {
-                Core.Initialize(runtimePath);
-            }
+            Core.Initialize(runtimePath);
         }
         catch (Exception exception) when (IsNativeRuntimeException(exception))
         {
@@ -99,7 +77,6 @@ public static class LibVlcRuntimeLocator
 
     internal static string? FindBundledRuntimePath(
         string baseDirectory,
-        DesktopRuntimePlatform platform,
         Architecture architecture)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(baseDirectory);
@@ -107,46 +84,23 @@ public static class LibVlcRuntimeLocator
         var libVlcRoot = Path.Combine(baseDirectory, "libvlc");
         var candidates = new List<string>();
 
-        if (platform is DesktopRuntimePlatform.Windows)
+        var runtimeFolder = architecture switch
         {
-            var runtimeFolder = architecture switch
-            {
-                Architecture.X64 => "win-x64",
-                Architecture.X86 => "win-x86",
-                Architecture.Arm64 => "win-arm64",
-                _ => null,
-            };
-
-            if (runtimeFolder is not null)
-            {
-                candidates.Add(Path.Combine(libVlcRoot, runtimeFolder));
-            }
+            Architecture.X64 => "win-x64",
+            Architecture.X86 => "win-x86",
+            Architecture.Arm64 => "win-arm64",
+            _ => null,
+        };
+        if (runtimeFolder is not null)
+        {
+            candidates.Add(Path.Combine(libVlcRoot, runtimeFolder));
         }
 
         candidates.Add(libVlcRoot);
-
-        if (platform is DesktopRuntimePlatform.MacOS)
-        {
-            candidates.Add(Path.GetFullPath(Path.Combine(
-                baseDirectory,
-                "..",
-                "Frameworks",
-                "libvlc",
-                "lib")));
-            candidates.Add(Path.GetFullPath(Path.Combine(
-                baseDirectory,
-                "..",
-                "Frameworks",
-                "libvlc")));
-        }
-
-        return candidates.FirstOrDefault(candidate =>
-            ContainsNativeRuntime(candidate, platform));
+        return candidates.FirstOrDefault(ContainsNativeRuntime);
     }
 
-    private static bool ContainsNativeRuntime(
-        string candidate,
-        DesktopRuntimePlatform platform)
+    private static bool ContainsNativeRuntime(string candidate)
     {
         if (!Directory.Exists(candidate))
         {
@@ -155,16 +109,7 @@ public static class LibVlcRuntimeLocator
 
         try
         {
-            return platform switch
-            {
-                DesktopRuntimePlatform.Windows =>
-                    File.Exists(Path.Combine(candidate, "libvlc.dll")),
-                DesktopRuntimePlatform.MacOS =>
-                    File.Exists(Path.Combine(candidate, "libvlc.dylib")),
-                DesktopRuntimePlatform.Linux =>
-                    Directory.EnumerateFiles(candidate, "libvlc.so*").Any(),
-                _ => false,
-            };
+            return File.Exists(Path.Combine(candidate, "libvlc.dll"));
         }
         catch (IOException)
         {
@@ -178,9 +123,7 @@ public static class LibVlcRuntimeLocator
 
     private static void ConfigureBundledPluginPath(string runtimePath)
     {
-        var pluginPath = OperatingSystem.IsMacOS()
-            ? Path.GetFullPath(Path.Combine(runtimePath, "..", "plugins"))
-            : Path.Combine(runtimePath, "plugins");
+        var pluginPath = Path.Combine(runtimePath, "plugins");
 
         if (Directory.Exists(pluginPath))
         {
@@ -208,27 +151,6 @@ public static class LibVlcRuntimeLocator
             or FileNotFoundException
             or TypeInitializationException;
 
-    private static DesktopRuntimePlatform GetPlatform() => OperatingSystem.IsWindows()
-        ? DesktopRuntimePlatform.Windows
-        : OperatingSystem.IsMacOS()
-            ? DesktopRuntimePlatform.MacOS
-            : OperatingSystem.IsLinux()
-                ? DesktopRuntimePlatform.Linux
-                : DesktopRuntimePlatform.Other;
-
-    private static string GetPlatformName() => GetPlatform() switch
-    {
-        DesktopRuntimePlatform.Windows => "Windows",
-        DesktopRuntimePlatform.MacOS => "macOS",
-        DesktopRuntimePlatform.Linux => "Linux",
-        _ => RuntimeInformation.OSDescription,
-    };
-}
-
-internal enum DesktopRuntimePlatform
-{
-    Windows,
-    MacOS,
-    Linux,
-    Other,
+    private static string GetPlatformName() => OperatingSystem.IsWindows()
+        ? "Windows" : OperatingSystem.IsAndroid() ? "Android" : "Other";
 }
