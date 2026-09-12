@@ -145,6 +145,22 @@
                     <StackPanel Margin="0,14"
                                 VerticalAlignment="Center"
                                 Spacing="18">
+                        <StackPanel Spacing="12" IsVisible="{Binding !IsFileLoaded}">
+                            <TextBlock FontSize="13"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       Text="Choose an audiobook from your library to begin listening."
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap" />
+                            <Button HorizontalAlignment="Center"
+                                    Padding="18,10"
+                                    Background="{DynamicResource AccentBrush}"
+                                    Foreground="{DynamicResource OnAccentBrush}"
+                                    FontWeight="SemiBold"
+                                    Content="Go to library"
+                                    Command="{Binding ShowLibraryCommand}"
+                                    IsEnabled="{Binding !IsBusy}" />
+                        </StackPanel>
+
                         <StackPanel Spacing="8">
                         <Slider Minimum="0"
                                 Maximum="{Binding SeekMaximum}"

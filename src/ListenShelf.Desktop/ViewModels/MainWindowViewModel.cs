@@ -537,7 +537,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     private string _bookTitle = "No audiobook selected";
 
     [ObservableProperty]
-    private string _fileName = "Open an audiobook to begin listening.";
+    private string _fileName = "Choose an audiobook from your library to begin listening.";
 
     [ObservableProperty]
     private string _fileFormatText = "AUDIO • LOCAL";
