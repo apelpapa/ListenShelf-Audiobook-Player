@@ -2162,6 +2162,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
 
         _audioEngine.Seek(clampedPosition);
+        // Seeking a finished book does not emit a native chapter-change event
+        // until Play. Keep the selector and Previous/Next usable while stopped.
+        SelectChapterContaining(clampedPosition);
         SaveProgress(clampedPosition, CurrentPlaybackDuration, force: true);
     }
 

@@ -38,6 +38,7 @@ longer part of this build (the previous work remains in Git history).
 - [ ] Test long-duration audiobook playback and seeking.
 - [ ] Test books with chapters and books without chapters.
 - [ ] Test replaying an audiobook after it has completed.
+- [x] Fix and visually verify immediate chapter-selection and Previous/Next updates when seeking a finished chaptered M4B, including replay without returning to Library (2026-09-12 development smoke check in `WINDOWS_TESTING.md`; broader playback acceptance remains open).
 - [x] Test Unicode audiobook paths.
 - [ ] Test long and unusual file paths.
 - [ ] Test operation without an internet connection.

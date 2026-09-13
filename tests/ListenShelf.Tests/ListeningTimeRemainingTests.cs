@@ -156,7 +156,11 @@ public sealed class ListeningTimeRemainingTests
         model.IsFileLoaded = true;
         model.PositionSeconds = position;
 
-        Assert.Equal(0, model.SelectedChapter.Index); // Simulate a delayed engine chapter event.
+        Assert.Equal(position < 1200 ? 1 : 2, model.SelectedChapter?.Index);
+        // A seek now updates selection immediately. Explicitly simulate an old
+        // native selection arriving afterward to retain this countdown check.
+        model.SelectedChapter = model.Chapters[0];
+        Assert.Equal(0, model.SelectedChapter.Index);
         Assert.Equal($"Chapter time left: ~{expected} at 1×", model.ChapterListeningTimeRemainingText);
         model.PositionSeconds = 300; // Rewind across the boundary again.
         Assert.Equal("Chapter time left: ~5:00 at 1×", model.ChapterListeningTimeRemainingText);
@@ -247,6 +251,7 @@ public sealed class ListeningTimeRemainingTests
         Change(() => model.PositionSeconds = 600);
         Change(() => model.SelectedPlaybackRate = 2);
         Assert.Equal("Chapter time left: ~5:00 at 2×", model.ChapterListeningTimeRemainingText);
+        Change(() => model.SelectedChapter = null);
         Change(() => model.SelectedChapter = model.Chapters[0]);
         Change(() => model.Chapters.Clear());
         Assert.False(model.HasChapterListeningTimeEstimate);

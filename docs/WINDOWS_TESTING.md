@@ -157,3 +157,30 @@ Use `build/Generate-SmokeTestMedia.ps1` to regenerate the deterministic media
 set when needed. For any failure, include the failed step, whether sound was
 heard, and the privacy-safe details from Settings → About. Review screenshots
 and logs before sharing: they can contain book names and local file paths.
+
+## Development smoke check — 2026-09-12
+
+This was a Windows x64 Debug UI check, **not** final-package or audible-output
+acceptance. A copy of the current source was built under the gitignored
+`artifacts/playback-smoke-20260912` directory. Only its default data-root path
+was overridden so imports, settings, and saved positions stayed in the test
+folder rather than the user's real ListenShelf catalog.
+
+- Imported the synthetic 12-second `short-with-chapters.m4b` through the file
+  picker. The source and managed-copy SHA-256 values matched the fixture manifest.
+- Observed playback progress, all three chapter labels, and the Finished state.
+- Reproduced a bug: rewinding the finished book to 0:00 left chapter 3 selected
+  and Next disabled. Seeking now updates chapter selection immediately without
+  waiting for a native chapter-change event or starting playback.
+- Repeated the case after rebuilding: 0:00 selected chapter 1, Previous was
+  disabled, Next was enabled, and Next advanced to chapter 2 at 0:04 while ready.
+  Play then restarted playback from that chapter without returning to Library.
+- Reopening the test build restored the selected book at the beginning, ready
+  without autoplay and with chapter controls available before Play.
+- All 726 automated tests passed, including four new seek/selection regression
+  cases. Existing countdown tests still cover delayed native chapter selection.
+
+Stopped after this one fix. Nonzero-position restart/resume, sustained pause,
+audible sound, other formats, long books, and final packaged-artifact checks
+remain to be completed. The isolated fixture/build/data were retained for local
+reproduction; no source audiobooks or real library entries were modified.

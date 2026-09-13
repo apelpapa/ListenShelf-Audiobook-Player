@@ -14,6 +14,44 @@ namespace ListenShelf.Tests;
 public sealed class ChapterSearchTests
 {
     [Theory]
+    [InlineData(0, 0)]
+    [InlineData(599, 0)]
+    [InlineData(600, 1)]
+    [InlineData(6600, 11)]
+    public async Task SeekingWithoutNativeChapterEvents_UpdatesSelectionAndNavigationImmediately(double seconds, int expectedIndex)
+    {
+        using var session = new PlayerSession();
+        await session.LoadAsync();
+        session.Model.PositionSeconds = seconds == 0 ? 1 : 0;
+        session.Model.SelectedChapter = session.Model.Chapters[^1];
+        session.Model.IsPlaying = false;
+        session.Model.ChapterSearchText = "storm";
+        session.Engine.ResetCalls();
+        var notifications = new HashSet<string?>();
+        var previousChanges = 0;
+        var nextChanges = 0;
+        session.Model.PropertyChanged += (_, args) => notifications.Add(args.PropertyName);
+        session.Model.PreviousChapterCommand.CanExecuteChanged += (_, _) => previousChanges++;
+        session.Model.NextChapterCommand.CanExecuteChanged += (_, _) => nextChanges++;
+
+        // After completion, LibVLC reports the requested time but does not
+        // emit a new chapter event until playback starts again.
+        session.Model.PositionSeconds = seconds;
+
+        Assert.Equal(expectedIndex, session.Model.SelectedChapter?.Index);
+        Assert.Equal($"Chapter {expectedIndex + 1} of 12", session.Model.ChapterPositionText);
+        Assert.Equal(expectedIndex > 0, session.Model.PreviousChapterCommand.CanExecute(null));
+        Assert.Equal(expectedIndex < 11, session.Model.NextChapterCommand.CanExecute(null));
+        Assert.Contains(nameof(MainWindowViewModel.ChapterPositionText), notifications);
+        Assert.True(previousChanges > 0);
+        Assert.True(nextChanges > 0);
+        Assert.False(session.Model.IsPlaying);
+        Assert.Equal("storm", session.Model.ChapterSearchText);
+        Assert.Empty(session.Engine.SelectedIndexes);
+        Assert.Equal(1, session.Engine.OtherPlaybackChanges);
+    }
+
+    [Theory]
     [InlineData("storm", "2,12")]
     [InlineData("STORM", "2,12")]
     [InlineData("  StOrM  ", "2,12")]
